@@ -1,6 +1,7 @@
 import type { AiLogEntry, AiStatusView } from "../ai/controller";
 import { isDifficulty, type Difficulty } from "../config";
 import type { StateView } from "../sim/types";
+import dayjs from "dayjs";
 
 const STATUS_LABELS: Record<AiStatusView["state"], string> = {
   off: "未启动",
@@ -24,10 +25,10 @@ const OVER_LABELS: Record<string, string> = {
 };
 
 const MOVE_ARROWS: Record<string, string> = {
-  up: "↑",
-  down: "↓",
-  left: "←",
-  right: "→",
+  up: "↑ UP",
+  down: "↓ DOWN",
+  left: "← LEFT",
+  right: "→ RIGHT",
 };
 
 const MAX_ERROR_LENGTH = 24;
@@ -41,7 +42,7 @@ function formatLogLine(entry: AiLogEntry): string {
   if (entry.error) return `✕  ${entry.latencyMs} ms · ${clip(entry.error)}`;
   if (entry.moves.length === 0) return "—";
   const glyphs = entry.moves.map((move) => MOVE_ARROWS[move] ?? move).join("");
-  return `${glyphs}  ${entry.latencyMs} ms`;
+  return `[${dayjs(entry.time).format("HH:mm:ss.SSS")}] ${glyphs}  ${entry.latencyMs} ms`;
 }
 
 function el<T extends HTMLElement>(id: string): T {
@@ -170,7 +171,7 @@ export function updateAiPanel(
   } else {
     const p50 = samples[Math.ceil(samples.length * 0.5) - 1];
     const p90 = samples[Math.ceil(samples.length * 0.9) - 1];
-    setText("ai-latency-stats", `P50 ${p50} · P90 ${p90}`);
+    setText("ai-latency-stats", `P50 ${p50}ms · P90 ${p90}ms`);
   }
 
   const logNode = el("ai-log");
