@@ -80,6 +80,16 @@ describe("AudioEngine", () => {
     expect(oscillators).toHaveLength(1);
   });
 
+  it("plays the movement sound quieter than other effects", () => {
+    const { ctx, gains } = fakeContext();
+    const audio = new AudioEngine(() => ctx);
+    audio.ensure();
+    audio.play("turn");
+    audio.play("eat");
+    expect(gains[0].gain.value).toBeCloseTo(0.01);
+    expect(gains[0].gain.value).toBeLessThan(gains[1].gain.value);
+  });
+
   it("starts a looping background track and mutes it with the master gain", () => {
     vi.useFakeTimers();
     const { ctx, oscillators, gains } = fakeContext();

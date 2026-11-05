@@ -49,13 +49,16 @@ export interface AudioContextLike {
   close(): Promise<void>;
 }
 
-const WAVES: Record<SfxName, { type: OscillatorType; from: number; to: number; dur: number }> = {
-  eat: { type: "square", from: 440, to: 880, dur: 0.08 },
-  turn: { type: "triangle", from: 320, to: 480, dur: 0.05 },
-  crash: { type: "square", from: 220, to: 60, dur: 0.3 },
-  start: { type: "triangle", from: 330, to: 660, dur: 0.12 },
-  win: { type: "square", from: 523, to: 1046, dur: 0.25 },
-  ui: { type: "triangle", from: 440, to: 440, dur: 0.04 },
+const WAVES: Record<
+  SfxName,
+  { type: OscillatorType; from: number; to: number; dur: number; volume: number }
+> = {
+  eat: { type: "square", from: 440, to: 880, dur: 0.08, volume: 0.04 },
+  turn: { type: "triangle", from: 320, to: 480, dur: 0.05, volume: 0.01 },
+  crash: { type: "square", from: 220, to: 60, dur: 0.3, volume: 0.04 },
+  start: { type: "triangle", from: 330, to: 660, dur: 0.12, volume: 0.04 },
+  win: { type: "square", from: 523, to: 1046, dur: 0.25, volume: 0.04 },
+  ui: { type: "triangle", from: 440, to: 440, dur: 0.04, volume: 0.04 },
 };
 
 const MUSIC_STEP_SECONDS = 0.27;
@@ -141,7 +144,7 @@ export class AudioEngine {
       wave.to,
       wave.dur,
       wave.type,
-      0.04,
+      wave.volume,
       this.ctx.destination,
       this.ctx.currentTime,
     );
