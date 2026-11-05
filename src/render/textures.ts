@@ -12,17 +12,23 @@ interface PixelBuffer {
 
 const CLEAR: RGBA = [0, 0, 0, 0];
 
-const SNAKE_OUTLINE: RGBA = [40, 82, 46, 255];
-const SNAKE_GREEN: RGBA = [104, 190, 80, 255];
-const SNAKE_GREEN_ALT: RGBA = [101, 186, 78, 255];
-const SNAKE_LIGHT: RGBA = [150, 224, 114, 255];
-const SNAKE_DARK: RGBA = [68, 142, 58, 255];
-const SNAKE_DEEP: RGBA = [52, 112, 50, 255];
+const SNAKE_OUTLINE: RGBA = [28, 66, 30, 255];
+const SNAKE_GREEN: RGBA = [128, 194, 66, 255];
+const SNAKE_GREEN_ALT: RGBA = [114, 180, 58, 255];
+const SNAKE_LIGHT: RGBA = [178, 230, 104, 255];
+const SNAKE_HIGHLIGHT: RGBA = [202, 240, 128, 255];
+const SNAKE_DARK: RGBA = [76, 142, 44, 255];
+const SNAKE_DEEP: RGBA = [50, 100, 34, 255];
+const SNAKE_BLOTCH: RGBA = [60, 122, 42, 255];
+const SNAKE_BLOTCH_DARK: RGBA = [46, 98, 34, 255];
+const SNAKE_BELLY: RGBA = [232, 222, 158, 255];
+const SNAKE_BELLY_LIGHT: RGBA = [246, 238, 186, 255];
+const SNAKE_BELLY_DARK: RGBA = [202, 190, 126, 255];
 const EYE_WHITE: RGBA = [250, 252, 236, 255];
 const EYE_SHADE: RGBA = [224, 232, 206, 255];
-const EYE_PUPIL: RGBA = [30, 46, 34, 255];
-const TONGUE: RGBA = [232, 84, 98, 255];
-const TONGUE_DARK: RGBA = [190, 56, 76, 255];
+const EYE_PUPIL: RGBA = [26, 38, 28, 255];
+const TONGUE: RGBA = [218, 70, 70, 255];
+const TONGUE_DARK: RGBA = [164, 42, 52, 255];
 
 const APPLE_OUTLINE: RGBA = [126, 40, 46, 255];
 const APPLE_RED: RGBA = [226, 64, 64, 255];
@@ -44,10 +50,10 @@ const BORDER_MOSS_LIGHT: RGBA = [126, 166, 90, 255];
 const BORDER_STONE: RGBA = [142, 138, 116, 255];
 const BORDER_STONE_LIGHT: RGBA = [164, 158, 132, 255];
 
-const FIELD_A: RGBA = [114, 160, 88, 255];
-const FIELD_B: RGBA = [108, 154, 82, 255];
-const FIELD_EDGE_A: RGBA = [104, 148, 80, 255];
-const FIELD_EDGE_B: RGBA = [99, 143, 75, 255];
+const FIELD_A: RGBA = [116, 162, 88, 255];
+const FIELD_B: RGBA = [110, 156, 82, 255];
+const FIELD_LIGHT: RGBA = [134, 180, 100, 255];
+const FIELD_DARK: RGBA = [110, 156, 82, 255];
 
 function buffer(width: number, height: number): PixelBuffer {
   return { width, height, data: new Uint8ClampedArray(width * height * 4) };
@@ -175,6 +181,37 @@ function insideEllipse(
   return dx * dx + dy * dy <= 1;
 }
 
+function paintBlotch(
+  buf: PixelBuffer,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  color: RGBA,
+): void {
+  const x0 = Math.floor(cx - rx);
+  const x1 = Math.ceil(cx + rx);
+  const y0 = Math.floor(cy - ry);
+  const y1 = Math.ceil(cy + ry);
+  for (let y = y0; y <= y1; y += 1) {
+    for (let x = x0; x <= x1; x += 1) {
+      const dx = (x + 0.5 - cx) / rx;
+      const dy = (y + 0.5 - cy) / ry;
+      if (dx * dx + dy * dy > 1) continue;
+      const current = get(buf, x, y);
+      if (current[3] === 0) continue;
+      if (
+        current[0] === SNAKE_OUTLINE[0] &&
+        current[1] === SNAKE_OUTLINE[1] &&
+        current[2] === SNAKE_OUTLINE[2]
+      ) {
+        continue;
+      }
+      put(buf, x, y, color);
+    }
+  }
+}
+
 function rotateBuffer(source: PixelBuffer, quarterTurns: number): PixelBuffer {
   let current = source;
   for (let turn = 0; turn < quarterTurns; turn += 1) {
@@ -211,24 +248,19 @@ function toTexture(buf: PixelBuffer): THREE.CanvasTexture {
 
 export function boardTexture(width: number, height: number): THREE.CanvasTexture {
   const cell = 10;
-  const buf = buffer(width * cell, height * cell);
+  const w = width * cell;
+  const h = height * cell;
+  const buf = buffer(w, h);
   const rng = new Rng(0x9f1e1d);
-  for (let tileY = 0; tileY < height; tileY += 1) {
-    const band = Math.floor(tileY / 2) % 2 === 0;
-    for (let tileX = 0; tileX < width; tileX += 1) {
-      const base = band ? FIELD_A : FIELD_B;
-      const edge = band ? FIELD_EDGE_A : FIELD_EDGE_B;
-      const tint = jitter(base, 4, rng);
-      for (let py = 0; py < cell; py += 1) {
-        for (let px = 0; px < cell; px += 1) {
-          let color = jitter(tint, 5, rng);
-          if (px === 0 || py === 0) color = jitter(edge, 4, rng);
-          else if (rng.next() < 0.028) color = shade(color, 0.955);
-          else if (rng.next() < 0.022) color = shade(color, 1.04);
-          if (rng.next() < 0.008) color = shade(color, 0.9);
-          put(buf, tileX * cell + px, tileY * cell + py, color);
-        }
-      }
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      let color = jitter(FIELD_A, 5, rng);
+      const roll = rng.next();
+      if (roll < 0.022) color = shade(color, 0.95);
+      else if (roll < 0.042) color = shade(color, 1.025);
+      if (rng.next() < 0.005) color = jitter(FIELD_LIGHT, 4, rng);
+      if (rng.next() < 0.003) color = jitter(FIELD_DARK, 4, rng);
+      put(buf, x, y, color);
     }
   }
   return toTexture(buf);
@@ -332,36 +364,46 @@ function drawCapsule(variant: number): PixelBuffer {
     for (let x = 1; x <= width - 2; x += 1) {
       if (!insideRounded(x, y, 1, 1, width - 2, height - 2, 7)) continue;
       let color = base;
-      if (y <= 3) color = rng.next() < 0.8 ? SNAKE_LIGHT : base;
-      else if (y >= height - 4) color = rng.next() < 0.8 ? SNAKE_DARK : shade(base, 0.92);
+      if (y <= 2) color = SNAKE_LIGHT;
+      else if (y >= 12) color = SNAKE_BELLY;
       else {
         const roll = rng.next();
-        if (roll < 0.12) color = SNAKE_DARK;
-        else if (roll < 0.22) color = SNAKE_LIGHT;
-        else if (roll < 0.28) color = shade(base, 1.04);
+        if (roll < 0.08) color = SNAKE_DARK;
+        else if (roll < 0.14) color = SNAKE_LIGHT;
+        else if (roll < 0.2) color = shade(base, 1.04);
       }
       put(buf, x, y, color);
     }
   }
-  const shift = variant === 0 ? 0 : 1;
-  const scales: Array<[number, number]> = [
-    [8, 8 + shift],
-    [14, 9 - shift],
-    [20, 8 + shift],
-    [25, 9 - shift],
-  ];
-  for (const [sx, sy] of scales) {
-    put(buf, sx, sy, SNAKE_LIGHT);
-    put(buf, sx + 1, sy, SNAKE_DARK);
+
+  const shift = variant === 0 ? 0 : 2;
+  paintBlotch(buf, 8 + shift, 6, 4.4, 2.7, SNAKE_BLOTCH);
+  paintBlotch(buf, 19 - shift, 7, 5.2, 3, SNAKE_BLOTCH);
+  paintBlotch(buf, 27, 4.8, 2.8, 1.9, SNAKE_BLOTCH_DARK);
+  paintBlotch(buf, 13, 9.5, 2.5, 1.6, SNAKE_BLOTCH_DARK);
+  paintBlotch(buf, 23, 4.4, 2, 1.4, SNAKE_BLOTCH);
+
+  fillRect(buf, 5, 1, 12, 1, SNAKE_HIGHLIGHT);
+  fillRect(buf, 17, 2, 21, 2, SNAKE_HIGHLIGHT);
+  put(buf, 9, 2, SNAKE_HIGHLIGHT);
+  put(buf, 24, 2, SNAKE_HIGHLIGHT);
+
+  for (let y = 12; y <= height - 2; y += 1) {
+    for (let x = 1; x <= width - 2; x += 1) {
+      if (!insideRounded(x, y, 1, 1, width - 2, height - 2, 7)) continue;
+      let color = y === 12 ? SNAKE_BELLY_LIGHT : SNAKE_BELLY;
+      if (x % 4 === 0) color = SNAKE_BELLY_DARK;
+      if (y >= height - 3) color = shade(color, 0.94);
+      put(buf, x, y, color);
+    }
   }
-  put(buf, 5, 7, SNAKE_LIGHT);
-  put(buf, 26, 10, SNAKE_DARK);
+
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       if (x > 2 && x < width - 3) continue;
       const color = get(buf, x, y);
       if (color[0] === SNAKE_OUTLINE[0] && color[1] === SNAKE_OUTLINE[1]) {
-        put(buf, x, y, base);
+        put(buf, x, y, y >= 12 ? SNAKE_BELLY : base);
       }
     }
   }
@@ -438,51 +480,84 @@ function drawHeadUp(): PixelBuffer {
   for (const [y, x0, x1] of HEAD_OUTER) fillRect(buf, x0, y, x1, y, SNAKE_OUTLINE);
   for (const [y, x0, x1] of HEAD_INNER) fillRect(buf, x0, y, x1, y, SNAKE_GREEN);
 
-  fillRect(buf, 12, 5, 19, 6, SNAKE_LIGHT);
-  fillRect(buf, 8, 9, 9, 11, SNAKE_LIGHT);
-  put(buf, 10, 8, SNAKE_LIGHT);
-  put(buf, 6, 13, SNAKE_LIGHT);
-  put(buf, 7, 12, SNAKE_LIGHT);
+  paintBlotch(buf, 9, 6, 4.5, 2.8, SNAKE_BLOTCH);
+  paintBlotch(buf, 21, 4.5, 4, 2.2, SNAKE_BLOTCH);
+  paintBlotch(buf, 15, 9, 4.5, 2.4, SNAKE_BLOTCH_DARK);
+  paintBlotch(buf, 26, 10, 2.6, 1.6, SNAKE_BLOTCH);
 
-  fillRect(buf, 9, 28, 22, 30, SNAKE_DARK);
-  fillRect(buf, 10, 30, 21, 30, SNAKE_DEEP);
+  fillRect(buf, 12, 3, 19, 4, SNAKE_HIGHLIGHT);
+  put(buf, 9, 5, SNAKE_HIGHLIGHT);
+  put(buf, 10, 4, SNAKE_HIGHLIGHT);
+  put(buf, 23, 5, SNAKE_HIGHLIGHT);
 
-  fillRounded(buf, 6, 11, 12, 17, 3, SNAKE_OUTLINE);
-  fillRounded(buf, 19, 11, 25, 17, 3, SNAKE_OUTLINE);
-  fillRounded(buf, 7, 12, 11, 16, 2, EYE_WHITE);
-  fillRounded(buf, 20, 12, 24, 16, 2, EYE_WHITE);
-  put(buf, 10, 15, EYE_SHADE);
-  put(buf, 21, 15, EYE_SHADE);
-  fillRect(buf, 9, 13, 10, 15, EYE_PUPIL);
-  fillRect(buf, 21, 13, 22, 15, EYE_PUPIL);
-  put(buf, 9, 13, EYE_WHITE);
-  put(buf, 21, 13, EYE_WHITE);
+  for (let y = 18; y <= 30; y += 1) {
+    for (let x = 0; x < 32; x += 1) {
+      const current = get(buf, x, y);
+      if (current[3] === 0) continue;
+      if (
+        current[0] === SNAKE_OUTLINE[0] &&
+        current[1] === SNAKE_OUTLINE[1] &&
+        current[2] === SNAKE_OUTLINE[2]
+      ) {
+        continue;
+      }
+      if (y >= 25 || x < 9 || x > 22) {
+        let color = y === 18 ? SNAKE_BELLY_LIGHT : SNAKE_BELLY;
+        if (x % 4 === 0) color = SNAKE_BELLY_DARK;
+        if (y >= 29) color = shade(color, 0.95);
+        put(buf, x, y, color);
+      }
+    }
+  }
 
-  fillRect(buf, 3, 18, 5, 20, SNAKE_DARK);
-  fillRect(buf, 26, 18, 28, 20, SNAKE_DARK);
+  fillRounded(buf, 4, 10, 13, 18, 4, SNAKE_OUTLINE);
+  fillRounded(buf, 5, 11, 12, 17, 3, EYE_PUPIL);
+  fillRect(buf, 7, 12, 8, 13, EYE_WHITE);
+  put(buf, 10, 16, EYE_SHADE);
+  fillRounded(buf, 18, 10, 27, 18, 4, SNAKE_OUTLINE);
+  fillRounded(buf, 19, 11, 26, 17, 3, EYE_PUPIL);
+  fillRect(buf, 21, 12, 22, 13, EYE_WHITE);
+  put(buf, 19, 16, EYE_SHADE);
+  fillRect(buf, 5, 9, 12, 9, SNAKE_DARK);
+  fillRect(buf, 19, 9, 26, 9, SNAKE_DARK);
 
-  fillRect(buf, 10, 8, 21, 8, SNAKE_OUTLINE);
-  fillRect(buf, 10, 9, 12, 9, SNAKE_OUTLINE);
-  fillRect(buf, 19, 9, 21, 9, SNAKE_OUTLINE);
-  put(buf, 13, 7, SNAKE_OUTLINE);
-  put(buf, 18, 7, SNAKE_OUTLINE);
+  put(buf, 10, 5, SNAKE_OUTLINE);
+  put(buf, 21, 5, SNAKE_OUTLINE);
+  fillRect(buf, 10, 9, 21, 9, SNAKE_OUTLINE);
+  fillRect(buf, 12, 10, 19, 11, SNAKE_BELLY);
+  put(buf, 11, 10, SNAKE_BELLY_DARK);
+  put(buf, 20, 10, SNAKE_BELLY_DARK);
 
-  fillRect(buf, 15, 3, 16, 9, TONGUE);
-  fillRect(buf, 16, 3, 16, 9, TONGUE_DARK);
-  put(buf, 13, 0, TONGUE);
-  put(buf, 18, 0, TONGUE);
-  put(buf, 13, 1, TONGUE);
-  put(buf, 14, 1, TONGUE);
-  put(buf, 17, 1, TONGUE_DARK);
-  put(buf, 18, 1, TONGUE);
-  put(buf, 14, 2, TONGUE);
-  put(buf, 15, 2, TONGUE);
-  put(buf, 16, 2, TONGUE_DARK);
-  put(buf, 17, 2, TONGUE);
-  put(buf, 15, 3, TONGUE);
-  put(buf, 16, 3, TONGUE_DARK);
+  fillRect(buf, 14, 3, 17, 9, TONGUE);
+  fillRect(buf, 15, 3, 16, 9, TONGUE_DARK);
+  fillRect(buf, 13, 2, 14, 3, TONGUE);
+  fillRect(buf, 17, 2, 18, 3, TONGUE);
+  fillRect(buf, 12, 1, 14, 2, TONGUE);
+  fillRect(buf, 17, 1, 19, 2, TONGUE);
+  fillRect(buf, 11, 0, 12, 0, TONGUE);
+  fillRect(buf, 19, 0, 20, 0, TONGUE);
+  put(buf, 13, 0, TONGUE_DARK);
+  put(buf, 18, 0, TONGUE_DARK);
 
   return buf;
+}
+
+export function tailTexture(): THREE.CanvasTexture {
+  const buf = buffer(16, 16);
+  fillEllipse(buf, 7.5, 7.5, 6.5, 6.5, SNAKE_OUTLINE);
+  fillEllipse(buf, 7.5, 7.5, 5.5, 5.5, SNAKE_GREEN);
+  fillEllipse(buf, 6, 5, 2.4, 1.6, SNAKE_BLOTCH);
+  fillRect(buf, 5, 2, 8, 2, SNAKE_HIGHLIGHT);
+  put(buf, 9, 3, SNAKE_HIGHLIGHT);
+  for (let y = 8; y <= 12; y += 1) {
+    for (let x = 3; x <= 12; x += 1) {
+      const dx = (x + 0.5 - 7.5) / 5.5;
+      const dy = (y + 0.5 - 7.5) / 5.5;
+      if (dx * dx + dy * dy > 1) continue;
+      put(buf, x, y, x % 4 === 0 ? SNAKE_BELLY_DARK : SNAKE_BELLY);
+    }
+  }
+  return toTexture(buf);
 }
 
 export function headTexture(direction: Direction): THREE.CanvasTexture {

@@ -61,6 +61,29 @@
   assert(api.getState().phase === "over", "wall crash did not end the run");
   assert(api.getState().overReason === "wall", "wall crash reason is wrong");
 
+  api.start({ seed: 86 });
+  api.setSnake(
+    [
+      { x: 17, y: 9 },
+      { x: 16, y: 9 },
+      { x: 15, y: 9 },
+    ],
+    "right",
+  );
+  api.setFood({ x: 0, y: 0 });
+  const wallScene = window.__pixelSerpent.scene;
+  wallScene.render(api.getState(), 1, 0, 0);
+  api.stepMoves(1);
+  wallScene.render(api.getState(), 1, 0, 0);
+  api.stepMoves(1);
+  wallScene.render(api.getState(), 1, 0, 0);
+  assert(api.getState().phase === "over" && api.getState().overReason === "wall", "wall hit did not end the run");
+  const wallHeadX = wallScene.headMesh.position.x;
+  assert(
+    Math.abs(wallHeadX - (api.getState().snake[0].x + 0.5)) < 0.01,
+    `head recoiled after the wall hit: ${wallHeadX}`,
+  );
+
   api.start({ seed: 80 });
   api.setSnake(
     [

@@ -31,6 +31,8 @@ describe("observation", () => {
     expect(observation.prompt).toContain("MOVE ANALYSIS");
     expect(observation.prompt).toContain("room ample");
     expect(observation.prompt).toContain("SAFE");
+    expect(observation.prompt).toContain(`board ${observation.view.width}x${observation.view.height}`);
+    expect(observation.prompt).toContain(`head (${observation.view.snake[0].x}, ${observation.view.snake[0].y})`);
     expect(observation.prompt).not.toContain("MAP");
     expect(observation.legalMoves).toEqual(["up", "down", "right"]);
     expect(observation.view.snake).toHaveLength(3);
@@ -49,7 +51,7 @@ describe("observation", () => {
     );
     state = setFood(state, { x: 5, y: 5 });
     const prompt = buildObservation(state).prompt;
-    expect(prompt).toContain("U: CRASH");
+    expect(prompt).toContain("U (0, -1): CRASH");
   });
 
   it("shows space only for tight turns", () => {
@@ -70,7 +72,7 @@ describe("observation", () => {
     );
     state = setFood(state, { x: 3, y: 3 });
     const prompt = buildObservation(state).prompt;
-    expect(prompt).toContain("R: SAFE; room tight; space 0");
+    expect(prompt).toContain("R (1, 1): SAFE; room tight; space 0");
   });
 
   it("returns independent cell objects in the view", () => {

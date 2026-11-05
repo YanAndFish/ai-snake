@@ -1,7 +1,7 @@
 import type * as THREE from "three";
 import type { Cell, Direction, GameState } from "../sim/types";
 
-export const BOARD_TOP = 0.22;
+export const BOARD_TOP = 0.01;
 export const SPRITE_SIZE = 0.88;
 export const HEAD_SIZE = 1;
 export const BODY_LENGTH = 1.24;
@@ -23,6 +23,8 @@ export interface SceneHot {
   segmentShadows: THREE.Mesh[];
   headMesh: THREE.Sprite | null;
   headShadow: THREE.Mesh | null;
+  tailMesh: THREE.Sprite | null;
+  tailShadow: THREE.Mesh | null;
   headMaterials: Record<Direction, THREE.SpriteMaterial>;
   appleGroup: THREE.Group;
   appleSprite: THREE.Sprite | null;
@@ -93,6 +95,8 @@ function renderSnake(scene: SceneHot, state: GameState, alpha: number): void {
     setBodyVisibility(scene, 0);
     if (scene.headMesh !== null) scene.headMesh.visible = false;
     if (scene.headShadow !== null) scene.headShadow.visible = false;
+    if (scene.tailMesh !== null) scene.tailMesh.visible = false;
+    if (scene.tailShadow !== null) scene.tailShadow.visible = false;
     return;
   }
   const head = state.snake[0];
@@ -118,7 +122,8 @@ function renderSnake(scene: SceneHot, state: GameState, alpha: number): void {
     to = state.snake;
   }
   const divisor = state.moveEveryTicks > 0 ? state.moveEveryTicks : 1;
-  const progress = clamp01((state.moveAccumulator + alpha) / divisor);
+  const progress =
+    state.phase === "over" ? 1 : clamp01((state.moveAccumulator + alpha) / divisor);
 
   const bodyCount = to.length - 1;
   setBodyVisibility(scene, bodyCount);
@@ -153,6 +158,24 @@ function renderSnake(scene: SceneHot, state: GameState, alpha: number): void {
       1,
       horizontal ? BODY_WIDTH * 1.12 : BODY_LENGTH * 1.06,
     );
+  }
+
+  if (scene.tailMesh !== null && to.length > 1) {
+    const tailIndex = to.length - 1;
+    const previousTail = tailIndex < from.length ? from[tailIndex] : from[from.length - 1];
+    const targetTail = to[tailIndex];
+    const tailX = previousTail.x + (targetTail.x - previousTail.x) * progress + 0.5;
+    const tailZ = previousTail.y + (targetTail.y - previousTail.y) * progress + 0.5;
+    scene.tailMesh.position.set(tailX, BOARD_TOP + BODY_WIDTH * 0.5, tailZ);
+    scene.tailMesh.visible = true;
+    if (scene.tailShadow !== null) {
+      scene.tailShadow.position.set(
+        tailX + SHADOW_OFFSET_X * 0.75,
+        BOARD_TOP + SHADOW_LIFT,
+        tailZ + SHADOW_OFFSET_Z * 0.75,
+      );
+      scene.tailShadow.visible = true;
+    }
   }
 
   if (scene.headMesh !== null) {

@@ -17,27 +17,30 @@ import {
 import {
   appleTexture,
   boardTexture,
-  borderTexture,
   bushTexture,
   daisyTexture,
   grassTuftTexture,
-  groundShadowTexture,
   groundTexture,
   headTexture,
   particleTexture,
   shadowTexture,
   snakeBodyTexture,
-  soilTexture,
   stoneTexture,
+  tailTexture,
 } from "./textures";
 
 export { BOARD_TOP, SPRITE_SIZE } from "./scene.hot";
 export type { SceneHot } from "./scene.hot";
 
-const BORDER_WIDTH = 0.58;
-const BORDER_HEIGHT = 0.16;
-const GROUND_Y = -0.16;
-const PLINTH_HEIGHT = BOARD_TOP - GROUND_Y;
+const GROUND_Y = 0;
+const FIELD_Y = 0.01;
+const FIELD_MARGIN = 0.95;
+const RAIL_WIDTH = 0.14;
+const RAIL_HEIGHT = 0.12;
+const RAIL_LOW = 0.14;
+const RAIL_HIGH = 0.28;
+const POST_WIDTH = 0.3;
+const POST_HEIGHT = 0.42;
 const MAX_PARTICLES = 48;
 const MAX_SEGMENTS = BOARD_WIDTH * BOARD_HEIGHT;
 const CAMERA_FOV = 34;
@@ -67,6 +70,8 @@ export class Scene implements SceneHot {
   segmentShadows: THREE.Mesh[] = [];
   headMesh: THREE.Sprite | null = null;
   headShadow: THREE.Mesh | null = null;
+  tailMesh: THREE.Sprite | null = null;
+  tailShadow: THREE.Mesh | null = null;
   headMaterials: Record<Direction, THREE.SpriteMaterial>;
   appleGroup = new THREE.Group();
   appleSprite: THREE.Sprite | null = null;
@@ -136,13 +141,6 @@ export class Scene implements SceneHot {
     ground.position.set(BOARD_WIDTH / 2, GROUND_Y, BOARD_HEIGHT / 2);
     this.scene.add(ground);
 
-    const plinth = new THREE.Mesh(
-      new THREE.BoxGeometry(BOARD_WIDTH + BORDER_WIDTH * 2, PLINTH_HEIGHT, BOARD_HEIGHT + BORDER_WIDTH * 2),
-      new THREE.MeshBasicMaterial({ map: soilTexture(), toneMapped: false }),
-    );
-    plinth.position.set(BOARD_WIDTH / 2, (BOARD_TOP + GROUND_Y) / 2, BOARD_HEIGHT / 2);
-    this.scene.add(plinth);
-
     const field = new THREE.Mesh(
       new THREE.PlaneGeometry(BOARD_WIDTH, BOARD_HEIGHT),
       new THREE.MeshBasicMaterial({
@@ -151,73 +149,59 @@ export class Scene implements SceneHot {
       }),
     );
     field.rotation.x = -Math.PI / 2;
-    field.position.set(BOARD_WIDTH / 2, BOARD_TOP + 0.002, BOARD_HEIGHT / 2);
+    field.position.set(BOARD_WIDTH / 2, FIELD_Y, BOARD_HEIGHT / 2);
     this.scene.add(field);
 
-    const borderMaterial = new THREE.MeshBasicMaterial({
-      map: borderTexture(),
-      toneMapped: false,
-    });
-    const borderY = BOARD_TOP + BORDER_HEIGHT / 2;
-    const horizontalBorder = new THREE.BoxGeometry(
-      BOARD_WIDTH + BORDER_WIDTH * 2,
-      BORDER_HEIGHT,
-      BORDER_WIDTH,
+    const topMaterial = new THREE.MeshBasicMaterial({ color: "#b08a55", toneMapped: false });
+    const sideMaterial = new THREE.MeshBasicMaterial({ color: "#6b4c2c", toneMapped: false });
+    const fenceMaterials = [sideMaterial, sideMaterial, topMaterial, sideMaterial, sideMaterial, sideMaterial];
+    const railGeoH = new THREE.BoxGeometry(
+      BOARD_WIDTH + POST_WIDTH,
+      RAIL_HEIGHT,
+      RAIL_WIDTH,
     );
-    const verticalBorder = new THREE.BoxGeometry(
-      BORDER_WIDTH,
-      BORDER_HEIGHT,
-      BOARD_HEIGHT,
+    const railGeoV = new THREE.BoxGeometry(
+      RAIL_WIDTH,
+      RAIL_HEIGHT,
+      BOARD_HEIGHT + POST_WIDTH,
     );
-    const topBorder = new THREE.Mesh(horizontalBorder, borderMaterial);
-    topBorder.position.set(BOARD_WIDTH / 2, borderY, -BORDER_WIDTH / 2);
-    this.scene.add(topBorder);
-    const bottomBorder = new THREE.Mesh(horizontalBorder, borderMaterial);
-    bottomBorder.position.set(BOARD_WIDTH / 2, borderY, BOARD_HEIGHT + BORDER_WIDTH / 2);
-    this.scene.add(bottomBorder);
-    const leftBorder = new THREE.Mesh(verticalBorder, borderMaterial);
-    leftBorder.position.set(-BORDER_WIDTH / 2, borderY, BOARD_HEIGHT / 2);
-    this.scene.add(leftBorder);
-    const rightBorder = new THREE.Mesh(verticalBorder, borderMaterial);
-    rightBorder.position.set(BOARD_WIDTH + BORDER_WIDTH / 2, borderY, BOARD_HEIGHT / 2);
-    this.scene.add(rightBorder);
+    const railYs = [FIELD_Y + RAIL_LOW, FIELD_Y + RAIL_HIGH];
+    for (let i = 0; i < railYs.length; i += 1) {
+      const y = railYs[i];
+      const northRail = new THREE.Mesh(railGeoH, fenceMaterials);
+      northRail.position.set(BOARD_WIDTH / 2, y, -RAIL_WIDTH / 2);
+      this.scene.add(northRail);
+      const southRail = new THREE.Mesh(railGeoH, fenceMaterials);
+      southRail.position.set(BOARD_WIDTH / 2, y, BOARD_HEIGHT + RAIL_WIDTH / 2);
+      this.scene.add(southRail);
+      const westRail = new THREE.Mesh(railGeoV, fenceMaterials);
+      westRail.position.set(-RAIL_WIDTH / 2, y, BOARD_HEIGHT / 2);
+      this.scene.add(westRail);
+      const eastRail = new THREE.Mesh(railGeoV, fenceMaterials);
+      eastRail.position.set(BOARD_WIDTH + RAIL_WIDTH / 2, y, BOARD_HEIGHT / 2);
+      this.scene.add(eastRail);
+    }
 
-    const boardShadowMap = groundShadowTexture();
-    const ambientShadow = new THREE.Mesh(
-      this.shadowGeometry,
-      new THREE.MeshBasicMaterial({
-        map: boardShadowMap,
-        transparent: true,
-        depthWrite: false,
-        opacity: 0.32,
-        toneMapped: false,
-      }),
-    );
-    ambientShadow.position.set(BOARD_WIDTH / 2, GROUND_Y + 0.002, BOARD_HEIGHT / 2);
-    ambientShadow.scale.set(
-      BOARD_WIDTH + BORDER_WIDTH * 2 + 5.2,
-      1,
-      BOARD_HEIGHT + BORDER_WIDTH * 2 + 5.2,
-    );
-    this.scene.add(ambientShadow);
-
-    const contactShadow = new THREE.Mesh(
-      this.shadowGeometry,
-      new THREE.MeshBasicMaterial({
-        map: boardShadowMap,
-        transparent: true,
-        depthWrite: false,
-        opacity: 0.58,
-        toneMapped: false,
-      }),
-    );
-    contactShadow.position.set(BOARD_WIDTH / 2, GROUND_Y + 0.003, BOARD_HEIGHT / 2);
-    contactShadow.scale.set(
-      BOARD_WIDTH + BORDER_WIDTH * 2 + 1.4,
-      1,
-      BOARD_HEIGHT + BORDER_WIDTH * 2 + 1.4,
-    );
-    this.scene.add(contactShadow);
+    const postGeo = new THREE.BoxGeometry(POST_WIDTH, POST_HEIGHT, POST_WIDTH);
+    const postXs = [0.1, 4.75, 9.5, 14.25, 18.9];
+    const postOffset = POST_WIDTH / 2;
+    for (let i = 0; i < postXs.length; i += 1) {
+      const x = postXs[i];
+      const northPost = new THREE.Mesh(postGeo, fenceMaterials);
+      northPost.position.set(x, FIELD_Y + POST_HEIGHT / 2, -postOffset);
+      this.scene.add(northPost);
+      const southPost = new THREE.Mesh(postGeo, fenceMaterials);
+      southPost.position.set(x, FIELD_Y + POST_HEIGHT / 2, BOARD_HEIGHT + postOffset);
+      this.scene.add(southPost);
+      if (i > 0 && i < postXs.length - 1) {
+        const westPost = new THREE.Mesh(postGeo, fenceMaterials);
+        westPost.position.set(-postOffset, FIELD_Y + POST_HEIGHT / 2, x);
+        this.scene.add(westPost);
+        const eastPost = new THREE.Mesh(postGeo, fenceMaterials);
+        eastPost.position.set(BOARD_WIDTH + postOffset, FIELD_Y + POST_HEIGHT / 2, x);
+        this.scene.add(eastPost);
+      }
+    }
   }
 
   private addDecoration(texture: THREE.Texture, size: number, x: number, z: number): void {
@@ -306,6 +290,19 @@ export class Scene implements SceneHot {
       this.segmentShadows.push(this.addBodyShadow());
     }
 
+    const tail = new THREE.Sprite(makeSpriteMaterial(tailTexture()));
+    tail.scale.set(BODY_WIDTH, BODY_WIDTH, 1);
+    tail.center.set(0.5, 0.5);
+    tail.renderOrder = 500;
+    tail.visible = false;
+    this.tailMesh = tail;
+    this.scene.add(tail);
+    const tailShadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
+    tailShadow.scale.set(0.5, 1, 0.36);
+    tailShadow.visible = false;
+    this.tailShadow = tailShadow;
+    this.scene.add(tailShadow);
+
     const head = new THREE.Sprite(this.headMaterials.right);
     head.scale.set(HEAD_SIZE, HEAD_SIZE, 1);
     head.center.set(0.5, 0.5);
@@ -371,8 +368,8 @@ export class Scene implements SceneHot {
     this.camera.far = 300;
 
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV / 2));
-    const halfDepth = BOARD_HEIGHT / 2 + BORDER_WIDTH + 0.55;
-    const halfWidth = BOARD_WIDTH / 2 + BORDER_WIDTH + 0.55;
+    const halfDepth = BOARD_HEIGHT / 2 + FIELD_MARGIN;
+    const halfWidth = BOARD_WIDTH / 2 + FIELD_MARGIN;
     const nearDepth = halfDepth * CAMERA_COS;
     const distanceY = nearDepth + (halfDepth * CAMERA_SIN) / (FIT_FRACTION * tanHalf);
     const distanceX = nearDepth + halfWidth / (FIT_FRACTION * tanHalf * aspect);
