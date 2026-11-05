@@ -1,0 +1,621 @@
+--- /dev/null
++++ b/src/ai/batch.ts
+@@ -0,0 +1,175 @@
++import { analyzeMove, type MoveAnalysis } from "../sim/analysis";
++import { advanceMove, enqueueDirection } from "../sim/game";
++import { DIRECTIONS, DX, DY, isOpposite, type Direction, type GameState } from "../sim/types";
++import type { AiAction } from "./types";
++
++/** 一项操作最多持续的移动次数。 */
++export const MAX_BATCH_STEPS = 6;
++/** 一批问题覆盖等待期间最多八次直行后的局面。 */
++export const MAX_BATCH_WAIT_MOVES = 8;
++
++/** Decisions API 中一个带说明的选项。 */
++interface BatchChoice {
++  /** 方向与持续步数，例如 U3、KEEP2。 */
++  value: string;
++  /** 执行该操作时的可观察后果。 */
++  description: string;
++}
++
++/** 等待期间一个确定局面的独立问题。 */
++interface BatchQuestion {
++  /** API 的问题类型。 */
++  type: "choice";
++  /** 包含移动编号的问题名，用于匹配响应。 */
++  name: string;
++  /** 这个局面的坐标、蛇身和决策目标。 */
++  instructions: string;
++  /** 所有非反向操作及其持续步数，包含会碰撞的操作。 */
++  choices: BatchChoice[];
++}
++
++/** 一次批量请求及其适用局面。 */
++export interface BatchRequest {
++  /** 是否允许响应提前到达，等待已选操作执行到起点。 */
++  allowFuture: boolean;
++  /** 各问题共用的游戏规则和时间信息。 */
++  input: string;
++  /** 由请求时可见信息预测的局面；只模拟等待期间直行。 */
++  states: GameState[];
++  /** 每个预测局面对应一个独立问题。 */
++  questions: BatchQuestion[];
++  /** 响应到达时读取实际局面，用于精确匹配适用的问题。 */
++  currentState: () => GameState;
++}
++
++/** 一个已经校验的 API 回答。 */
++export interface BatchAnswer {
++  /** 回答适用的移动编号。 */
++  moveCount: number;
++  /** AI 选择的方向或 KEEP。 */
++  action: AiAction;
++  /** AI 选择的持续步数。 */
++  steps: number;
++}
++
++/** 批量响应的完整回答和实际采用项。 */
++export interface BatchTrace {
++  /** API 返回的全部独立操作。 */
++  answers: BatchAnswer[];
++  /** 响应到达时匹配到的问题编号。 */
++  selectedMoveCount: number;
++}
++
++/** 批量响应覆盖的局面已经全部过去。 */
++export class ExpiredBatchError extends Error {
++  constructor() {
++    super("响应对应的局面已过期，将根据当前局面重新请求");
++    this.name = "ExpiredBatchError";
++  }
++}
++
++const TOKENS: Record<AiAction, string> = { up: "U", down: "D", left: "L", right: "R", keep: "KEEP" };
++const ACTIONS: Record<string, AiAction> = { U: "up", D: "down", L: "left", R: "right", KEEP: "keep" };
++
++/** 比较执行操作需要的可观察状态，不比较 RNG 和墙钟。 */
++export function matchesBatchState(expected: GameState, actual: GameState): boolean {
++  return actual.phase === "playing" && expected.moveCount === actual.moveCount &&
++    expected.width === actual.width && expected.height === actual.height &&
++    expected.direction === actual.direction && expected.eaten === actual.eaten &&
++    expected.moveEveryTicks === actual.moveEveryTicks && actual.queue.length === 0 &&
++    expected.food?.x === actual.food?.x && expected.food?.y === actual.food?.y &&
++    expected.snake.length === actual.snake.length && expected.snake.every((cell, index) =>
++      cell.x === actual.snake[index].x && cell.y === actual.snake[index].y);
++}
++
++/** 描述一段同方向移动，不挑选或修正模型的操作。 */
++function choiceDescription(state: GameState, action: AiAction, steps: number, replyMs: number, analysis: MoveAnalysis): string {
++  const direction = action === "keep" ? state.direction : action;
++  const head = state.snake[0];
++  const food = state.food;
++  const dx = food === null ? 0 : food.x - head.x;
++  const dy = food === null ? 0 : food.y - head.y;
++  const along = dx * DX[direction] + dy * DY[direction];
++  const onLine = food !== null && dx * DY[direction] === dy * DX[direction] && along > 0;
++  const eatAt = onLine && along <= analysis.runway ? along : null;
++  const intervalMs = state.moveEveryTicks * 1000 / 60;
++  const requestAfterMoves = eatAt !== null && eatAt <= steps ? eatAt : 0;
++  const endX = head.x + DX[direction] * steps;
++  const endY = head.y + DY[direction] * steps;
++  const endFood = food === null || (eatAt !== null && eatAt <= steps) ? "unknown after eating" : `dx=${food.x - endX} dy=${food.y - endY}`;
++  return `${action} ${steps} moves: ${steps > analysis.runway ? "COLLISION" : "clear"}; eat=${eatAt !== null && eatAt <= steps}; end_food=${endFood}; remaining_straight=${analysis.runway - steps}; reply_margin=${Math.round((analysis.runway - requestAfterMoves) * intervalMs - replyMs)}ms.`;
++}
++
++/** 为等待期间的各个直行位置建立独立问题，吃食物后停止预测。 */
++export function buildBatchRequest(state: GameState, replyMs: number, currentState: () => GameState, allowFuture = false): BatchRequest {
++  const states: GameState[] = [];
++  let predicted = { ...state, snake: state.snake.map((cell) => ({ ...cell })), queue: [] as Direction[] };
++  for (let offset = 0; offset <= MAX_BATCH_WAIT_MOVES; offset += 1) {
++    states.push(predicted);
++    const next = advanceMove(predicted).state;
++    // 新食物的坐标不可用于决策，也不能用未知食物之后的状态匹配响应。
++    if (next.phase !== "playing" || next.eaten !== predicted.eaten) break;
++    predicted = next;
++  }
++  const input = [
++    "SNAKE/5 CONDITIONAL BATCH",
++    `Start move=${state.moveCount}`,
++    "Each question is independent and gives a complete hypothetical state after waiting straight. Answer that state only. Do not assume any answer from another question.",
++    "When the response arrives, only the answer matching the actual board and move number is used. Other answers are discarded. An early answer waits for the already chosen action to finish. Your action begins at the next movement boundary from its matching state.",
++    `Choose a direction or KEEP together with 1-${MAX_BATCH_STEPS} moves. KEEP maintains that question's heading. The whole action executes at the normal speed, including after eating. The next request starts while your chosen action executes, predicting only the action YOU selected. If the visible apple is eaten, planning waits until its actual replacement is observed. If the next answer is late, the snake holds its last heading.`,
++    `Next response estimate p90=${Math.round(replyMs)}ms; one move=${Math.round(state.moveEveryTicks * 1000 / 60)}ms. Response time is uncertain.`,
++    "Objective: apples give 10 points each; survival is worth 0.5 points per second. Balance progress and survival. Extra safe space alone gives no apple points. Plan the duration to eat or align with visible food while leaving time to respond again.",
++    "All non-reversing directions and durations remain available, including collisions. There is no local rescue, pause, or slowdown. Future food locations are unknown. Coordinates: x right, y down.",
++  ].join("\n");
++  const questions = states.map((snapshot): BatchQuestion => {
++    const head = snapshot.snake[0];
++    const actions: AiAction[] = [...DIRECTIONS.filter((direction) => !isOpposite(direction, snapshot.direction)), "keep"];
++    const choices: BatchChoice[] = [];
++    for (const action of actions) {
++      const analysis = analyzeMove(snapshot, action === "keep" ? snapshot.direction : action);
++      for (let steps = 1; steps <= MAX_BATCH_STEPS; steps += 1) {
++        choices.push({ value: `${TOKENS[action]}${steps}`, description: choiceDescription(snapshot, action, steps, replyMs, analysis) });
++      }
++    }
++    return {
++      type: "choice", name: `move_${snapshot.moveCount}`,
++      instructions: `Choose the action and duration for THIS state: move=${snapshot.moveCount}, board=${snapshot.width}x${snapshot.height}, head=(${head.x},${head.y}), heading=${snapshot.direction}, food=${snapshot.food === null ? "unknown" : `(${snapshot.food.x},${snapshot.food.y})`}, body=${snapshot.snake.map((cell) => `(${cell.x},${cell.y})`).join(" ")}. Maximize the stated objective.`,
++      choices,
++    };
++  });
++  return { input, states, questions, currentState, allowFuture };
++}
++
++/** 校验全部回答后，仅返回与响应到达局面匹配的操作。 */
++export function decodeBatchAnswers(payload: unknown, batch: BatchRequest): { action: AiAction; steps: number; batchTrace: BatchTrace; reason: string } {
++  const raw = typeof payload === "object" && payload !== null ? (payload as { answers?: unknown }).answers : null;
++  if (!Array.isArray(raw) || raw.length !== batch.questions.length) throw new Error("批量响应缺少回答，请重试");
++  const byName = new Map<string, Record<string, unknown>>();
++  for (const answer of raw) {
++    if (typeof answer !== "object" || answer === null || typeof answer.name !== "string" || byName.has(answer.name)) throw new Error("批量响应的问题名称无效或重复");
++    byName.set(answer.name, answer);
++  }
++  const answers = batch.questions.map((question, index): BatchAnswer => {
++    const answer = byName.get(question.name);
++    if (answer?.type !== "choice" || typeof answer.choice !== "string" || !question.choices.some((choice) => choice.value === answer.choice)) throw new Error("批量响应包含无效操作，请重试");
++    const parts = /^(U|D|L|R|KEEP)([1-6])$/.exec(answer.choice)!;
++    return { moveCount: batch.states[index].moveCount, action: ACTIONS[parts[1]], steps: Number(parts[2]) };
++  });
++  const current = batch.currentState();
++  let index = batch.states.findIndex((snapshot) => matchesBatchState(snapshot, current));
++  if (index < 0 && batch.allowFuture && current.moveCount < batch.states[0].moveCount) index = 0;
++  if (index < 0) throw new ExpiredBatchError();
++  const selected = answers[index];
++  return { action: selected.action, steps: selected.steps, batchTrace: { answers, selectedMoveCount: selected.moveCount }, reason: `Decisions API ${TOKENS[selected.action]} for ${selected.steps} moves at move ${selected.moveCount}` };
++}
++
++/** 只预测 AI 已选操作的终点；发生碰撞或出现未知食物时返回 null。 */
++export function predictChosenEnd(state: GameState, moves: readonly Direction[]): GameState | null {
++  let predicted = { ...state, queue: [] as Direction[] };
++  for (const direction of moves) {
++    const beforeEaten = predicted.eaten;
++    predicted = advanceMove(enqueueDirection(predicted, direction)).state;
++    if (predicted.phase !== "playing" || predicted.eaten !== beforeEaten) return null;
++  }
++  return predicted;
++}
+--- a/src/ai/client.ts
++++ b/src/ai/client.ts
+@@ -0,0 +1 @@
++import { decodeBatchAnswers, type BatchRequest } from "./batch";
+@@ -5,0 +7,2 @@
++  /** 多结果模式的独立问题；省略时只请求一个当前方向。 */
++  batch?: BatchRequest;
+@@ -77 +80 @@
+-    const body = {
++    const body = request.batch ? { model: request.model || DEFAULT_MODEL, input: request.batch.input, questions: request.batch.questions } : {
+@@ -115,0 +119 @@
++    if (request.batch) return JSON.stringify(decodeBatchAnswers(payload, request.batch));
+--- a/src/ai/controller.ts
++++ b/src/ai/controller.ts
+@@ -0,0 +1 @@
++import type { BatchTrace } from "./batch";
+@@ -21,0 +23,2 @@
++  /** 多结果请求返回的独立操作；单方向模式省略。 */
++  batchTrace?: BatchTrace;
+@@ -40,0 +44,2 @@
++  /** 多结果模式的请求；省略时采用单方向模式。 */
++  batch?: DecisionRequest["batch"];
+@@ -94,0 +100,4 @@
++  /** 当前操作来自哪个请求；null 表示控制台计划。 */
++  planRequestId: number | null = null;
++  /** 当前操作的原始选择；null 表示控制台计划。 */
++  planAction: AiAction | null = null;
+@@ -125 +134 @@
+-    return this.log.map((e) => ({ ...e, moves: [...e.moves] }));
++    return this.log.map((e) => ({ ...e, moves: [...e.moves], ...(e.batchTrace ? { batchTrace: { ...e.batchTrace, answers: e.batchTrace.answers.map((answer) => ({ ...answer })) } } : {}) }));
+@@ -133 +142,3 @@
+-  setPlan(moves: Direction[]): void {
++  setPlan(moves: Direction[], requestId: number | null = null, action: AiAction | null = null): void {
++    this.planRequestId = requestId;
++    this.planAction = action;
+@@ -146,0 +158,2 @@
++    this.planRequestId = null;
++    this.planAction = null;
+@@ -182,0 +196 @@
++        batch: args.batch,
+@@ -185 +199 @@
+-      const parsed = parseAiResponse(text, args.currentDirection);
++      const parsed = parseAiResponse(text, args.currentDirection, args.batch !== undefined);
+@@ -195,0 +210 @@
++        ...(parsed.batchTrace ? { batchTrace: parsed.batchTrace } : {}),
+--- a/src/ai/response.ts
++++ b/src/ai/response.ts
+@@ -0,0 +1 @@
++import { MAX_BATCH_STEPS, type BatchTrace } from "./batch";
+@@ -15,0 +17,2 @@
++  /** 多结果请求的全部操作和匹配项；单方向模式省略。 */
++  batchTrace?: BatchTrace;
+@@ -113,0 +117 @@
++  allowBatch = false,
+@@ -126 +130,5 @@
+-  return { moves: [direction], action: keep ? "keep" : direction, reason: extractReason(parsed) };
++  const object = parsed as Record<string, unknown>;
++  const steps = allowBatch ? object.steps ?? 1 : 1;
++  if (!Number.isInteger(steps) || (steps as number) < 1 || (steps as number) > MAX_BATCH_STEPS) throw new Error("AI 返回的持续步数无效");
++  if (!allowBatch && object.steps !== undefined && object.steps !== 1) throw new Error("当前模式只允许一次操作");
++  return { moves: Array.from({ length: steps as number }, () => direction), action: keep ? "keep" : direction, reason: extractReason(parsed), ...(allowBatch ? { batchTrace: object.batchTrace as BatchTrace | undefined } : {}) };
+--- a/src/app/session.ts
++++ b/src/app/session.ts
+@@ -0,0 +1,2 @@
++import type { AiAction } from "../ai/types";
++import { buildBatchRequest, ExpiredBatchError, matchesBatchState, predictChosenEnd, type BatchRequest } from "../ai/batch";
+@@ -26,0 +29 @@
++  isOpposite,
+@@ -46,0 +50,2 @@
++  /** 是否使用多结果模式，默认 false。 */
++  batchMode?: boolean;
+@@ -77,0 +83,12 @@
++
++/** 提前返回、等待已选操作结束的下一段操作。 */
++interface PendingBatch {
++  /** AI 选定的逐步方向。 */
++  moves: Direction[];
++  /** 这段操作开始前应当出现的局面。 */
++  start: GameState;
++  /** 产生这段操作的请求序号。 */
++  requestId: number;
++  /** 模型选择的方向或 KEEP。 */
++  action: AiAction;
++}
+@@ -131,0 +149,2 @@
++  private batchMode: boolean;
++  private pendingBatch: PendingBatch | null = null;
+@@ -134,0 +154 @@
++    this.batchMode = options.batchMode ?? false;
+@@ -251,0 +272 @@
++    this.pendingBatch = null;
+@@ -256 +277 @@
+-  private installPlan(moves: Direction[], source: PlanSource): void {
++  private installPlan(moves: Direction[], source: PlanSource, requestId: number | null = null, action: AiAction | null = null): void {
+@@ -258 +279 @@
+-    this.controller.setPlan(moves);
++    this.controller.setPlan(moves, requestId, action);
+@@ -264 +285,8 @@
+-    if (this.state.queue.length > 0 || this.controller.plan.length > 0 || this.requestInFlight) return;
++    if (this.state.queue.length > 0) return;
++    if (this.pendingBatch !== null && this.controller.plan.length === 0) {
++      const pending = this.pendingBatch;
++      this.pendingBatch = null;
++      if (matchesBatchState(pending.start, this.state)) this.installPlan(pending.moves, "api", pending.requestId, pending.action);
++    }
++    if (this.requestInFlight || this.pendingBatch !== null) return;
++    if (this.controller.plan.length > 0 && (!this.batchMode || this.planSource !== "api")) return;
+@@ -270 +298,9 @@
+-    this.requestDecision(this.getObservation());
++    let batch: BatchRequest | undefined;
++    if (this.batchMode) {
++      const start = predictChosenEnd(this.state, this.controller.plan);
++      if (start === null) return;
++      const latency = this.decisionContext().latency;
++      const replyMs = latency.samples > 0 ? latency.p90Ticks * 1000 / 60 : this.state.moveEveryTicks * 2 * 1000 / 60;
++      batch = buildBatchRequest(start, replyMs, () => this.state, this.controller.plan.length > 0);
++    }
++    this.requestDecision(this.getObservation(), batch);
+@@ -274 +310,2 @@
+-  private requestDecision(observation: Observation): void {
++  private requestDecision(observation: Observation, batch?: BatchRequest): void {
++    const requestId = ++this.requestSeq;
+@@ -288 +325,2 @@
+-          prompt: observation.prompt,
++          prompt: batch?.input ?? observation.prompt,
++          batch,
+@@ -292,2 +330,2 @@
+-          currentDirection: observation.view.direction,
+-          legalMoves: observation.legalMoves,
++          currentDirection: batch?.states[0].direction ?? observation.view.direction,
++          legalMoves: batch ? (["up", "down", "left", "right"] as Direction[]).filter((direction) => !isOpposite(direction, batch.states[0].direction)) : observation.legalMoves,
+@@ -295 +333 @@
+-          requestId: ++this.requestSeq,
++          requestId,
+@@ -300 +338,7 @@
+-        this.installPlan(moves, "api");
++        const entry = this.controller.getLog().find((item) => item.requestId === requestId);
++        const start = batch?.states.find((state) => state.moveCount === entry?.batchTrace?.selectedMoveCount);
++        if (start !== undefined && start.moveCount > this.state.moveCount) {
++          this.pendingBatch = { moves, start, requestId, action: entry!.action! };
++        } else {
++          this.installPlan(moves, "api", requestId, entry?.action ?? null);
++        }
+@@ -302 +346 @@
+-      } catch {
++      } catch (error) {
+@@ -305 +349 @@
+-          this.retryAtTick = this.state.tick + 60;
++          this.retryAtTick = this.state.tick + (error instanceof ExpiredBatchError ? 0 : 60);
+@@ -310,0 +355 @@
++          if (this.batchMode && this.controller.plan.length > 0) this.prepareAi();
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -64,0 +65 @@
++  batchMode: true,
+--- /dev/null
++++ b/test/ai/batch.test.ts
+@@ -0,0 +1,249 @@
++import { describe, expect, it } from "vitest";
++import { buildBatchRequest, decodeBatchAnswers, ExpiredBatchError, matchesBatchState, predictChosenEnd } from "../../src/ai/batch";
++import { DecisionsTransport, type DecisionRequest } from "../../src/ai/client";
++import { AiController } from "../../src/ai/controller";
++import { parseAiResponse } from "../../src/ai/response";
++import { GameSession } from "../../src/app/session";
++import { KeyStore } from "../../src/app/keyStore";
++import { advanceMove, cloneState, createGame, setFood, setSnake, startGame } from "../../src/sim/game";
++
++/** 创建正前方没有食物的局面，使等待期间可连续直行。 */
++function board() {
++  return setFood(startGame(createGame({ seed: 83 }), 83), { x: 0, y: 0 });
++}
++
++/** 为每个独立问题返回同一个带步数的选项。 */
++function answers(request: ReturnType<typeof buildBatchRequest>, choice = "U2") {
++  return { answers: request.questions.map((question) => ({ type: "choice", name: question.name, choice })) };
++}
++
++/** 创建可控制响应到达时机的真实传输层。 */
++function harness() {
++  const calls: { body: { questions: { name: string }[] }; answer: (choice?: string) => void; signal: AbortSignal }[] = [];
++  const transport = new DecisionsTransport(async (_input, init) => new Promise<Response>((resolve) => {
++    const body = JSON.parse(String(init?.body));
++    calls.push({ body, signal: init?.signal as AbortSignal,
++      answer: (choice = "U2") => resolve(new Response(JSON.stringify({ answers: body.questions.map((question: { name: string }) => ({ type: "choice", name: question.name, choice })) }), { status: 200 })) });
++  }));
++  const controller = new AiController(transport);
++  const game = new GameSession({ controller, keyStore: new KeyStore(), batchMode: true });
++  game.setCredentials("sk-test-batch-secret");
++  return { game, controller, calls };
++}
++
++describe("AI 多结果与持续步数", () => {
++  it("不同等待位置分别提问，选项包含危险操作和 KEEP", () => {
++    const state = board();
++    const batch = buildBatchRequest(state, 500, () => state);
++    expect(batch.questions).toHaveLength(9);
++    expect(batch.states.map((item) => item.moveCount)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
++    expect(batch.questions[0].choices).toHaveLength(24);
++    expect(batch.questions[0].choices.some((item) => item.value === "KEEP6")).toBe(true);
++    expect(batch.questions[8].choices.find((item) => item.value === "KEEP6")?.description).toContain("COLLISION");
++    expect(batch.questions[0].choices.some((item) => item.value.startsWith("L"))).toBe(false);
++  });
++
++  it("响应按问题名称匹配，采用实际到达位置的答案", () => {
++    const state = board();
++    let current = state;
++    const batch = buildBatchRequest(state, 500, () => current);
++    current = advanceMove(advanceMove(state).state).state;
++    const payload = answers(batch);
++    payload.answers[2].choice = "D3";
++    payload.answers.reverse();
++    const result = decodeBatchAnswers(payload, batch);
++    expect(result).toMatchObject({ action: "down", steps: 3, batchTrace: { selectedMoveCount: 2 } });
++    expect(parseAiResponse(JSON.stringify(result), "right", true).moves).toEqual(["down", "down", "down"]);
++  });
++
++  it("相同坐标但不同蛇身的局面不会采用回答", () => {
++    const state = board();
++    const changed = { ...cloneState(state), snake: [state.snake[0], { x: 9, y: 10 }, { x: 8, y: 10 }] };
++    expect(matchesBatchState(state, changed)).toBe(false);
++    const batch = buildBatchRequest(state, 500, () => changed);
++    expect(() => decodeBatchAnswers(answers(batch), batch)).toThrow(ExpiredBatchError);
++  });
++
++  it("吃到当前食物之后的未知局面不会发给模型", () => {
++    const state = setFood(board(), { x: 11, y: 9 });
++    const batch = buildBatchRequest(state, 500, () => state);
++    expect(batch.states.map((item) => item.snake[0])).toEqual([{ x: 9, y: 9 }, { x: 10, y: 9 }]);
++    const other = { ...state, rng: 123456789, seed: 987654321 };
++    const second = buildBatchRequest(other, 500, () => other);
++    expect(second.input).toBe(batch.input);
++    expect(second.questions).toEqual(batch.questions);
++  });
++
++  it("建立批量问题后实际棋盘保持不变", () => {
++    const state = board();
++    const before = cloneState(state);
++    buildBatchRequest(state, 500, () => state);
++    expect(state).toEqual(before);
++  });
++
++  it.each(["missing", "duplicate", "unknown", "reverse", "refusal"])("拒绝包含 %s 错误的批量响应", (kind) => {
++    const state = board();
++    const batch = buildBatchRequest(state, 500, () => state);
++    const payload = answers(batch);
++    if (kind === "missing") payload.answers.pop();
++    if (kind === "duplicate") payload.answers[1].name = payload.answers[0].name;
++    if (kind === "unknown") payload.answers[0].choice = "U99";
++    if (kind === "reverse") payload.answers[0].choice = "L1";
++    if (kind === "refusal") payload.answers[0].type = "refusal";
++    expect(() => decodeBatchAnswers(payload, batch)).toThrow();
++  });
++
++  it("单方向模式拒绝持续多步的回答", () => {
++    expect(() => parseAiResponse('{"action":"up","steps":3}', "right")).toThrow();
++  });
++
++  it("响应延迟三步时从实际位置执行模型选定的三步", async () => {
++    const { game, calls, controller } = harness();
++    game.start({ seed: 83, ai: true });
++    game.stepMoves(3);
++    const before = game.getState();
++    calls[0].answer("U3");
++    await game.waitForIdle();
++    expect(game.getState()).toEqual(before);
++    expect(controller.plan).toEqual(["up", "up", "up"]);
++    expect(game.getAiLog()[0].batchTrace?.selectedMoveCount).toBe(3);
++    game.stepMoves(2);
++    expect(calls).toHaveLength(2);
++    game.stepMoves(1);
++    expect(calls).toHaveLength(2);
++    expect(game.getState().snake[0]).toEqual({ x: 12, y: 6 });
++    expect(game.getAiExecutionStats()).toMatchObject({ apiMoves: 3, coastMoves: 3 });
++    expect(JSON.stringify(game.getAiLog())).not.toContain("sk-test-batch-secret");
++    game.stopAi();
++  });
++
++  it("KEEP 持续多步时速度不变且每一步都计为 AI 输入", async () => {
++    const { game, calls } = harness();
++    game.start({ seed: 83, ai: true });
++    const before = game.getState();
++    calls[0].answer("KEEP3");
++    await game.waitForIdle();
++    game.stepMoves(3);
++    expect(game.getState().snake[0]).toEqual({ x: 12, y: 9 });
++    expect(game.getState().tick - before.tick).toBe(3 * before.moveEveryTicks);
++    expect(game.getAiExecutionStats().apiMoves).toBe(3);
++    game.stopAi();
++  });
++
++  it("模型选择超过剩余空间的持续步数时照常碰撞", async () => {
++    const { game, calls } = harness();
++    game.start({ seed: 83, ai: true });
++    game.setSnake([{ x: 17, y: 9 }, { x: 16, y: 9 }, { x: 15, y: 9 }], "right");
++    game.retryAi();
++    calls[1].answer("KEEP3");
++    await game.waitForIdle();
++    expect(game.stepMoves(3).overReason).toBe("wall");
++  });
++
++  it("吃到食物后完成已选步数，并使用实际新食物提前请求", async () => {
++    const { game, calls, controller } = harness();
++    game.start({ seed: 83, ai: true });
++    game.setFood({ x: 10, y: 9 });
++    game.retryAi();
++    expect(calls[1].body.questions).toHaveLength(1);
++    calls[1].answer("KEEP3");
++    await game.waitForIdle();
++    game.stepMoves(1);
++    expect(game.getState().score).toBe(10);
++    expect(controller.plan).toHaveLength(2);
++    expect(calls).toHaveLength(3);
++    game.stepMoves(2);
++    expect(calls).toHaveLength(3);
++    expect(game.getState().snake[0]).toEqual({ x: 12, y: 9 });
++    game.stopAi();
++  });
++
++  it("超过所有预测位置的响应被丢弃，下一次移动重新请求", async () => {
++    const { game, calls, controller } = harness();
++    game.start({ seed: 83, ai: true });
++    game.setSnake([{ x: 0, y: 9 }, { x: 0, y: 10 }, { x: 0, y: 11 }], "right");
++    game.setFood({ x: 0, y: 0 });
++    game.retryAi();
++    game.stepMoves(9);
++    calls[1].answer("U2");
++    await game.waitForIdle();
++    expect(controller.plan).toHaveLength(0);
++    expect(game.getAiExecutionStats().completed).toBe(0);
++    game.stepMoves(1);
++    expect(calls).toHaveLength(3);
++    expect(game.getState().direction).toBe("right");
++    game.stopAi();
++  });
++
++  it("暂停取消批量请求，旧响应不能安装操作", async () => {
++    const { game, calls, controller } = harness();
++    game.start({ seed: 83, ai: true });
++    const settled = game.waitForIdle();
++    game.pause();
++    expect(calls[0].signal.aborted).toBe(true);
++    calls[0].answer();
++    await settled;
++    expect(controller.plan).toHaveLength(0);
++    expect(game.getState().phase).toBe("paused");
++  });
++  it("提前返回的下一段等待当前操作结束，执行来源分别记录", async () => {
++    const { game, calls, controller } = harness();
++    game.start({ seed: 83, ai: true });
++    calls[0].answer("U3");
++    await game.waitForIdle();
++    expect(calls).toHaveLength(2);
++    expect(calls[1].body.questions[0].name).toBe("move_3");
++    calls[1].answer("R2");
++    await game.waitForIdle();
++    expect(controller.plan).toEqual(["up", "up", "up"]);
++    expect(controller.planRequestId).toBe(game.getAiLog()[0].requestId);
++    game.stepMoves(3);
++    expect(game.getState().snake[0]).toEqual({ x: 9, y: 6 });
++    expect(controller.plan).toEqual(["right", "right"]);
++    expect(controller.planRequestId).toBe(game.getAiLog()[1].requestId);
++    game.stepMoves(2);
++    expect(game.getState().snake[0]).toEqual({ x: 11, y: 6 });
++    expect(game.getAiExecutionStats().apiMoves).toBe(5);
++    game.stopAi();
++  });
++
++  it("提前请求返回较晚时按实际到达位置选择回答", async () => {
++    const { game, calls, controller } = harness();
++    game.start({ seed: 83, ai: true });
++    calls[0].answer("U2");
++    await game.waitForIdle();
++    game.stepMoves(4);
++    expect(game.getState().snake[0]).toEqual({ x: 9, y: 5 });
++    calls[1].answer("R2");
++    await game.waitForIdle();
++    expect(game.getAiLog()[1].batchTrace?.selectedMoveCount).toBe(4);
++    expect(controller.plan).toEqual(["right", "right"]);
++    expect(game.stepMoves(1).snake[0]).toEqual({ x: 10, y: 5 });
++    game.stopAi();
++  });
++
++  it("外部转向清除已提前返回的下一段", async () => {
++    const { game, calls, controller } = harness();
++    game.start({ seed: 83, ai: true });
++    calls[0].answer("U3");
++    await game.waitForIdle();
++    calls[1].answer("R2");
++    await game.waitForIdle();
++    game.setDirection("up");
++    expect(controller.plan).toHaveLength(0);
++    game.stepMoves(1);
++    expect(game.getAiExecutionStats().apiMoves).toBe(0);
++    expect(controller.plan).toHaveLength(0);
++    game.stopAi();
++  });
++
++  it("预测已选动作遇到食物或碰撞时停止", () => {
++    const state = setFood(board(), { x: 10, y: 9 });
++    expect(predictChosenEnd(state, ["right", "right"])).toBeNull();
++    const edge = setSnake(board(), [{ x: 18, y: 9 }, { x: 17, y: 9 }, { x: 16, y: 9 }], "right");
++    expect(predictChosenEnd(edge, ["right"])).toBeNull();
++    const end = predictChosenEnd(board(), ["up", "up", "left"]);
++    expect(end?.snake[0]).toEqual({ x: 8, y: 7 });
++  });
++
++});
+--- a/scripts/evaluate-live.mjs
++++ b/scripts/evaluate-live.mjs
+@@ -242,2 +242,2 @@
+-    const requestId = directionInput === null ? null : latestParsedRequestId;
+-    const actionInput = requestId === null ? null : parsed.get(requestId)?.selectedAction ?? directionInput;
++    const requestId = directionInput === null ? null : controller.planRequestId ?? latestParsedRequestId;
++    const actionInput = requestId === null ? null : controller.planAction ?? parsed.get(requestId)?.selectedAction ?? directionInput;
+@@ -282,0 +283,2 @@
++      record.selectedMoves = [...moves];
++      record.batchTrace = entry?.batchTrace ?? null;
+@@ -330,2 +332,13 @@
+-      // clone 的读取独立于生产 parser。活动计数覆盖整个响应体的接收过程。
+-      response.clone().arrayBuffer().then(() => finishFetch(true), () => finishFetch(false));
++      // 在生产 parser 读完响应体时结束计数，避免把副本的读取延迟算成请求并发。
++      const readJson = response.json.bind(response);
++      response.json = async () => {
++        try {
++          const payload = await readJson();
++          record.apiAnswers = payload.answers ?? null;
++          finishFetch(true);
++          return payload;
++        } catch (error) {
++          finishFetch(false);
++          throw error;
++        }
++      };
+@@ -427,4 +440,5 @@
+-    const choice = body.questions[0].choices.find((item) => item.value === "KEEP") ?? body.questions[0].choices[0];
+-    return route.fulfill({ status: 200, headers, contentType: "application/json", body: JSON.stringify({
+-      answers: [{ type: "choice", name: "next_move", choice: choice.value, confidence: 1 }],
+-    }) });
++    const answers = body.questions.map((question) => {
++      const choice = question.choices.find((item) => item.value === "KEEP1" || item.value === "KEEP") ?? question.choices[0];
++      return { type: "choice", name: question.name, choice: choice.value, confidence: 1 };
++    });
++    return route.fulfill({ status: 200, headers, contentType: "application/json", body: JSON.stringify({ answers }) });

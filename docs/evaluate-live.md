@@ -41,7 +41,7 @@ npm run eval:live -- --env-file .env.local --matrix /tmp/variants.json --seeds 2
 - `errors` 区分 HTTP、网络、解析、死亡取消和窗口结束取消。旧源码没有来源统计时，`executionStats` 与 `decisionApplied` 为 `null`。
 - `sourceBefore` 和 `sourceAfter` 按相对路径与内容计算每份源码 `src/**/*.ts` 的 SHA256，包含逐文件清单。`sourceStable` 表示运行前后内容相同。
 
-当前方向控制的配对实验见 [提示词实验报告](ai-prompt-evaluation.md) 和 [更多提示词与 KEEP 实验](ai-prompt-exploration.md)。
+当前方向控制的配对实验见 [提示词实验报告](ai-prompt-evaluation.md) 、[更多提示词与 KEEP 实验](ai-prompt-exploration.md) 和 [多结果与提前请求实验](ai-batch-evaluation.md)。
 
 `passed` 只表示页面、时钟、单请求和清理检查通过。检查模型效果时同时查看错误、真实解析数和实际 API 动作，不能仅看 `passed`。
 
