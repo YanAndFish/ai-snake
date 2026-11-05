@@ -119,27 +119,16 @@ describe("TLA+ action conformance", () => {
     session.stopAi();
   });
 
-  it("AIRespond 缓存早到选择，AIApply 等前缀终点才安装路线", async () => {
+  it("AIRespond 保存一个方向，AIApply 在下一次移动执行", async () => {
     const gate = deferred();
     const session = aiSession(gate.transport);
     session.start({ seed: 15, ai: true });
-    const prefix = session.getDecisionContext().pending.plan;
     const before = session.getState();
-    expect(prefix.length).toBeGreaterThan(0);
-    expect(gate.calls[0].request.legalMoves).toContain("up");
-
+    expect(session.getDecisionContext().pending.plan).toEqual([]);
     gate.calls[0].resolve('{"moves":["up"]}');
     await session.waitForIdle(1000);
     expect(session.getState()).toEqual(before);
-    expect(session.getDecisionContext().pending.plan).toEqual(prefix);
-
-    for (const direction of prefix) {
-      const moved = session.stepMoves(1);
-      expect(moved.direction).toBe(direction);
-      expect(session.getAiExecutionStats().apiMoves).toBe(0);
-    }
-    expect(session.getState().moveCount).toBe(prefix.length);
-    expect(session.getDecisionContext().pending.plan[0]).toBe("up");
+    expect(session.getDecisionContext().pending.plan).toEqual(["up"]);
     expect(session.stepMoves(1).direction).toBe("up");
     expect(session.getAiExecutionStats().apiMoves).toBe(1);
     expect(session.getInvariantReport().ok).toBe(true);
@@ -194,26 +183,16 @@ describe("TLA+ action conformance", () => {
     session.stopAi();
   });
 
-  it("AIDiscard 丢弃错过执行起点的响应", async () => {
+  it("反向响应被拒绝，等待期间维持当前方向", async () => {
     const gate = deferred();
     const session = aiSession(gate.transport);
     session.start({ seed: 15, ai: true });
-    const prefixLength = session.getAiStatus().planLength;
-    session.stepMoves(prefixLength + 1);
-    const before = session.getState();
-    const plan = session.getDecisionContext().pending.plan;
-    expect(before.phase).toBe("playing");
-    session.getEvents();
-
-    gate.calls[0].resolve('{"moves":["up"]}');
+    gate.calls[0].resolve('{"moves":["left"]}');
     await session.waitForIdle(1000);
-    expect(session.getState()).toEqual(before);
-    expect(session.getDecisionContext().pending.plan).toEqual(plan);
-    expect(session.getAiExecutionStats().expiredResponses).toBe(1);
-    expect(session.getEvents().some((event) => event.type === "ready")).toBe(false);
-    session.stepMoves(1);
+    expect(session.getAiStatus().state).toBe("error");
+    expect(session.getDecisionContext().pending.plan).toEqual([]);
+    expect(session.stepMoves(1).direction).toBe("right");
     expect(session.getAiExecutionStats().apiMoves).toBe(0);
-    expect(gate.calls).toHaveLength(2);
     expect(session.getInvariantReport().ok).toBe(true);
     session.stopAi();
   });

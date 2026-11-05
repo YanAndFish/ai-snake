@@ -231,6 +231,17 @@ describe("decision context", () => {
     expect(state.eaten).toBe(0);
   });
 
+  it("等待期间吃到食物时，分析隐藏尚未出现的新食物", () => {
+    const state = setFood(game(), { x: 10, y: 9 });
+    const telemetry = new DecisionTelemetry();
+    telemetry.reset(state);
+    const context = telemetry.context(state, { queue: [], plan: [] });
+    expect(context.scenarios[0].food).toEqual({ x: 10, y: 9 });
+    expect(context.scenarios[1].food).toBeNull();
+    expect(context.scenarios[2].food).toBeNull();
+    expect(state.food).toEqual({ x: 10, y: 9 });
+  });
+
   it("没有延迟样本时，展示等待一到两步的风险", () => {
     const state = game();
     const telemetry = new DecisionTelemetry();

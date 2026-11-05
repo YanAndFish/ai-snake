@@ -82,12 +82,13 @@ AIRespond(d) ==
   /\ aiMode = TRUE
   /\ phase = "playing"
   /\ d \in Dirs
+  /\ d /= Opposite(dir)
   /\ aiPending' = FALSE
   /\ aiReady' = TRUE
   /\ readyDir' = d
   /\ UNCHANGED <<phase, aiMode, ticks, haltTick, score, length, dir, nextDir>>
 
-\* 表示到达匹配的执行起点。精确棋盘匹配由会话测试检查。
+\* 收到的方向在下一次移动时应用。
 AIApply ==
   /\ phase = "playing"
   /\ aiMode = TRUE
@@ -97,15 +98,6 @@ AIApply ==
   /\ aiReady' = FALSE
   /\ readyDir' = "R"
   /\ UNCHANGED <<phase, aiMode, aiPending, ticks, haltTick, score, length, dir>>
-
-\* 表示选择已经过期，或实际棋盘与执行起点不同。
-AIDiscard ==
-  /\ phase = "playing"
-  /\ aiMode = TRUE
-  /\ aiReady
-  /\ aiReady' = FALSE
-  /\ readyDir' = "R"
-  /\ UNCHANGED <<phase, aiMode, aiPending, ticks, haltTick, score, length, dir, nextDir>>
 
 AIError ==
   /\ aiPending = TRUE
@@ -121,6 +113,7 @@ Turn(d) ==
 
 Tick ==
   /\ phase = "playing"
+  /\ ~aiReady
   /\ ticks' = ticks + 1
   /\ dir' = nextDir
   /\ nextDir' = nextDir
@@ -163,7 +156,7 @@ Done ==
   /\ phase = "over"
   /\ UNCHANGED <<phase, aiMode, aiPending, aiReady, readyDir, ticks, haltTick, score, length, dir, nextDir>>
 
-AIRespondR == AIRespond("R")
+AIRespondAny == \E d \in Dirs : AIRespond(d)
 
 Next ==
   \/ Start
@@ -171,9 +164,8 @@ Next ==
   \/ Pause
   \/ Resume
   \/ AIRequest
-  \/ AIRespondR
+  \/ AIRespondAny
   \/ AIApply
-  \/ AIDiscard
   \/ AIError
   \/ Tick
   \/ Restart

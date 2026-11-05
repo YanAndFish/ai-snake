@@ -65,22 +65,16 @@ describe("console test API", () => {
     expect(api.getPrompt()).toContain("MOVE ANALYSIS");
   });
 
-  it("控制台读取提前响应时，路线等待预测起点执行", async () => {
+  it("控制台收到 AI 响应后下一步执行所选方向", async () => {
     const { api } = harness();
     api.ai.useMock({ moves: ["up"], reason: "api mock" });
-    const started = api.start({ seed: 6, ai: true });
-    expect(started.phase).toBe("playing");
+    api.start({ seed: 6, ai: true });
     api.stepMoves(2);
-    expect(api.getState().snake[0].x).toBe(11);
     await api.ai.waitForIdle(1000);
     expect(api.ai.getStatus().state).toBe("ready");
+    expect(api.ai.getStatus().planLength).toBe(1);
     api.stepMoves(1);
-    expect(api.getState().snake[0].y).toBe(9);
-    expect(api.ai.getExecutionStats().apiMoves).toBe(0);
-    api.stepMoves(13);
-    const head = api.getState().snake[0];
-    api.stepMoves(1);
-    expect(api.getState().snake[0].y).toBe(head.y - 1);
+    expect(api.getState().snake[0]).toEqual({ x: 11, y: 8 });
     expect(api.ai.getExecutionStats().apiMoves).toBe(1);
     expect(api.getAiLog().at(-1)?.reason).toBe("api mock");
     api.ai.clearMock();

@@ -8,7 +8,7 @@ type Vars = {
   aiPending: boolean;
   /** 是否已收到等待执行的选择。 */
   aiReady: boolean;
-  /** 缓存的路线首方向。aiReady 为 false 时不参与执行。 */
+  /** 待执行的 AI 方向。aiReady 为 false 时不参与执行。 */
   readyDir: "R" | "L" | "U" | "D";
   /** 已推进的 tick 数。 */
   ticks: number;
@@ -21,7 +21,7 @@ export const state = (v: Vars) => {
   if (v.phase === "menu") return "菜单";
   if (v.phase === "playing") {
     if (v.aiPending) return "游戏中，等待 AI 响应";
-    if (v.aiReady) return "游戏中，等待执行起点";
+    if (v.aiReady) return "游戏中，等待下一次移动";
     return "游戏中";
   }
   if (v.phase === "paused") return "已暂停";
@@ -57,12 +57,10 @@ export const step = (action: string, from: Vars, to: Vars) => {
     case "AIRequest":
       return "发起 AI 请求";
     case "AIRespond":
-    case "AIRespondR":
+    case "AIRespondAny":
       return "缓存 AI 选择";
     case "AIApply":
-      return "到达执行起点，应用选择";
-    case "AIDiscard":
-      return "丢弃失效选择";
+      return "下一次移动应用方向";
     case "AIError":
       return "AI 请求失败";
     case "Tick":

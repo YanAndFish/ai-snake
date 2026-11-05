@@ -2,7 +2,9 @@ import { MAX_PLAN_MOVES } from "../config";
 import { isOpposite, type Direction } from "../sim/types";
 
 export interface ParsedPlan {
+  /** 已解析的方向输入，AI 响应只有一个方向。 */
   moves: Direction[];
+  /** 响应附带的简短说明。 */
   reason: string;
 }
 
@@ -98,6 +100,7 @@ function extractReason(parsed: unknown): string {
   return "";
 }
 
+/** 解析一个方向输入，拒绝多步计划、未知方向和反向。 */
 export function parseAiResponse(
   text: string,
   currentDirection: Direction,
@@ -106,11 +109,13 @@ export function parseAiResponse(
     throw new Error("empty AI response");
   }
   const parsed = extractJson(text);
-  const moves = validateMoves(extractMoves(parsed), currentDirection);
-  if (moves.length === 0) {
-    throw new Error("no valid move in AI response");
+  const tokens = extractMoves(parsed);
+  if (tokens.length !== 1) throw new Error("AI 必须只返回一个方向");
+  const direction = toDirection(tokens[0]);
+  if (direction === null || isOpposite(direction, currentDirection)) {
+    throw new Error("AI 返回的方向无效或与当前方向相反");
   }
-  return { moves, reason: extractReason(parsed) };
+  return { moves: [direction], reason: extractReason(parsed) };
 }
 
 function tokenizePlanString(s: string): string[] {

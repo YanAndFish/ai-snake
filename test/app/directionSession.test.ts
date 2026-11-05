@@ -1,17 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { DecisionRequest, DecisionTransport } from "../../src/ai/client";
 import { AiController } from "../../src/ai/controller";
-import { buildRouteChoices, projectPrefix } from "../../src/ai/routes";
 import { KeyStore } from "../../src/app/keyStore";
 import { GameSession } from "../../src/app/session";
-import { advanceMove, createGame, enqueueDirection } from "../../src/sim/game";
+import type { Direction } from "../../src/sim/types";
 
 /** 可由测试决定成功、失败和到达时间的一次请求。 */
 interface Call {
   /** 真实控制器传给网络层的请求参数。 */
   request: DecisionRequest;
-  /** 返回请求中首条合法路线。 */
-  answer(): void;
+  /** 返回指定方向，省略时返回上。 */
+  answer(direction?: Direction): void;
   /** 让当前请求失败。 */
   fail(): void;
 }
@@ -23,7 +22,7 @@ function harness() {
     decide: (request) => new Promise<string>((resolve, reject) => {
       calls.push({
         request,
-        answer: () => resolve(JSON.stringify({ moves: [request.legalMoves[0]], reason: "选首条路线" })),
+        answer: (direction = "up") => resolve(JSON.stringify({ moves: [direction], reason: "当前转向" })),
         fail: () => reject(new Error("连接失败")),
       });
     }),
@@ -34,71 +33,106 @@ function harness() {
   return { game, calls, controller };
 }
 
-describe("路线会话调度", () => {
-  it("提前响应等待完整前缀，随后在预测起点执行所选路线", async () => {
+describe("AI 当前方向控制", () => {
+  it("每次请求使用当前棋盘，响应在下一次移动执行", async () => {
     const { game, calls, controller } = harness();
-    game.start({ seed: 2, ai: true });
-    const prefix = [...controller.plan];
-    const expected = projectPrefix(game.state, prefix);
-    expect(expected).not.toBeNull();
-    if (expected === null) return;
-    const chosen = buildRouteChoices(expected, 16).find((choice) => choice.direction === calls[0].request.legalMoves[0]);
-    expect(chosen).toBeDefined();
+    const started = game.start({ seed: 2, ai: true });
+    expect(controller.plan).toEqual([]);
+    expect(calls[0].request.prompt).toBe(game.getPrompt());
+    expect(calls[0].request.prompt).toContain("head (9, 9)");
+    expect(calls[0].request.prompt).not.toContain("ROUTES");
+    expect(calls[0].request.legalMoves).toEqual(["up", "down", "right"]);
     calls[0].answer();
     await game.waitForIdle();
-    game.stepMoves(prefix.length - 1);
-    expect(game.getAiExecutionStats().apiMoves).toBe(0);
+    expect(game.getState()).toEqual(started);
+    expect(controller.plan).toEqual(["up"]);
     expect(calls).toHaveLength(1);
     game.stepMoves(1);
-    expect(game.getState().snake).toEqual(expected.snake);
+    expect(game.getState().snake[0]).toEqual({ x: 9, y: 8 });
     expect(calls).toHaveLength(2);
-    game.stepMoves(1);
-    const next = advanceMove(enqueueDirection(expected, calls[0].request.legalMoves[0])).state;
-    expect(game.getState().snake).toEqual(next.snake);
+    expect(calls[1].request.prompt).toContain("head (9, 8)");
+    expect(calls[1].request.legalMoves).toEqual(["up", "left", "right"]);
     expect(game.getAiExecutionStats().apiMoves).toBe(1);
     game.stopAi();
   });
 
-  it("迟到响应被丢弃，下一个移动边界重新请求", async () => {
+  it("等待期间已经移动时，响应从实际位置控制下一步", async () => {
     const { game, calls } = harness();
     game.start({ seed: 2, ai: true });
-    game.stepMoves(17);
-    expect(game.getState().phase).toBe("playing");
+    game.stepMoves(3);
+    expect(game.getState().snake[0]).toEqual({ x: 12, y: 9 });
     expect(calls).toHaveLength(1);
-    calls[0].answer();
+    calls[0].answer("down");
     await game.waitForIdle();
-    expect(game.getAiExecutionStats().expiredResponses).toBe(1);
-    expect(game.getAiExecutionStats().apiMoves).toBe(0);
-    expect(calls).toHaveLength(1);
     game.stepMoves(1);
-    expect(calls).toHaveLength(2);
-    expect(game.getInvariantReport().ok).toBe(true);
+    expect(game.getState().snake[0]).toEqual({ x: 12, y: 10 });
+    expect(game.getAiExecutionStats()).toMatchObject({ apiMoves: 1, coastMoves: 3, maxInFlight: 1 });
     game.stopAi();
   });
 
-  it("请求失败后至少等待 60 tick，再在移动边界重试", async () => {
+  it("只有一个安全方向时也请求 AI，并保留危险选项", async () => {
+    const { game, calls, controller } = harness();
+    game.start({ seed: 2, ai: true });
+    game.setSnake([{ x: 18, y: 0 }, { x: 17, y: 0 }, { x: 16, y: 0 }], "right");
+    game.retryAi();
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.legalMoves).toEqual(["up", "down", "right"]);
+    expect(calls[1].request.choiceDescriptions?.right).toContain("S0 X");
+    expect(calls[1].request.choiceDescriptions?.up).toContain("S0 X");
+    expect(controller.plan).toEqual([]);
+    calls[1].answer("down");
+    await game.waitForIdle();
+    expect(game.stepMoves(1).snake[0]).toEqual({ x: 18, y: 1 });
+    expect(game.getAiExecutionStats().apiMoves).toBe(1);
+    game.stopAi();
+  });
+
+  it("AI 选择撞墙方向时按规则结束，不替换方向", async () => {
+    const { game, calls } = harness();
+    game.start({ seed: 2, ai: true });
+    game.setSnake([{ x: 18, y: 0 }, { x: 17, y: 0 }, { x: 16, y: 0 }], "right");
+    game.retryAi();
+    calls[1].answer("up");
+    await game.waitForIdle();
+    const state = game.stepMoves(1);
+    expect(state.direction).toBe("up");
+    expect(state.overReason).toBe("wall");
+  });
+
+  it("响应未到达时撞墙，后到响应不能重启游戏", async () => {
+    const { game, calls, controller } = harness();
+    game.start({ seed: 2, ai: true });
+    const settled = game.waitForIdle();
+    game.stepMoves(10);
+    const ended = game.getState();
+    expect(ended.overReason).toBe("wall");
+    expect(calls[0].request.signal.aborted).toBe(true);
+    calls[0].answer();
+    await settled;
+    expect(game.getState()).toEqual(ended);
+    expect(controller.plan).toEqual([]);
+    expect(game.getAiExecutionStats().completed).toBe(0);
+  });
+
+  it("请求失败后至少等待 60 tick，再请求当前棋盘", async () => {
     const { game, calls } = harness();
     game.start({ seed: 4, ai: true });
     calls[0].fail();
     await game.waitForIdle();
+    game.stepTicks(59);
     expect(calls).toHaveLength(1);
-    expect(game.getAiExecutionStats().failedResponses).toBe(1);
+    expect(game.getState().snake[0]).toEqual({ x: 14, y: 9 });
     game.stepTicks(1);
-    expect(calls).toHaveLength(1);
-    game.stepMoves(1);
-    expect(calls).toHaveLength(1);
-    game.stepTicks(50);
     expect(calls).toHaveLength(2);
+    expect(game.getAiExecutionStats().failedResponses).toBe(1);
     calls[1].answer();
     await game.waitForIdle();
-    game.stepMoves(16 - game.getState().moveCount);
-    game.stepMoves(1);
+    expect(game.stepMoves(1).direction).toBe("up");
     expect(game.getAiExecutionStats().apiMoves).toBe(1);
-    expect(game.getAiExecutionStats().maxInFlight).toBe(1);
     game.stopAi();
   });
 
-  it("暂停会取消未来结果，恢复后的请求不受旧回调影响", async () => {
+  it("暂停会取消请求，恢复后的请求不受旧回调影响", async () => {
     const { game, calls } = harness();
     game.start({ seed: 5, ai: true });
     game.stepMoves(1);
@@ -123,7 +157,7 @@ describe("路线会话调度", () => {
     game.start({ seed: 6, ai: true });
     game.setPlan("up left");
     game.start({ seed: 7, ai: true });
-    expect(controller.plan[0]).toBe("right");
+    expect(controller.plan).toEqual([]);
     calls[0].answer();
     await Promise.resolve();
     await Promise.resolve();
@@ -134,7 +168,7 @@ describe("路线会话调度", () => {
     game.stopAi();
   });
 
-  it.each(["snake", "food", "speed", "difficulty", "direction"] as const)("编辑 %s 后旧路线失效", async (edit) => {
+  it.each(["snake", "food", "speed", "difficulty", "direction"] as const)("编辑 %s 后取消请求", async (edit) => {
     const { game, calls } = harness();
     game.start({ seed: 8, ai: true });
     if (edit === "snake") game.setSnake([{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }], "right");
@@ -170,51 +204,19 @@ describe("路线会话调度", () => {
     game.stopAi();
   });
 
-  it("接近满盘时可以在下一步获胜", () => {
+  it("移动统计区分 AI 输入、保持方向和控制台脚本", async () => {
     const { game, calls } = harness();
-    game.state = createGame({ width: 3, height: 3 });
-    game.start({ seed: 10, ai: true });
-    game.setSnake([{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 2, y: 1 }, { x: 1, y: 1 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 }], "left");
-    game.setFood({ x: 0, y: 0 });
-    expect(game.stepMoves(1).overReason).toBe("win");
-    expect(game.getState().snake).toHaveLength(9);
-    expect(game.getInvariantReport().ok).toBe(true);
-    expect(calls).toHaveLength(0);
-  });
-
-  it("延迟抖动和间歇失败时，游戏时钟独立推进且移动来源可核对", async () => {
-    const { game, calls } = harness();
-    let now = 0;
-    const clock = vi.spyOn(performance, "now").mockImplementation(() => now * 1000 / 60);
-    try {
-      game.start({ seed: 11, ai: true });
-      let handled = 0;
-      let due = 5;
-      for (now = 1; now <= 1200; now += 1) {
-        game.stepTick();
-        if (handled < calls.length && now >= due) {
-          if (handled % 5 === 4) calls[handled].fail();
-          else calls[handled].answer();
-          handled += 1;
-          await Promise.resolve();
-          await Promise.resolve();
-          await Promise.resolve();
-          due = now + (handled % 3 === 0 ? 120 : 5);
-        }
-        expect(game.getInvariantReport().ok).toBe(true);
-      }
-      const state = game.getState();
-      const stats = game.getAiExecutionStats();
-      expect(state.tick).toBe(1200);
-      expect(state.phase).toBe("playing");
-      expect(stats.apiMoves).toBeGreaterThan(0);
-      expect(stats.failedResponses).toBeGreaterThan(0);
-      expect(stats.apiMoves + stats.bridgeMoves + stats.forcedMoves + stats.scriptMoves).toBe(state.moveCount);
-      expect(stats.maxInFlight).toBe(1);
-      expect(JSON.stringify({ state, stats, log: game.getAiLog() })).not.toContain("sk-test-secret");
-    } finally {
-      game.stopAi();
-      clock.mockRestore();
-    }
+    game.start({ seed: 11, ai: true });
+    game.stepMoves(2);
+    calls[0].answer();
+    await game.waitForIdle();
+    game.stepMoves(1);
+    game.setPlan("left down");
+    game.stepMoves(2);
+    const stats = game.getAiExecutionStats();
+    expect(stats).toMatchObject({ apiMoves: 1, coastMoves: 2, scriptMoves: 2, maxInFlight: 1 });
+    expect(stats.apiMoves + stats.coastMoves + stats.scriptMoves).toBe(game.getState().moveCount);
+    expect(JSON.stringify({ stats, log: game.getAiLog() })).not.toContain("sk-test-secret");
+    game.stopAi();
   });
 });

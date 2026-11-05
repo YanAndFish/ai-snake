@@ -6,7 +6,6 @@ import {
 } from "../ai/controller";
 import { DecisionTelemetry, type DecisionContext } from "../ai/context";
 import { normalizePlan } from "../ai/response";
-import { buildBridge, buildRouteChoices, buildRoutePrompt, matchesRouteStart, projectPrefix, rescueDirection, routeLength, type RouteChoice } from "../ai/routes";
 import {
   advanceMove,
   createGame,
@@ -53,55 +52,33 @@ export interface SessionOptions {
   onFatal?: (message: string) => void;
 }
 
-/** 一局中实际完成的 AI 移动和请求统计。 */
+/** 一局中实际执行的方向输入和请求统计。 */
 export interface AiExecutionStats {
   /** 已发出的请求数。 */
   requests: number;
-  /** 已成功解析的响应数，包含晚到的响应。 */
+  /** 已成功解析并接收的响应数。 */
   completed: number;
   /** 请求或解析失败的次数，取消请求不计入。 */
   failedResponses: number;
-  /** 错过执行起点的响应数。 */
-  expiredResponses: number;
-  /** 移动数相同但棋盘与预测起点不同的次数。 */
-  startMismatches: number;
-  /** 按 API 选择的路线完成的移动数。 */
+  /** 应用 AI 方向输入后完成的移动数。 */
   apiMoves: number;
-  /** 等待响应时按本地避险前缀完成的移动数。 */
-  bridgeMoves: number;
-  /** 只有一个安全候选时完成的移动数。 */
-  forcedMoves: number;
-  /** 按控制台方向计划或入队方向完成的移动数。 */
+  /** 没有新输入时沿当前方向完成的移动数。 */
+  coastMoves: number;
+  /** 按控制台方向输入完成的移动数。 */
   scriptMoves: number;
-  /** 在 API 路线中吃到的食物数。 */
+  /** 应用 AI 方向输入时吃到的食物数。 */
   apiEats: number;
-  /** 在本地避险前缀中吃到的食物数。 */
-  bridgeEats: number;
-  /** 在唯一安全路线中吃到的食物数。 */
-  forcedEats: number;
+  /** 没有新输入时吃到的食物数。 */
+  coastEats: number;
   /** 同时进行的请求数最大值。 */
   maxInFlight: number;
 }
 
-/** 请求绑定的完整未来棋盘和模型选择。 */
-interface PendingRoute {
-  /** 棋盘修改后递增，用于丢弃旧结果。 */
-  version: number;
-  /** 当前请求的序号。 */
-  requestId: number;
-  /** 所有候选路线共享的执行起点。 */
-  expected: GameState;
-  /** 按不同首步区分的安全路线。 */
-  choices: RouteChoice[];
-  /** 模型选中的首方向；null 表示尚未收到响应。 */
-  selected: Direction | null;
-}
-
-type PlanSource = "api" | "bridge" | "forced" | "script";
+type PlanSource = "api" | "script";
 
 /** 创建单局执行统计。 */
 function emptyExecutionStats(): AiExecutionStats {
-  return { requests: 0, completed: 0, failedResponses: 0, expiredResponses: 0, startMismatches: 0, apiMoves: 0, bridgeMoves: 0, forcedMoves: 0, scriptMoves: 0, apiEats: 0, bridgeEats: 0, forcedEats: 0, maxInFlight: 0 };
+  return { requests: 0, completed: 0, failedResponses: 0, apiMoves: 0, coastMoves: 0, scriptMoves: 0, apiEats: 0, coastEats: 0, maxInFlight: 0 };
 }
 
 const MAX_EVENTS = 100;
@@ -149,9 +126,7 @@ export class GameSession {
   private fatal: string | null = null;
   private telemetry = new DecisionTelemetry();
   private boardVersion = 0;
-  private pendingRoute: PendingRoute | null = null;
-  private planSource: PlanSource = "bridge";
-  private routeLatenciesMs: number[] = [];
+  private planSource: PlanSource = "api";
   private executionStats = emptyExecutionStats();
   private retryAtTick = 0;
 
@@ -223,8 +198,7 @@ export class GameSession {
 
   start(options?: StartOptions): StateView {
     this.runId += 1;
-    this.invalidateRoutes();
-    this.routeLatenciesMs.length = 0;
+    this.invalidateDecision();
     this.executionStats = emptyExecutionStats();
     this.frozen = false;
     this.fatal = null;
@@ -266,70 +240,40 @@ export class GameSession {
     });
   }
 
-  /** 取消不适用于当前棋盘的请求，并清空活动路线。 */
-  private invalidateRoutes(): void {
+  /** 取消请求并清除待执行输入，修改棋盘后用新局面请求 AI。 */
+  private invalidateDecision(): void {
     this.boardVersion += 1;
     this.abortController?.abort();
     this.abortController = null;
     this.requestInFlight = false;
     this.requestPromise = null;
-    this.pendingRoute = null;
     this.retryAtTick = 0;
     this.controller.setOff();
-    this.planSource = "bridge";
+    this.planSource = "api";
   }
 
-  /** 安装已确定的路线。只有会话可以改变实际执行的方向列表。 */
+  /** 保存待执行输入，来源用于区分 AI 响应与控制台脚本。 */
   private installPlan(moves: Direction[], source: PlanSource): void {
     this.planSource = source;
     this.controller.setPlan(moves);
   }
 
-  /** 在移动边界处理未来结果，并从活动路线终点准备下一次选择。 */
+  /** 用当前棋盘请求一个方向，已有输入执行后才发出下一次请求。 */
   private prepareAi(): void {
-    if (!this.aiEnabled || this.state.phase !== "playing" || this.state.queue.length > 0) return;
-    if (this.planSource === "script" && this.controller.plan.length > 0) return;
-    const pending = this.pendingRoute;
-    if (this.controller.plan.length === 0 && pending !== null && pending.selected !== null) {
-      if (matchesRouteStart(this.state, pending.expected) && pending.version === this.boardVersion) {
-        const selected = pending.choices.find((choice) => choice.direction === pending.selected);
-        this.pendingRoute = null;
-        if (selected !== undefined) this.installPlan(selected.moves, pending.choices.length === 1 ? "forced" : "api");
-      } else {
-        this.executionStats.expiredResponses += 1;
-        if (this.state.moveCount === pending.expected.moveCount) this.executionStats.startMismatches += 1;
-        this.pendingRoute = null;
-      }
-    }
-    if (this.pendingRoute !== null || this.requestInFlight) return;
+    if (!this.aiEnabled || this.state.phase !== "playing") return;
+    if (this.state.queue.length > 0 || this.controller.plan.length > 0 || this.requestInFlight) return;
     if (!this.controller.hasMock() && !this.keyStore.has()) {
       this.controller.setNeedKey();
       return;
     }
-    if (this.controller.plan.length === 0) {
-      this.installPlan(buildBridge(this.state, routeLength(this.state, this.routeLatenciesMs)), "bridge");
-    }
-    if (this.controller.plan.length === 0) return;
     if (this.state.tick < this.retryAtTick) return;
-    const expected = projectPrefix(this.state, this.controller.plan);
-    if (expected === null) return;
-    // 前缀吃到食物后，路线只做避险，不追逐尚未在真实棋盘出现的食物。
-    const visibleFood = expected.eaten === this.state.eaten ? this.state.food : null;
-    const choices = buildRouteChoices(expected, routeLength(expected, this.routeLatenciesMs), visibleFood);
-    if (choices.length === 0) return;
-    const next: PendingRoute = { version: this.boardVersion, requestId: ++this.requestSeq, expected, choices, selected: null };
-    this.pendingRoute = next;
-    if (choices.length === 1) {
-      next.selected = choices[0].direction;
-      // 唯一候选在前缀终点执行，不占用网络请求。
-      return;
-    }
-    this.requestDecision(next, buildRoutePrompt(expected, choices, visibleFood));
+    this.requestDecision(this.getObservation());
   }
 
-  /** 请求只保存所选路线，实际安装留到执行起点。 */
-  private requestDecision(pending: PendingRoute, prompt: string): void {
+  /** 接收单次方向输入，下一次移动按当前棋盘执行。 */
+  private requestDecision(observation: Observation): void {
     const runId = this.runId;
+    const version = this.boardVersion;
     const controller = new AbortController();
     this.abortController = controller;
     this.requestInFlight = true;
@@ -341,32 +285,23 @@ export class GameSession {
     this.requestPromise = (async () => {
       try {
         const moves = await this.controller.request({
-          prompt,
+          prompt: observation.prompt,
           model: this.model,
           apiKey: this.keyStore.get(),
           signal: controller.signal,
-          currentDirection: pending.expected.direction,
-          legalMoves: pending.choices.map((choice) => choice.direction),
-          choiceDescriptions: Object.fromEntries(pending.choices.map((choice) => [choice.direction, choice.description])),
-          requestId: pending.requestId,
+          currentDirection: observation.view.direction,
+          legalMoves: observation.legalMoves,
+          choiceDescriptions: observation.choiceDescriptions,
+          requestId: ++this.requestSeq,
         });
-        if (controller.signal.aborted || runId !== this.runId || pending.version !== this.boardVersion || this.pendingRoute !== pending) return;
-        const latency = performance.now() - requestStartedAt;
-        this.telemetry.recordLatency(latency);
-        this.routeLatenciesMs.push(latency);
-        if (this.routeLatenciesMs.length > 8) this.routeLatenciesMs.shift();
+        if (controller.signal.aborted || runId !== this.runId || version !== this.boardVersion) return;
+        this.telemetry.recordLatency(performance.now() - requestStartedAt);
         this.executionStats.completed += 1;
-        if (this.state.moveCount > pending.expected.moveCount) {
-          this.executionStats.expiredResponses += 1;
-          this.pendingRoute = null;
-          return;
-        }
-        pending.selected = moves[0];
+        this.installPlan(moves, "api");
         this.emit([{ type: "ready", tick: this.state.tick }]);
       } catch {
-        if (!controller.signal.aborted && this.pendingRoute === pending) {
+        if (!controller.signal.aborted && version === this.boardVersion) {
           this.executionStats.failedResponses += 1;
-          this.pendingRoute = null;
           this.retryAtTick = this.state.tick + 60;
         }
       } finally {
@@ -388,14 +323,10 @@ export class GameSession {
       return;
     }
 
-    if (this.aiEnabled) this.prepareAi();
-    let source: PlanSource = this.state.queue.length > 0 ? "script" : this.planSource;
+    const source = this.state.queue.length > 0 ? "script" : this.controller.plan.length > 0 ? this.planSource : "coast";
     if (this.aiEnabled && this.controller.plan.length > 0) {
       const dir = this.controller.consumeDirection();
       if (dir !== undefined) this.state = enqueueDirection(this.state, dir);
-    } else if (this.aiEnabled && this.state.queue.length === 0) {
-      source = "bridge";
-      this.state = enqueueDirection(this.state, rescueDirection(this.state));
     }
 
     const beforeMove = this.state.moveCount;
@@ -404,13 +335,11 @@ export class GameSession {
     this.state = result.state;
     if (this.aiEnabled && this.state.moveCount > beforeMove) {
       if (source === "api") this.executionStats.apiMoves += 1;
-      else if (source === "forced") this.executionStats.forcedMoves += 1;
       else if (source === "script") this.executionStats.scriptMoves += 1;
-      else this.executionStats.bridgeMoves += 1;
+      else this.executionStats.coastMoves += 1;
       if (this.state.eaten > beforeEaten) {
         if (source === "api") this.executionStats.apiEats += 1;
-        else if (source === "forced") this.executionStats.forcedEats += 1;
-        else if (source === "bridge") this.executionStats.bridgeEats += 1;
+        else if (source === "coast") this.executionStats.coastEats += 1;
       }
     }
     this.telemetry.recordMove(this.state, result.events);
@@ -420,7 +349,7 @@ export class GameSession {
 
     if (this.state.phase === "over") {
       this.aiEnabled = false;
-      this.invalidateRoutes();
+      this.invalidateDecision();
       return;
     }
 
@@ -446,7 +375,7 @@ export class GameSession {
   pause(): StateView {
     this.state = pauseGame(this.state, "user");
     if (this.state.phase === "paused") {
-      this.invalidateRoutes();
+      this.invalidateDecision();
       this.emit([{ type: "pause", tick: this.state.tick }]);
     }
     this.assertInvariants();
@@ -465,14 +394,14 @@ export class GameSession {
 
   setDirection(dir: Direction): StateView {
     this.state = enqueueDirection(this.state, dir);
-    if (this.aiEnabled) this.invalidateRoutes();
+    if (this.aiEnabled) this.invalidateDecision();
     this.assertInvariants();
     return viewState(this.state);
   }
 
   setSnake(cells: Cell[], dir: Direction): StateView {
     this.state = setSnakeGame(this.state, cells, dir);
-    if (this.aiEnabled) this.invalidateRoutes();
+    if (this.aiEnabled) this.invalidateDecision();
     this.telemetry.reset(this.state);
     this.assertInvariants();
     return viewState(this.state);
@@ -480,7 +409,7 @@ export class GameSession {
 
   setFood(cell: Cell | null): StateView {
     this.state = setFoodGame(this.state, cell);
-    if (this.aiEnabled) this.invalidateRoutes();
+    if (this.aiEnabled) this.invalidateDecision();
     this.telemetry.reset(this.state);
     this.assertInvariants();
     return viewState(this.state);
@@ -488,7 +417,7 @@ export class GameSession {
 
   setSpeed(moveEveryTicks: number): StateView {
     this.state = setSpeedGame(this.state, moveEveryTicks);
-    if (this.aiEnabled) this.invalidateRoutes();
+    if (this.aiEnabled) this.invalidateDecision();
     this.assertInvariants();
     return viewState(this.state);
   }
@@ -496,7 +425,7 @@ export class GameSession {
   setDifficulty(difficulty: Difficulty): StateView {
     this.difficulty = difficulty;
     this.state = setDifficultyGame(this.state, difficulty);
-    if (this.aiEnabled) this.invalidateRoutes();
+    if (this.aiEnabled) this.invalidateDecision();
     this.assertInvariants();
     return viewState(this.state);
   }
@@ -510,7 +439,7 @@ export class GameSession {
       throw new Error("setPlan requires an AI-controlled run");
     }
     const parsed = normalizePlan(moves, this.state.direction);
-    this.invalidateRoutes();
+    this.invalidateDecision();
     this.state = { ...this.state, queue: [] };
     this.installPlan(parsed.moves, "script");
     this.assertInvariants();
@@ -520,7 +449,7 @@ export class GameSession {
   stopAi(): StateView {
     if (!this.aiEnabled) return viewState(this.state);
     this.runId += 1;
-    this.invalidateRoutes();
+    this.invalidateDecision();
     this.aiEnabled = false;
     this.state = { ...this.state, control: "human" };
     this.assertInvariants();
@@ -544,17 +473,17 @@ export class GameSession {
   }
 
   clearMock(): void {
-    this.invalidateRoutes();
+    this.invalidateDecision();
     this.controller.clearMock();
   }
 
   setModel(value: string): void {
-    if (this.aiEnabled) this.invalidateRoutes();
+    if (this.aiEnabled) this.invalidateDecision();
     this.model = value.trim() || DEFAULT_MODEL;
   }
 
   clearKey(): void {
-    if (this.aiEnabled) this.invalidateRoutes();
+    if (this.aiEnabled) this.invalidateDecision();
     this.keyStore.clear();
   }
 
@@ -603,7 +532,7 @@ export class GameSession {
     return this.controller.getLog();
   }
 
-  /** 返回本局路线来源和请求结果的副本。 */
+  /** 返回本局方向输入来源和请求结果的副本。 */
   getAiExecutionStats(): AiExecutionStats {
     return { ...this.executionStats };
   }

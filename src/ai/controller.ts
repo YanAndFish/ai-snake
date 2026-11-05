@@ -160,7 +160,7 @@ export class AiController {
     };
   }
 
-  /** 返回解析后的方向列表，实际路线由会话根据执行起点安装。 */
+  /** 返回 AI 选择的一个方向，由会话在下一次移动时执行。 */
   request(args: AiRequestArgs): Promise<Direction[]> {
     const seq = ++this.requestSeq;
     const startedAt = performance.now();
@@ -181,7 +181,7 @@ export class AiController {
       if (args.signal.aborted || seq !== this.requestSeq) throw abortError();
       const parsed = parseAiResponse(text, args.currentDirection);
       if (parsed.moves.length === 0 || !args.legalMoves.includes(parsed.moves[0])) {
-        throw new Error("AI 返回了未提供的路线，请重试");
+        throw new Error("AI 返回了未提供的方向，请重试");
       }
       this.status = { state: "ready", error: null, planLength: this.plan.length, model: args.model };
       this.version += 1;

@@ -118,11 +118,10 @@ function predictionLines(
 function taskLines(): string[] {
   return [
     "TASK",
-    "1. Choose for the [likely] execution scenario, then check later scenarios. With unknown delay, prefer safety across scenarios. P means death before the answer; ignore P when comparing turns.",
-    "2. Survival: avoid X and NA. run counts safe straight moves INCLUDING the chosen move. Prefer run > p90 delay in moves so the next answer can arrive before a crash. Never maximize space at the cost of an immediate crash.",
-    "3. Pursue food: among survivable turns, prefer E or the smallest reachable f. Turn as soon as this shortens the food path; continuing straight has no bonus except as a tie-breaker. Food marked past is still reachable by turning around through legal turns.",
-    "4. Escape: prefer tail=yes and enough space for the body. In a tight region or with loop=yes, favor an escape route even if f temporarily increases. E is not worth entering a dead end.",
-    "5. If every option fails, maximize run, then space. A single cell revisit is normal. Return one listed direction.",
+    "Choose one direction to control the snake now. The goal is to survive and eat food; you decide every turn.",
+    "Your input is applied at the next movement after the response arrives. Delay scenarios describe uncertainty, not scheduled future actions.",
+    "All non-reversing directions are available, including X (crash). The game will execute your choice without a local safety override.",
+    "The table contains measurements only. Food distance and reachable space do not guarantee a safe future path. Newly spawned food is unknown until observed.",
     "Return one of U/D/L/R only.",
   ];
 }
@@ -156,7 +155,7 @@ export function buildPrompt(
     "",
     "STATE",
     `tick ${state.tick}; board ${state.width}x${state.height}; x right, y down, 0-based`,
-    `head (${head.x}, ${head.y}); neck (${neck.x}, ${neck.y}); tail (${tail.x}, ${tail.y}); food ${food}; dir ${directionToken(state.direction)}; len ${state.snake.length}; interval ${state.moveEveryTicks}t (1m); t=tick, m=move`,
+    `head (${head.x}, ${head.y}); neck (${neck.x}, ${neck.y}); tail (${tail.x}, ${tail.y}); food ${food}; dir ${directionToken(state.direction)}; len ${state.snake.length}; interval ${state.moveEveryTicks}t (1m); next_move_in ${state.moveEveryTicks - state.moveAccumulator}t; t=tick, m=move`,
     `body ${state.snake.map((cell) => `(${cell.x},${cell.y})`).join(" ")}`,
   ];
 
