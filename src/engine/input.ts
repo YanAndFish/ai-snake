@@ -3,19 +3,17 @@ import type { Direction } from "../sim/types";
 export type KeyAction = "pause" | "restart" | "mute";
 
 const JOYSTICK_DEAD_ZONE = 14;
+const JOYSTICK_TURN_DISTANCE = 8;
 const JOYSTICK_SHOW_DISTANCE = 6;
-const JOYSTICK_TRAVEL = 36;
 
-/** 摇杆中心和圆形手柄在屏幕中的位置。 */
+/** 摇杆中心在屏幕中的位置和当前生效的方向。 */
 export interface JoystickDrag {
   /** 按下位置的水平坐标，单位为 CSS 像素。 */
   x: number;
   /** 按下位置的垂直坐标，单位为 CSS 像素。 */
   y: number;
-  /** 手柄相对中心的水平偏移，已限制在摇杆半径内。 */
-  dx: number;
-  /** 手柄相对中心的垂直偏移，已限制在摇杆半径内。 */
-  dy: number;
+  /** 当前生效的转向；null 表示手柄居中。 */
+  direction: Direction | null;
 }
 
 /** 触屏手势的接收区域、可用条件和显示回调。 */
@@ -24,7 +22,7 @@ export interface TouchInputOptions {
   target: HTMLElement;
   /** 只有返回 true 时才接收触屏转向。 */
   canControl: () => boolean;
-  /** 实际拖动后更新摇杆的位置和手柄偏移。 */
+  /** 实际拖动后更新摇杆的位置和手柄方向。 */
   onDrag: (drag: JoystickDrag) => void;
   /** 松手、取消或停止接收输入时收起摇杆。 */
   onEnd: () => void;
@@ -38,11 +36,12 @@ interface JoystickBinding {
   dispose: () => void;
 }
 
-/** 将拖动距离转换为方向；中心区域返回 null，对角线附近沿用上次的轴。 */
+/** 将拖动距离转换为方向；首次转向用较大阈值，已有方向后用小阈值换轴。 */
 export function joystickDirection(dx: number, dy: number, previous: Direction | null = null): Direction | null {
   const absX = Math.abs(dx);
   const absY = Math.abs(dy);
-  if (Math.hypot(dx, dy) < JOYSTICK_DEAD_ZONE) return null;
+  const threshold = previous === null ? JOYSTICK_DEAD_ZONE : JOYSTICK_TURN_DISTANCE;
+  if (Math.hypot(dx, dy) < threshold) return null;
   if ((previous === "left" || previous === "right") && absY < absX * 1.25) {
     return dx > 0 ? "right" : "left";
   }
@@ -51,6 +50,39 @@ export function joystickDirection(dx: number, dy: number, previous: Direction | 
   }
   if (absX >= absY) return dx > 0 ? "right" : "left";
   return dy > 0 ? "down" : "up";
+}
+
+/** 跟随手指位置的小步手势状态机，用于按住时连续转向。 */
+export class TouchSteering {
+  /** 当前方向判定的起点。 */
+  private anchorX: number;
+  /** 当前方向判定的起点。 */
+  private anchorY: number;
+  /** 最近一次生效的方向。 */
+  private heading: Direction | null = null;
+
+  constructor(x: number, y: number) {
+    this.anchorX = x;
+    this.anchorY = y;
+  }
+
+  /** 当前生效的方向；尚未转向时为 null。 */
+  get direction(): Direction | null {
+    return this.heading;
+  }
+
+  /** 返回本次移动产生的新方向；未转向或方向未变时返回 null。 */
+  move(x: number, y: number): Direction | null {
+    const dx = x - this.anchorX;
+    const dy = y - this.anchorY;
+    const direction = joystickDirection(dx, dy, this.heading);
+    if (direction === null) return null;
+    this.anchorX = x;
+    this.anchorY = y;
+    if (direction === this.heading) return null;
+    this.heading = direction;
+    return direction;
+  }
 }
 
 /** 按住拖动时立即转向，松手后移除摇杆效果。一次只跟踪一个触点。 */
@@ -63,14 +95,14 @@ function bindJoystick(
   let startX = 0;
   let startY = 0;
   let dragging = false;
-  let previous: Direction | null = null;
+  let steering: TouchSteering | null = null;
 
   /** 清除手势，并释放浏览器对触点的捕获。 */
   const cancel = (): void => {
     const captured = pointerId;
     pointerId = null;
     dragging = false;
-    previous = null;
+    steering = null;
     if (captured !== null && target.hasPointerCapture(captured)) target.releasePointerCapture(captured);
     options.onEnd();
   };
@@ -80,25 +112,21 @@ function bindJoystick(
     pointerId = event.pointerId;
     startX = event.clientX;
     startY = event.clientY;
+    steering = new TouchSteering(event.clientX, event.clientY);
     target.setPointerCapture(event.pointerId);
   };
 
   const onPointerMove = (event: PointerEvent): void => {
-    if (pointerId === null || event.pointerId !== pointerId) return;
+    if (pointerId === null || event.pointerId !== pointerId || steering === null) return;
     if (!options.canControl()) {
       cancel();
       return;
     }
-    const dx = event.clientX - startX;
-    const dy = event.clientY - startY;
-    const distance = Math.hypot(dx, dy);
-    if (!dragging && distance < JOYSTICK_SHOW_DISTANCE) return;
+    if (!dragging && Math.hypot(event.clientX - startX, event.clientY - startY) < JOYSTICK_SHOW_DISTANCE) return;
     dragging = true;
-    const scale = distance > JOYSTICK_TRAVEL ? JOYSTICK_TRAVEL / distance : 1;
-    options.onDrag({ x: startX, y: startY, dx: dx * scale, dy: dy * scale });
-    const direction = joystickDirection(dx, dy, previous);
-    if (direction !== null && direction !== previous) onDirection(direction);
-    previous = direction;
+    const direction = steering.move(event.clientX, event.clientY);
+    options.onDrag({ x: startX, y: startY, direction: steering.direction });
+    if (direction !== null) onDirection(direction);
   };
 
   const onPointerUp = (event: PointerEvent): void => {
