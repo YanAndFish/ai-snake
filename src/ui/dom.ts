@@ -90,15 +90,9 @@ export function updateHud(view: StateView, best: number): void {
   markDifficulty(view.difficulty);
 }
 
-export function updateObservation(observation: string): void {
-  const node = el("observation");
-  if (node) node.textContent = observation;
-}
-
 export function updateAiPanel(
   status: AiStatusView,
   log: AiLogEntry[],
-  observation: string,
 ): void {
   const state = status.state;
   const label = STATUS_LABELS[state] ?? state;
@@ -106,15 +100,25 @@ export function updateAiPanel(
   setText("ai-status", `${label}${error}`);
   el("ai-status").dataset.state = state;
 
-  const logLines = log.slice(-20).map((entry) => {
+  const last = status.latencyMs;
+  const samples = log.map((entry) => entry.latencyMs).sort((a, b) => a - b);
+  if (last === null || samples.length === 0) {
+    setText("ai-latency", "决策延迟：等待首次响应");
+  } else {
+    const p50 = samples[Math.ceil(samples.length * 0.5) - 1];
+    const p90 = samples[Math.ceil(samples.length * 0.9) - 1];
+    setText("ai-latency", `最近 ${last} ms · P50 ${p50} ms · P90 ${p90} ms`);
+  }
+
+  const logLines = log.slice(-20).reverse().map((entry) => {
     const moves = entry.moves.length > 0 ? entry.moves.join(" ") : "-";
     const reason = entry.reason ? ` | ${entry.reason}` : "";
     const err = entry.error ? ` | 错误 ${entry.error}` : "";
-    return `#${entry.requestId} ${entry.model} [${moves}]${reason}${err}`;
+    return `#${entry.requestId} · ${entry.latencyMs} ms · ${entry.model} [${moves}]${reason}${err}`;
   });
-  el("ai-log").textContent = logLines.join("\n") || "暂无决策记录";
-
-  updateObservation(observation);
+  const logNode = el("ai-log");
+  logNode.textContent = logLines.join("\n") || "暂无决策记录";
+  logNode.scrollTop = 0;
 }
 
 function show(id: string, visible: boolean): void {

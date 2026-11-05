@@ -2,11 +2,18 @@ import { DEFAULT_MODEL, OPENAI_ENDPOINT } from "../config";
 import type { Direction } from "../sim/types";
 
 export interface DecisionRequest {
+  /** 棋盘状态和候选移动的分析。 */
   prompt: string;
+  /** 使用的模型名，空字符串表示默认模型。 */
   model: string;
+  /** 仅用于当前请求的 API Key。 */
   apiKey: string;
+  /** 取消当前请求的信号。 */
   signal: AbortSignal;
+  /** 允许模型选择的方向。 */
   legalMoves: readonly Direction[];
+  /** 选项的局面分析；省略时使用方向说明。 */
+  choiceDescriptions?: Partial<Record<Direction, string>>;
 }
 
 export interface DecisionTransport {
@@ -60,7 +67,7 @@ export class DecisionsTransport implements DecisionTransport {
     }
     const choices = request.legalMoves.map((dir) => ({
       value: TOKEN[dir],
-      description: DESCRIPTION[dir],
+      description: request.choiceDescriptions?.[dir] ?? DESCRIPTION[dir],
     }));
     const body = {
       model: request.model || DEFAULT_MODEL,
@@ -70,7 +77,7 @@ export class DecisionsTransport implements DecisionTransport {
           type: "choice",
           name: "next_move",
           instructions:
-            "Choose exactly one listed turn. Never choose a turn labeled CRASH when a SAFE turn is available; if every turn crashes, choose the one with the most space. A 180-degree reversal is not offered.",
+            "Choose the direction that survives the response delay and reaches food efficiently. Compare the per-choice execution scenarios: OK is safe, X crashes, NA is illegal, P dies before execution. Use [likely] timing and check later timing; run is the number of safe straight moves including the chosen move. Prefer enough run for the next response, a path to the tail, then E (eats) or smaller reachable f (food distance). Break loops with a safe escape. Continuing straight is only a tie-breaker. Return exactly one listed choice.",
           choices,
         },
       ],

@@ -27,7 +27,7 @@ describe("Decisions transport", () => {
       "https://example.test/decisions",
     );
     const content = await transport.decide({
-      prompt: "SNAKE/1\nMAP",
+      prompt: "SNAKE/2\nSTATE",
       model: "gpt-6-luna",
       apiKey: "sk-test-secret",
       signal: signal(),
@@ -50,12 +50,28 @@ describe("Decisions transport", () => {
       }>;
     };
     expect(body.model).toBe("gpt-6-luna");
-    expect(body.input).toContain("SNAKE/1");
+    expect(body.input).toContain("SNAKE/2");
     expect(body.questions[0].type).toBe("choice");
     expect(body.questions[0].name).toBe("next_move");
     expect(body.questions[0].choices.map((choice) => choice.value)).toEqual(["U", "D", "R"]);
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer sk-test-secret");
     expect(init.body).not.toContain("response_format");
+  });
+
+  it("候选方向包含局面分析时，将分析发送到对应选项", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse({ answers: [{ type: "choice", choice: "U" }] }));
+    const transport = new DecisionsTransport(fetchImpl);
+    await transport.decide({
+      prompt: "SNAKE/2", model: "gpt-6-luna", apiKey: "sk-test", signal: signal(),
+      legalMoves: ["up", "right"],
+      choiceDescriptions: { up: "U: S0 OK run=9 tail=yes", right: "R: S0 X" },
+    });
+    const init = fetchImpl.mock.calls[0][1];
+    const body = JSON.parse(String(init?.body));
+    expect(body.questions[0].choices).toEqual([
+      { value: "U", description: "U: S0 OK run=9 tail=yes" },
+      { value: "R", description: "R: S0 X" },
+    ]);
   });
 
   it("uses the default model when the request leaves it empty", async () => {

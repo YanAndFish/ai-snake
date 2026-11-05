@@ -22,7 +22,6 @@ import {
   showPause,
   updateAiPanel,
   updateHud,
-  updateObservation,
 } from "./ui/dom";
 
 const BEST_SCORE_KEY = "snake-best";
@@ -70,7 +69,6 @@ const session = new GameSession({
 });
 
 function handleEvents(events: GameEvent[]): void {
-  let refreshObservation = false;
   for (const event of events) {
     if (event.type === "eat") {
       scene?.burstAt(session.state.snake[0]);
@@ -79,19 +77,9 @@ function handleEvents(events: GameEvent[]): void {
       scene?.shake();
       flashScreen();
     }
-    if (
-      event.type === "start" ||
-      event.type === "move" ||
-      event.type === "eat" ||
-      event.type === "crash" ||
-      event.type === "win"
-    ) {
-      refreshObservation = true;
-    }
     const sfx = sfxForEvent(event.type);
     if (sfx) audio.play(sfx);
   }
-  if (refreshObservation) updateObservation(session.getMap());
 }
 
 function startManual(): void {
@@ -170,7 +158,7 @@ const frameCtx: FrameHotContext = {
     updateHud(state, best);
   },
   onAi() {
-    updateAiPanel(session.getAiStatus(), session.getAiLog(), session.getObservation().map);
+    updateAiPanel(session.getAiStatus(), session.getAiLog());
   },
   onFatal(message) {
     showFatal(message);

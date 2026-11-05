@@ -98,6 +98,19 @@ describe("GameSession", () => {
     expect(game.getAiStatus().state).toBe("ready");
   });
 
+  it("records request latency and movement in the decision context", async () => {
+    const game = session({ mock: { moves: ["right"], reason: "context" }, seed: 21 });
+    game.start({ seed: 21, ai: true });
+    await game.waitForIdle(1000);
+    const prompt = game.getPrompt();
+    expect(prompt).toContain("DELAY");
+    expect(prompt).toMatch(/DELAY\nn=1/);
+    expect(prompt).toContain("HIST");
+    expect(prompt).toContain("recent:");
+    game.stepMoves(1);
+    expect(game.getPrompt()).toContain("recent:");
+  });
+
   it("pauses and resumes without advancing the tick", () => {
     const game = session({ seed: 5 });
     game.start({ seed: 5 });
@@ -249,7 +262,7 @@ describe("GameSession", () => {
     game.start({ seed: 16 });
     expect(game.getState().phase).toBe("playing");
     expect(game.getPrompt()).toContain("MOVE ANALYSIS");
-    expect(game.getObservation().map).toContain("H");
+    expect(game.getObservation().prompt).toContain("board 19x19");
     expect(game.getAiVersion()).toBeGreaterThanOrEqual(0);
     expect(game.getFatal()).toBeNull();
     expect(game.halted()).toBe(false);

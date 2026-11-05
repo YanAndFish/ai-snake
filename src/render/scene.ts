@@ -4,8 +4,6 @@ import type { Cell, Direction, GameState } from "../sim/types";
 import {
   APPLE_SIZE,
   BOARD_TOP,
-  BODY_LENGTH,
-  BODY_WIDTH,
   HEAD_SIZE,
   SHADOW_LIFT,
   SHADOW_OFFSET_X,
@@ -14,8 +12,9 @@ import {
   renderSceneHot,
   type SceneHot,
 } from "./scene.hot";
+import { appleTexture } from "./snakeTextures";
+import { createSnakeBody, createSnakeShadow } from "./snakeBody";
 import {
-  appleTexture,
   boardTexture,
   bushTexture,
   daisyTexture,
@@ -24,9 +23,7 @@ import {
   headTexture,
   particleTexture,
   shadowTexture,
-  snakeBodyTexture,
   stoneTexture,
-  tailTexture,
 } from "./textures";
 
 export { BOARD_TOP, SPRITE_SIZE } from "./scene.hot";
@@ -60,19 +57,32 @@ function makeSpriteMaterial(texture: THREE.Texture): THREE.SpriteMaterial {
   return material;
 }
 
+/** 创建与蛇身共用俯视角度的像素蛇头材质。 */
+function makeHeadMaterial(direction: Direction): THREE.MeshBasicMaterial {
+  return new THREE.MeshBasicMaterial({
+    map: headTexture(direction),
+    transparent: true,
+    depthWrite: false,
+    alphaTest: 0.04,
+    toneMapped: false,
+  });
+}
+
 export class Scene implements SceneHot {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   cameraHome = new THREE.Vector3();
   cameraTarget = new THREE.Vector3();
-  segmentMeshes: THREE.Sprite[] = [];
-  segmentShadows: THREE.Mesh[] = [];
-  headMesh: THREE.Sprite | null = null;
+  /** 身体使用同一张像素贴图，弯道与直线的边缘连续。 */
+  bodyMesh = createSnakeBody(MAX_SEGMENTS);
+  /** 每帧插值后的身体中心点，依次保存 x、z。 */
+  snakePoints = new Float32Array(MAX_SEGMENTS * 2);
+  /** 沿身体轮廓连续绘制的地面阴影。 */
+  bodyShadow = createSnakeShadow(this.bodyMesh);
+  headMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> | null = null;
   headShadow: THREE.Mesh | null = null;
-  tailMesh: THREE.Sprite | null = null;
-  tailShadow: THREE.Mesh | null = null;
-  headMaterials: Record<Direction, THREE.SpriteMaterial>;
+  headMaterials: Record<Direction, THREE.MeshBasicMaterial>;
   appleGroup = new THREE.Group();
   appleSprite: THREE.Sprite | null = null;
   appleShadow: THREE.Mesh | null = null;
@@ -81,6 +91,7 @@ export class Scene implements SceneHot {
   prevSnake: Cell[] | null = null;
   currentSnake: Cell[] | null = null;
   lastTick = -1;
+  lastMoveCount = -1;
   shakeTime = 0;
   shakeActive = false;
 
@@ -114,11 +125,12 @@ export class Scene implements SceneHot {
     });
 
     this.headMaterials = {
-      up: makeSpriteMaterial(headTexture("up")),
-      down: makeSpriteMaterial(headTexture("down")),
-      left: makeSpriteMaterial(headTexture("left")),
-      right: makeSpriteMaterial(headTexture("right")),
+      up: makeHeadMaterial("up"),
+      down: makeHeadMaterial("down"),
+      left: makeHeadMaterial("left"),
+      right: makeHeadMaterial("right"),
     };
+
 
     this.buildBoard();
     this.buildDecorations();
@@ -165,6 +177,10 @@ export class Scene implements SceneHot {
       RAIL_HEIGHT,
       BOARD_HEIGHT + POST_WIDTH,
     );
+    this.addFenceShadow(BOARD_WIDTH / 2, -RAIL_WIDTH / 2, BOARD_WIDTH + 0.6, 0.48);
+    this.addFenceShadow(BOARD_WIDTH / 2, BOARD_HEIGHT + RAIL_WIDTH / 2, BOARD_WIDTH + 0.6, 0.48);
+    this.addFenceShadow(-RAIL_WIDTH / 2, BOARD_HEIGHT / 2, 0.48, BOARD_HEIGHT + 0.6);
+    this.addFenceShadow(BOARD_WIDTH + RAIL_WIDTH / 2, BOARD_HEIGHT / 2, 0.48, BOARD_HEIGHT + 0.6);
     const railYs = [FIELD_Y + RAIL_LOW, FIELD_Y + RAIL_HIGH];
     for (let i = 0; i < railYs.length; i += 1) {
       const y = railYs[i];
@@ -190,18 +206,30 @@ export class Scene implements SceneHot {
       const northPost = new THREE.Mesh(postGeo, fenceMaterials);
       northPost.position.set(x, FIELD_Y + POST_HEIGHT / 2, -postOffset);
       this.scene.add(northPost);
+      this.addFenceShadow(x, -postOffset, 0.68, 0.62);
       const southPost = new THREE.Mesh(postGeo, fenceMaterials);
       southPost.position.set(x, FIELD_Y + POST_HEIGHT / 2, BOARD_HEIGHT + postOffset);
       this.scene.add(southPost);
+      this.addFenceShadow(x, BOARD_HEIGHT + postOffset, 0.68, 0.62);
       if (i > 0 && i < postXs.length - 1) {
         const westPost = new THREE.Mesh(postGeo, fenceMaterials);
         westPost.position.set(-postOffset, FIELD_Y + POST_HEIGHT / 2, x);
         this.scene.add(westPost);
+        this.addFenceShadow(-postOffset, x, 0.68, 0.62);
         const eastPost = new THREE.Mesh(postGeo, fenceMaterials);
         eastPost.position.set(BOARD_WIDTH + postOffset, FIELD_Y + POST_HEIGHT / 2, x);
         this.scene.add(eastPost);
+        this.addFenceShadow(BOARD_WIDTH + postOffset, x, 0.68, 0.62);
       }
     }
+  }
+
+  /** 绘制栅栏在地面上的柔和投影，偏移方向与食物一致。 */
+  private addFenceShadow(x: number, z: number, width: number, depth: number): void {
+    const shadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
+    shadow.position.set(x + SHADOW_OFFSET_X, BOARD_TOP + SHADOW_LIFT, z + SHADOW_OFFSET_Z);
+    shadow.scale.set(width, 1, depth);
+    this.scene.add(shadow);
   }
 
   private addDecoration(texture: THREE.Texture, size: number, x: number, z: number): void {
@@ -265,47 +293,13 @@ export class Scene implements SceneHot {
     this.appleGroup.add(shadow);
   }
 
-  private addBodyShadow(): THREE.Mesh {
-    const shadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
-    shadow.position.y = BOARD_TOP + SHADOW_LIFT;
-    shadow.scale.set(BODY_LENGTH * 1.06, 1, BODY_WIDTH * 1.12);
-    shadow.visible = false;
-    this.scene.add(shadow);
-    return shadow;
-  }
-
   private buildSnake(): void {
-    const bodyA = snakeBodyTexture(0);
-    const bodyB = snakeBodyTexture(1);
-    for (let i = 0; i < MAX_SEGMENTS; i += 1) {
-      const sprite = new THREE.Sprite(
-        makeSpriteMaterial(i % 2 === 0 ? bodyA : bodyB),
-      );
-      sprite.scale.set(BODY_LENGTH, BODY_WIDTH, 1);
-      sprite.center.set(0.5, 0.5);
-      sprite.renderOrder = 1;
-      sprite.visible = false;
-      this.segmentMeshes.push(sprite);
-      this.scene.add(sprite);
-      this.segmentShadows.push(this.addBodyShadow());
-    }
+    this.scene.add(this.bodyMesh);
+    this.scene.add(this.bodyShadow);
 
-    const tail = new THREE.Sprite(makeSpriteMaterial(tailTexture()));
-    tail.scale.set(BODY_WIDTH, BODY_WIDTH, 1);
-    tail.center.set(0.5, 0.5);
-    tail.renderOrder = 500;
-    tail.visible = false;
-    this.tailMesh = tail;
-    this.scene.add(tail);
-    const tailShadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
-    tailShadow.scale.set(0.5, 1, 0.36);
-    tailShadow.visible = false;
-    this.tailShadow = tailShadow;
-    this.scene.add(tailShadow);
-
-    const head = new THREE.Sprite(this.headMaterials.right);
-    head.scale.set(HEAD_SIZE, HEAD_SIZE, 1);
-    head.center.set(0.5, 0.5);
+    const geometry = new THREE.PlaneGeometry(HEAD_SIZE, HEAD_SIZE);
+    geometry.rotateX(-Math.PI / 2);
+    const head = new THREE.Mesh(geometry, this.headMaterials.right);
     head.renderOrder = 1000;
     head.visible = false;
     this.headMesh = head;
@@ -313,7 +307,7 @@ export class Scene implements SceneHot {
 
     const headShadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
     headShadow.position.y = BOARD_TOP + SHADOW_LIFT;
-    headShadow.scale.set(0.82, 1, 0.68);
+    headShadow.scale.set(1.65, 1, 1.45);
     headShadow.visible = false;
     this.headShadow = headShadow;
     this.scene.add(headShadow);

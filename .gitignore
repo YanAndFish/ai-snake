@@ -4,3 +4,4 @@ coverage/
 states/
 *.log
 .DS_Store
+.env.local

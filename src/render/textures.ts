@@ -12,18 +12,18 @@ interface PixelBuffer {
 
 const CLEAR: RGBA = [0, 0, 0, 0];
 
-const SNAKE_OUTLINE: RGBA = [28, 66, 30, 255];
-const SNAKE_GREEN: RGBA = [128, 194, 66, 255];
-const SNAKE_GREEN_ALT: RGBA = [114, 180, 58, 255];
-const SNAKE_LIGHT: RGBA = [178, 230, 104, 255];
-const SNAKE_HIGHLIGHT: RGBA = [202, 240, 128, 255];
-const SNAKE_DARK: RGBA = [76, 142, 44, 255];
-const SNAKE_DEEP: RGBA = [50, 100, 34, 255];
-const SNAKE_BLOTCH: RGBA = [60, 122, 42, 255];
-const SNAKE_BLOTCH_DARK: RGBA = [46, 98, 34, 255];
-const SNAKE_BELLY: RGBA = [232, 222, 158, 255];
-const SNAKE_BELLY_LIGHT: RGBA = [246, 238, 186, 255];
-const SNAKE_BELLY_DARK: RGBA = [202, 190, 126, 255];
+const SNAKE_OUTLINE: RGBA = [24, 61, 35, 255];
+const SNAKE_GREEN: RGBA = [126, 200, 67, 255];
+const SNAKE_GREEN_ALT: RGBA = [87, 165, 50, 255];
+const SNAKE_LIGHT: RGBA = [168, 229, 82, 255];
+const SNAKE_HIGHLIGHT: RGBA = [208, 249, 123, 255];
+const SNAKE_DARK: RGBA = [54, 123, 43, 255];
+const SNAKE_DEEP: RGBA = [35, 91, 41, 255];
+const SNAKE_BLOTCH: RGBA = [35, 91, 41, 255];
+const SNAKE_BLOTCH_DARK: RGBA = [24, 61, 35, 255];
+const SNAKE_BELLY: RGBA = [216, 219, 120, 255];
+const SNAKE_BELLY_LIGHT: RGBA = [236, 237, 155, 255];
+const SNAKE_BELLY_DARK: RGBA = [160, 180, 86, 255];
 const EYE_WHITE: RGBA = [250, 252, 236, 255];
 const EYE_SHADE: RGBA = [224, 232, 206, 255];
 const EYE_PUPIL: RGBA = [26, 38, 28, 255];
@@ -353,192 +353,110 @@ export function soilTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-function drawCapsule(variant: number): PixelBuffer {
-  const width = 32;
-  const height = 18;
+export type SnakeBodyAxis = "horizontal" | "vertical";
+
+function bodyColor(u: number, v: number, variant: number, uLen: number): RGBA {
+  let color: RGBA;
+  if (v === 0) color = SNAKE_DARK;
+  else if (v <= 2) color = SNAKE_LIGHT;
+  else if (v <= 9) color = SNAKE_GREEN;
+  else if (v <= 12) color = SNAKE_GREEN_ALT;
+  else if (v <= 14) color = SNAKE_DARK;
+  else if (v === 15) color = SNAKE_DEEP;
+  else color = SNAKE_BELLY;
+
+  const c = variant === 0 ? uLen * 0.82 : uLen * 0.18;
+  const du = (u - c) / (uLen * 0.34);
+  const dv = (v - 6) / 2.8;
+  if (v >= 3 && v <= 9 && du * du + dv * dv <= 1) color = SNAKE_BLOTCH;
+
+  if (v >= 16 && u % 8 === 0) color = SNAKE_BELLY_DARK;
+  return color;
+}
+
+function drawBody(variant: number, axis: SnakeBodyAxis): PixelBuffer {
+  const horizontal = axis === "horizontal";
+  const width = horizontal ? 25 : 18;
+  const height = horizontal ? 18 : 20;
   const buf = buffer(width, height);
-  const rng = new Rng(0x51a7e + variant * 977);
-  const base = variant === 0 ? SNAKE_GREEN : SNAKE_GREEN_ALT;
-  fillRounded(buf, 0, 0, width - 1, height - 1, 8, SNAKE_OUTLINE);
-  for (let y = 1; y <= height - 2; y += 1) {
-    for (let x = 1; x <= width - 2; x += 1) {
-      if (!insideRounded(x, y, 1, 1, width - 2, height - 2, 7)) continue;
-      let color = base;
-      if (y <= 2) color = SNAKE_LIGHT;
-      else if (y >= 12) color = SNAKE_BELLY;
-      else {
-        const roll = rng.next();
-        if (roll < 0.08) color = SNAKE_DARK;
-        else if (roll < 0.14) color = SNAKE_LIGHT;
-        else if (roll < 0.2) color = shade(base, 1.04);
-      }
-      put(buf, x, y, color);
-    }
-  }
-
-  const shift = variant === 0 ? 0 : 2;
-  paintBlotch(buf, 8 + shift, 6, 4.4, 2.7, SNAKE_BLOTCH);
-  paintBlotch(buf, 19 - shift, 7, 5.2, 3, SNAKE_BLOTCH);
-  paintBlotch(buf, 27, 4.8, 2.8, 1.9, SNAKE_BLOTCH_DARK);
-  paintBlotch(buf, 13, 9.5, 2.5, 1.6, SNAKE_BLOTCH_DARK);
-  paintBlotch(buf, 23, 4.4, 2, 1.4, SNAKE_BLOTCH);
-
-  fillRect(buf, 5, 1, 12, 1, SNAKE_HIGHLIGHT);
-  fillRect(buf, 17, 2, 21, 2, SNAKE_HIGHLIGHT);
-  put(buf, 9, 2, SNAKE_HIGHLIGHT);
-  put(buf, 24, 2, SNAKE_HIGHLIGHT);
-
-  for (let y = 12; y <= height - 2; y += 1) {
-    for (let x = 1; x <= width - 2; x += 1) {
-      if (!insideRounded(x, y, 1, 1, width - 2, height - 2, 7)) continue;
-      let color = y === 12 ? SNAKE_BELLY_LIGHT : SNAKE_BELLY;
-      if (x % 4 === 0) color = SNAKE_BELLY_DARK;
-      if (y >= height - 3) color = shade(color, 0.94);
-      put(buf, x, y, color);
-    }
-  }
-
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      if (x > 2 && x < width - 3) continue;
-      const color = get(buf, x, y);
-      if (color[0] === SNAKE_OUTLINE[0] && color[1] === SNAKE_OUTLINE[1]) {
-        put(buf, x, y, y >= 12 ? SNAKE_BELLY : base);
-      }
+      const u = horizontal ? x : y;
+      const v = horizontal ? y : x;
+      put(buf, x, y, bodyColor(u, v, variant, horizontal ? width : height));
     }
   }
   return buf;
 }
 
-export function snakeBodyTexture(variant: number): THREE.CanvasTexture {
-  return toTexture(drawCapsule(variant));
+export function snakeBodyTexture(
+  variant: 0 | 1 = 0,
+  axis: SnakeBodyAxis = "horizontal",
+): THREE.CanvasTexture {
+  return toTexture(drawBody(variant, axis));
 }
 
-const HEAD_OUTER: Array<[number, number, number]> = [
-  [3, 12, 19],
-  [4, 11, 20],
-  [5, 10, 21],
-  [6, 9, 22],
-  [7, 9, 22],
-  [8, 8, 23],
-  [9, 7, 24],
-  [10, 6, 25],
-  [11, 4, 27],
-  [12, 3, 28],
-  [13, 2, 29],
-  [14, 2, 29],
-  [15, 2, 29],
-  [16, 2, 29],
-  [17, 2, 29],
-  [18, 2, 29],
-  [19, 2, 29],
-  [20, 2, 29],
-  [21, 3, 28],
-  [22, 4, 27],
-  [23, 6, 25],
-  [24, 8, 23],
-  [25, 8, 23],
-  [26, 8, 23],
-  [27, 8, 23],
-  [28, 8, 23],
-  [29, 8, 23],
-  [30, 9, 22],
-];
-
-const HEAD_INNER: Array<[number, number, number]> = [
-  [4, 12, 19],
-  [5, 11, 20],
-  [6, 10, 21],
-  [7, 10, 21],
-  [8, 9, 22],
-  [9, 8, 23],
-  [10, 7, 24],
-  [11, 5, 26],
-  [12, 4, 27],
-  [13, 3, 28],
-  [14, 3, 28],
-  [15, 3, 28],
-  [16, 3, 28],
-  [17, 3, 28],
-  [18, 3, 28],
-  [19, 3, 28],
-  [20, 3, 28],
-  [21, 4, 27],
-  [22, 5, 26],
-  [23, 7, 24],
-  [24, 9, 22],
-  [25, 9, 22],
-  [26, 9, 22],
-  [27, 9, 22],
-  [28, 9, 22],
-  [29, 9, 22],
-  [30, 10, 21],
-];
-
-function drawHeadUp(): PixelBuffer {
-  const buf = buffer(32, 32);
-  for (const [y, x0, x1] of HEAD_OUTER) fillRect(buf, x0, y, x1, y, SNAKE_OUTLINE);
-  for (const [y, x0, x1] of HEAD_INNER) fillRect(buf, x0, y, x1, y, SNAKE_GREEN);
-
-  paintBlotch(buf, 9, 6, 4.5, 2.8, SNAKE_BLOTCH);
-  paintBlotch(buf, 21, 4.5, 4, 2.2, SNAKE_BLOTCH);
-  paintBlotch(buf, 15, 9, 4.5, 2.4, SNAKE_BLOTCH_DARK);
-  paintBlotch(buf, 26, 10, 2.6, 1.6, SNAKE_BLOTCH);
-
-  fillRect(buf, 12, 3, 19, 4, SNAKE_HIGHLIGHT);
-  put(buf, 9, 5, SNAKE_HIGHLIGHT);
-  put(buf, 10, 4, SNAKE_HIGHLIGHT);
-  put(buf, 23, 5, SNAKE_HIGHLIGHT);
-
-  for (let y = 18; y <= 30; y += 1) {
-    for (let x = 0; x < 32; x += 1) {
-      const current = get(buf, x, y);
-      if (current[3] === 0) continue;
-      if (
-        current[0] === SNAKE_OUTLINE[0] &&
-        current[1] === SNAKE_OUTLINE[1] &&
-        current[2] === SNAKE_OUTLINE[2]
-      ) {
-        continue;
-      }
-      if (y >= 25 || x < 9 || x > 22) {
-        let color = y === 18 ? SNAKE_BELLY_LIGHT : SNAKE_BELLY;
-        if (x % 4 === 0) color = SNAKE_BELLY_DARK;
-        if (y >= 29) color = shade(color, 0.95);
-        put(buf, x, y, color);
-      }
+export function bodyJointTexture(): THREE.CanvasTexture {
+  const size = 32;
+  const buf = buffer(size, size);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const dx = (x + 0.5 - 16) / 15;
+      const dy = (y + 0.5 - 16) / 15;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= 1) continue;
+      const light = (x / 31) * 0.45 + (y / 31) * 0.55;
+      let color: RGBA;
+      if (light < 0.2) color = SNAKE_LIGHT;
+      else if (light < 0.45) color = SNAKE_GREEN;
+      else if (light < 0.7) color = SNAKE_GREEN_ALT;
+      else if (light < 0.88) color = SNAKE_DARK;
+      else color = SNAKE_DEEP;
+      const radius = Math.sqrt(d2);
+      if (radius > 0.82 && (dx > 0.05 || dy > 0.05)) color = SNAKE_BELLY;
+      const fade = Math.max(0, Math.min(1, (1 - radius) * 3.2));
+      put(buf, x, y, [color[0], color[1], color[2], Math.round(255 * fade)]);
     }
   }
+  return toTexture(buf);
+}
 
-  fillRounded(buf, 4, 10, 13, 18, 4, SNAKE_OUTLINE);
-  fillRounded(buf, 5, 11, 12, 17, 3, EYE_PUPIL);
-  fillRect(buf, 7, 12, 8, 13, EYE_WHITE);
-  put(buf, 10, 16, EYE_SHADE);
-  fillRounded(buf, 18, 10, 27, 18, 4, SNAKE_OUTLINE);
-  fillRounded(buf, 19, 11, 26, 17, 3, EYE_PUPIL);
-  fillRect(buf, 21, 12, 22, 13, EYE_WHITE);
-  put(buf, 19, 16, EYE_SHADE);
-  fillRect(buf, 5, 9, 12, 9, SNAKE_DARK);
-  fillRect(buf, 19, 9, 26, 9, SNAKE_DARK);
-
-  put(buf, 10, 5, SNAKE_OUTLINE);
-  put(buf, 21, 5, SNAKE_OUTLINE);
-  fillRect(buf, 10, 9, 21, 9, SNAKE_OUTLINE);
-  fillRect(buf, 12, 10, 19, 11, SNAKE_BELLY);
-  put(buf, 11, 10, SNAKE_BELLY_DARK);
-  put(buf, 20, 10, SNAKE_BELLY_DARK);
-
-  fillRect(buf, 14, 3, 17, 9, TONGUE);
-  fillRect(buf, 15, 3, 16, 9, TONGUE_DARK);
-  fillRect(buf, 13, 2, 14, 3, TONGUE);
-  fillRect(buf, 17, 2, 18, 3, TONGUE);
-  fillRect(buf, 12, 1, 14, 2, TONGUE);
-  fillRect(buf, 17, 1, 19, 2, TONGUE);
-  fillRect(buf, 11, 0, 12, 0, TONGUE);
-  fillRect(buf, 19, 0, 20, 0, TONGUE);
-  put(buf, 13, 0, TONGUE_DARK);
-  put(buf, 18, 0, TONGUE_DARK);
-
+/** 绘制朝上的俯视像素蛇头，后颈收窄以衔接蛇身。 */
+function drawHeadUp(): PixelBuffer {
+  const buf = buffer(20, 20);
+  const outline: Array<[number, number, number]> = [
+    [3, 7, 12], [4, 5, 14], [5, 3, 16], [6, 2, 17],
+    [7, 1, 18], [8, 1, 18], [9, 1, 18], [10, 2, 17],
+    [11, 2, 17], [12, 3, 16], [13, 3, 16], [14, 4, 15],
+    [15, 4, 15], [16, 4, 15], [17, 4, 15], [18, 4, 15], [19, 4, 15],
+  ];
+  for (const [y, left, right] of outline) {
+    fillRect(buf, left, y, right, y, SNAKE_OUTLINE);
+    for (let x = left + 1; x < right; x += 1) {
+      let color = SNAKE_GREEN;
+      if (x === right - 1) color = SNAKE_LIGHT;
+      else if (x <= left + 2 && y >= 10) color = SNAKE_BELLY;
+      else if (x === left + 3 && y >= 10) color = SNAKE_DEEP;
+      else if (x === left + 4 && y >= 10) color = SNAKE_GREEN_ALT;
+      put(buf, x, y, color);
+    }
+  }
+  // 两只眼睛靠近前端，朝向由整张像素贴图旋转得到。
+  fillRect(buf, 3, 5, 7, 10, SNAKE_OUTLINE);
+  fillRect(buf, 4, 6, 6, 9, EYE_WHITE);
+  fillRect(buf, 5, 6, 6, 8, EYE_PUPIL);
+  put(buf, 6, 6, EYE_WHITE);
+  fillRect(buf, 12, 5, 16, 10, SNAKE_OUTLINE);
+  fillRect(buf, 13, 6, 15, 9, EYE_WHITE);
+  fillRect(buf, 13, 6, 14, 8, EYE_PUPIL);
+  put(buf, 14, 6, EYE_WHITE);
+  put(buf, 7, 4, SNAKE_DARK);
+  put(buf, 12, 4, SNAKE_DARK);
+  fillRect(buf, 8, 12, 10, 14, SNAKE_DARK);
+  put(buf, 11, 13, SNAKE_DARK);
+  fillRect(buf, 9, 1, 10, 3, TONGUE);
+  put(buf, 8, 0, TONGUE);
+  put(buf, 11, 0, TONGUE);
   return buf;
 }
 
@@ -560,6 +478,7 @@ export function tailTexture(): THREE.CanvasTexture {
   return toTexture(buf);
 }
 
+/** 返回指定方向的俯视蛇头贴图，轮廓和配色与蛇身一致。 */
 export function headTexture(direction: Direction): THREE.CanvasTexture {
   const canonical = drawHeadUp();
   let turns = 0;

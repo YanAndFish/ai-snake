@@ -5,30 +5,51 @@ import { parseAiResponse } from "./response";
 export type AiStatusState = "off" | "needKey" | "thinking" | "ready" | "error";
 
 export interface AiStatusView {
+  /** 当前请求或计划的状态。 */
   state: AiStatusState;
+  /** 请求失败的原因；null 表示没有错误。 */
   error: string | null;
+  /** 等待执行的方向数量。 */
   planLength: number;
+  /** 当前使用的模型；null 表示尚未发出请求。 */
   model: string | null;
+  /** 最近一次完成或失败的请求耗时，单位毫秒；null 表示还没有记录。 */
+  latencyMs: number | null;
 }
 
 export interface AiLogEntry {
+  /** 请求完成的时间戳，单位毫秒。 */
   time: number;
+  /** 本次请求使用的模型。 */
   model: string;
+  /** 模型返回的方向列表。失败时为空。 */
   moves: string[];
+  /** 返回结果的简短说明。失败时为空。 */
   reason: string;
-  observation: string;
+  /** 会话分配的请求序号。 */
   requestId: number;
+  /** 请求失败的原因；null 表示成功。 */
   error: string | null;
+  /** 从发出请求到完成解析的耗时，单位毫秒。 */
+  latencyMs: number;
 }
 
 export interface AiRequestArgs {
+  /** 当前棋盘和移动分析的提示词。 */
   prompt: string;
+  /** 本次请求使用的模型名。 */
   model: string;
+  /** 当前请求使用的 API Key。 */
   apiKey: string;
+  /** 取消请求的信号。 */
   signal: AbortSignal;
-  observation: string;
+  /** 请求发出时蛇头的方向，用于拒绝反向移动。 */
   currentDirection: Direction;
+  /** 允许模型选择的方向。 */
   legalMoves: readonly Direction[];
+  /** 各方向的局面分析；省略时使用传输层的方向说明。 */
+  choiceDescriptions?: DecisionRequest["choiceDescriptions"];
+  /** 会话分配的请求序号，用于关联决策记录。 */
   requestId: number;
 }
 
@@ -61,7 +82,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 export class AiController {
   private transport: DecisionTransport;
   private mock: MockAnswer | null = null;
-  private status: AiStatusView = { state: "off", error: null, planLength: 0, model: null };
+  private status: Omit<AiStatusView, "latencyMs"> = { state: "off", error: null, planLength: 0, model: null };
   private log: AiLogEntry[] = [];
   private inFlight: Promise<unknown> | null = null;
   private requestSeq = 0;
@@ -90,7 +111,7 @@ export class AiController {
   }
 
   getStatus(): AiStatusView {
-    return { ...this.status };
+    return { ...this.status, latencyMs: this.log.at(-1)?.latencyMs ?? null };
   }
 
   getVersion(): number {
@@ -134,6 +155,7 @@ export class AiController {
 
   request(args: AiRequestArgs): Promise<Direction[]> {
     const seq = ++this.requestSeq;
+    const startedAt = performance.now();
     this.model = args.model;
     this.status = { state: "thinking", error: null, planLength: 0, model: args.model };
     this.version += 1;
@@ -146,6 +168,7 @@ export class AiController {
         apiKey: args.apiKey,
         signal: args.signal,
         legalMoves: args.legalMoves,
+        choiceDescriptions: args.choiceDescriptions,
       });
       if (args.signal.aborted || seq !== this.requestSeq) throw abortError();
       const parsed = parseAiResponse(text, args.currentDirection);
@@ -155,17 +178,18 @@ export class AiController {
       this.log.push({
         time: Date.now(),
         model: args.model,
-        moves: parsed.moves,
+        moves: [...parsed.moves],
         reason: parsed.reason,
-        observation: args.observation,
         requestId: args.requestId,
         error: null,
+        latencyMs: Math.max(0, Math.round(performance.now() - startedAt)),
       });
       if (this.log.length > 20) this.log.splice(0, this.log.length - 20);
       return parsed.moves;
     })().catch((err) => {
       if (args.signal.aborted || seq !== this.requestSeq) throw err;
-      const message = err instanceof Error ? err.message : String(err);
+      const detail = err instanceof Error ? err.message : String(err);
+      const message = args.apiKey ? detail.split(args.apiKey).join("[已隐藏 Key]") : detail;
       this.status = { state: "error", error: message, planLength: 0, model: args.model };
       this.version += 1;
       this.log.push({
@@ -173,9 +197,9 @@ export class AiController {
         model: args.model,
         moves: [],
         reason: "",
-        observation: args.observation,
         requestId: args.requestId,
         error: message,
+        latencyMs: Math.max(0, Math.round(performance.now() - startedAt)),
       });
       if (this.log.length > 20) this.log.splice(0, this.log.length - 20);
       throw err;

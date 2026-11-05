@@ -1,3 +1,9 @@
+import type {
+  DecisionContext,
+  FoodRelation,
+  PredictedOutcome,
+  PredictionScenario,
+} from "./context";
 import { analyzeMove, type MoveAnalysis } from "../sim/analysis";
 import type { Direction, GameState } from "../sim/types";
 
@@ -5,55 +11,192 @@ export function directionToken(dir: Direction): string {
   return { up: "U", down: "D", left: "L", right: "R" }[dir];
 }
 
-function formatMove(option: MoveAnalysis, hasFood: boolean): string {
-  const token = directionToken(option.direction);
-  const target = `(${option.target.x}, ${option.target.y})`;
-  if (!option.safe) return `${token} ${target}: CRASH`;
-  const food =
-    !hasFood
-      ? "no food"
-      : option.eats
-        ? "EATS FOOD"
-        : option.foodDistance === null
-          ? "food unreachable"
-          : `food ${option.foodDistance}`;
-  const room =
-    option.room === "tight"
-      ? `room tight; space ${option.space}`
-      : "room ample";
-  return `${token} ${target}: SAFE; ${room}; ${food}`;
+function formatDistance(distance: number | null): string {
+  return distance === null ? "-" : String(distance);
 }
 
-export function buildPrompt(state: GameState, legalMoves: Direction[]): string {
+function formatTrend(trend: number | null): string {
+  if (trend === null) return "-";
+  return trend > 0 ? `+${trend}` : String(trend);
+}
+
+function formatFood(option: MoveAnalysis, hasFood: boolean): string {
+  if (!hasFood) return "no food";
+  if (option.eats) return "E";
+  return option.foodDistance === null ? "f-" : `f${option.foodDistance}`;
+}
+
+function formatRoom(option: MoveAnalysis): string {
+  return option.room === "tight" ? `T${option.space}` : "A";
+}
+
+function formatStatic(option: MoveAnalysis, hasFood: boolean): string {
+  const token = directionToken(option.direction);
+  if (!option.safe) return `${token}: X`;
+  return `${token}: OK (${option.target.x}, ${option.target.y}) ${formatRoom(option)} ${formatFood(option, hasFood)} ${formatEscape(option)}`;
+}
+
+/** 格式化可达空间、通往尾部的路径和下次决策前可直行的步数。 */
+function formatEscape(option: MoveAnalysis): string {
+  return `space=${option.space} tail=${option.tailReachable ? "yes" : "no"} run=${option.runway}`;
+}
+
+function formatOutcome(outcome: PredictedOutcome): string {
+  if (outcome.ended) return "P";
+  if (!outcome.applicable || outcome.analysis === null) return "NA";
+  const option = outcome.analysis;
+  if (!option.safe) return "X";
+  return `OK (${option.target.x}, ${option.target.y}) ${formatRoom(option)} ${formatFood(option, true)} ${formatEscape(option)}`;
+}
+
+function foodRelationToken(relation: FoodRelation): string {
+  return relation;
+}
+
+function formatScenario(scenario: PredictionScenario): string {
+  const at = scenario.ended || scenario.head === null
+    ? "dead"
+    : `(${scenario.head.x},${scenario.head.y})`;
+  const food =
+    scenario.food === null ? "-" : `(${scenario.food.x},${scenario.food.y})`;
+  return `${scenario.label}${scenario.likely ? "[likely]" : ""}=${scenario.ticks}t/${scenario.moves}m @${at} food=${food} ${foodRelationToken(scenario.foodRelation)}`;
+}
+
+function formatRecent(context: DecisionContext): string {
+  const entries = context.recent.map((record) => {
+    const eat = record.ate ? "+" : "-";
+    return `t${record.tick}(${record.head.x},${record.head.y})${directionToken(record.direction)}${eat}`;
+  });
+  return entries.length === 0 ? "-" : entries.join(" ");
+}
+
+function delayLine(context: DecisionContext, state: GameState): string {
+  const latency = context.latency;
+  if (latency.samples === 0) return "n=0 (unknown); exec timing uncertain";
+  const interval = Math.max(1, state.moveEveryTicks);
+  const p50Moves = Math.floor(latency.p50Ticks / interval);
+  const p90Moves = Math.floor(latency.p90Ticks / interval);
+  return `n=${latency.samples}; p50=${latency.p50Ticks}t/${p50Moves}m; p90=${latency.p90Ticks}t/${p90Moves}m; range=${latency.minTicks}..${latency.maxTicks}t`;
+}
+
+function historyLine(context: DecisionContext): string {
+  const history = context.history;
+  return [
+    `moves=${history.moves}`,
+    `food_age=${history.foodAgeTicks}t`,
+    `same_food=${history.sameFoodMoves}m`,
+    `dist=${formatDistance(history.distanceNow)}`,
+    `min12m=${formatDistance(history.minDistance)}`,
+    `trend=${formatTrend(history.trend)}`,
+    `stall=${history.noProgressTicks}t/${history.noProgressMoves}m`,
+    `repeat=${history.repeats}`,
+    `cellrep=${history.cellRepeats}`,
+    `loop=${history.loop ? "yes" : "no"}`,
+  ].join("; ");
+}
+
+function predictionLines(
+  state: GameState,
+  legalMoves: Direction[],
+  context: DecisionContext,
+): string[] {
+  const byDirection = new Map(
+    context.predictions.map((prediction) => [prediction.direction, prediction]),
+  );
+  return legalMoves.map((direction) => {
+    const prediction = byDirection.get(direction);
+    if (prediction === undefined) {
+      return formatStatic(analyzeMove(state, direction), state.food !== null);
+    }
+    const outcomes = prediction.outcomes
+      .map((outcome) => `${outcome.scenario} ${formatOutcome(outcome)}`)
+      .join(" | ");
+    return `${directionToken(direction)}: ${outcomes}`;
+  });
+}
+
+function taskLines(): string[] {
+  return [
+    "TASK",
+    "1. Choose for the [likely] execution scenario, then check later scenarios. With unknown delay, prefer safety across scenarios. P means death before the answer; ignore P when comparing turns.",
+    "2. Survival: avoid X and NA. run counts safe straight moves INCLUDING the chosen move. Prefer run > p90 delay in moves so the next answer can arrive before a crash. Never maximize space at the cost of an immediate crash.",
+    "3. Pursue food: among survivable turns, prefer E or the smallest reachable f. Turn as soon as this shortens the food path; continuing straight has no bonus except as a tie-breaker. Food marked past is still reachable by turning around through legal turns.",
+    "4. Escape: prefer tail=yes and enough space for the body. In a tight region or with loop=yes, favor an escape route even if f temporarily increases. E is not worth entering a dead end.",
+    "5. If every option fails, maximize run, then space. A single cell revisit is normal. Return one listed direction.",
+    "Return one of U/D/L/R only.",
+  ];
+}
+
+/** 把每个候选方向的分析放进对应选项，供 Decisions API 直接比较。 */
+export function buildChoiceDescriptions(
+  state: GameState,
+  legalMoves: Direction[],
+  context?: DecisionContext,
+): Partial<Record<Direction, string>> {
+  const lines = context === undefined
+    ? legalMoves.map((direction) => formatStatic(analyzeMove(state, direction), state.food !== null))
+    : predictionLines(state, legalMoves, context);
+  const descriptions: Partial<Record<Direction, string>> = {};
+  for (let i = 0; i < legalMoves.length; i += 1) descriptions[legalMoves[i]] = lines[i];
+  return descriptions;
+}
+
+export function buildPrompt(
+  state: GameState,
+  legalMoves: Direction[],
+  context?: DecisionContext,
+): string {
   const head = state.snake[0];
   const neck = state.snake[1] ?? head;
   const tail = state.snake[state.snake.length - 1] ?? head;
   const food = state.food === null ? "none" : `(${state.food.x}, ${state.food.y})`;
-  const analysis = legalMoves.map((direction) =>
-    formatMove(analyzeMove(state, direction), state.food !== null),
-  );
   const lines = [
-    "SNAKE/1",
-    "Choose exactly one allowed turn for the current board.",
+    "SNAKE/2",
+    "Snapshot only. The snake keeps moving until the answer is applied; do not assume this board at execution time.",
     "",
     "STATE",
-    `board ${state.width}x${state.height}; x grows right, y grows down, coordinates are 0-based`,
-    `head (${head.x}, ${head.y}); neck (${neck.x}, ${neck.y}); tail (${tail.x}, ${tail.y}); food ${food}`,
-    `current direction ${directionToken(state.direction)}; length ${state.snake.length}`,
-    "",
-    "MOVE ANALYSIS",
-    "room: ample or tight; tight means little escape space relative to snake length.",
-    "space: reachable empty cells after the move; shown for tight turns.",
-    "food: shortest path to the food after the move. CRASH ends the run; EATS FOOD grows the snake.",
-    ...analysis,
-    "",
-    "TASK",
-    "1. Never choose CRASH when any SAFE turn exists.",
-    "2. If any ample-room turn exists, ignore tight turns. Among them, prefer EATS FOOD, otherwise the smallest food distance.",
-    "3. If only tight turns exist, choose the largest space.",
-    `4. If all turns crash, or the best turns tie, prefer the current direction ${directionToken(state.direction)}.`,
-    "",
-    "The simulation keeps moving during the request; answer quickly for this snapshot.",
+    `tick ${state.tick}; board ${state.width}x${state.height}; x right, y down, 0-based`,
+    `head (${head.x}, ${head.y}); neck (${neck.x}, ${neck.y}); tail (${tail.x}, ${tail.y}); food ${food}; dir ${directionToken(state.direction)}; len ${state.snake.length}; interval ${state.moveEveryTicks}t (1m); t=tick, m=move`,
+    `body ${state.snake.map((cell) => `(${cell.x},${cell.y})`).join(" ")}`,
   ];
+
+  if (context === undefined) {
+    lines.push("", "DELAY", "n=0 (unknown); exec timing uncertain");
+    lines.push(
+      "",
+      "MOVE ANALYSIS",
+      "codes: OK safe; X crash; P dead before exec; NA illegal; A ample; T<space> tight; f<path> food distance; E eats; f- unreachable; tail=path to tail; run=safe straight moves including this move.",
+      ...legalMoves.map((direction) =>
+        formatStatic(analyzeMove(state, direction), state.food !== null),
+      ),
+    );
+  } else {
+    const pending = context.pending;
+    const pendingText =
+      pending.queue.length === 0 && pending.plan.length === 0
+        ? "no pending turn"
+        : `pending q=${pending.queue.map(directionToken).join("") || "-"} p=${pending.plan.map(directionToken).join("") || "-"}; future dir uncertain`;
+    lines.push(
+      "",
+      "DELAY",
+      delayLine(context, state),
+      "",
+      "SCEN",
+      context.scenarios.map(formatScenario).join("; "),
+      `EXEC follows queued turns, then continues straight until arrival; ${pendingText}; timing probabilistic.`,
+      "",
+      "HIST",
+      historyLine(context),
+      `recent: ${formatRecent(context)}`,
+      "trend>0 means farther from the current food; trend<0 means closer.",
+      "loop=yes means same food + repeated (head,dir) + stall; a single revisit is normal.",
+      "",
+      "MOVE ANALYSIS",
+      "codes: OK safe; X crash; P dead before exec; NA illegal; A ample; T<space> tight; f<path> food distance; E eats; f- unreachable; tail=path to tail; run=safe straight moves including this move.",
+      ...predictionLines(state, legalMoves, context),
+    );
+  }
+
+  lines.push("", ...taskLines());
   return lines.join("\n");
 }

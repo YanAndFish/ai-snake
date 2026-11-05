@@ -135,26 +135,50 @@
 
   api.start({ seed: 82 });
   const observation = api.getObservation();
-  assert(observation.map.split("\n").length === api.getState().height + 2, "observation map row count is wrong");
-  assert((observation.map.match(/H/g) || []).length === 1, "map needs one head");
-  assert((observation.map.match(/\*/g) || []).length === 1, "map needs one food");
-  const bodyCount = (observation.map.match(/s/g) || []).length;
-  assert(bodyCount === api.getState().snake.length - 1, "map body count is wrong");
+  assert(observation.prompt.includes("board 19x19"), "prompt lacks board size");
+  assert(observation.prompt.includes("head ("), "prompt lacks head coordinates");
+  assert(observation.prompt.includes("food ("), "prompt lacks food coordinates");
+  assert(!observation.prompt.includes("MAP"), "prompt still contains a text map");
+  assert(!document.querySelector("#observation"), "observation map is still in the DOM");
   assert(observation.prompt.includes("MOVE ANALYSIS"), "prompt lacks the move analysis");
+  assert(observation.prompt.includes("DELAY"), "prompt lacks latency context");
+  assert(observation.prompt.includes("HIST"), "prompt lacks history context");
+  assert(observation.prompt.includes("SCEN"), "prompt lacks execution scenarios");
   assert(observation.prompt.includes("TASK"), "prompt lacks the decision task");
 
   api.start({ seed: 87 });
-  const manualMapBefore = document.querySelector("#observation").textContent;
   api.stepMoves(1);
-  const manualMapAfter = document.querySelector("#observation").textContent;
-  assert(manualMapBefore !== manualMapAfter, "manual play did not refresh the observation map");
-  assert(manualMapAfter.split("\n").length === api.getState().height + 2, "manual observation map rows are wrong");
+  assert(api.getState().phase === "playing", "manual step did not keep the run alive");
 
   const rendered = window.__pixelSerpent.scene;
   const target = rendered.cameraTarget;
   assert(rendered.camera, "scene camera is missing");
   assert(Math.abs(rendered.cameraHome.x - target.x) < 0.001, "camera must not yaw");
   assert(rendered.cameraHome.y > target.y, "camera must look down");
+
+  // 同一蛇头位置替换身体时，渲染应立即显示新的弯道。
+  api.setSnake([{ x: 9, y: 9 }, { x: 8, y: 9 }, { x: 7, y: 9 }], "right");
+  rendered.render(api.getState(), 0, 0, 0);
+  api.setSnake([{ x: 9, y: 9 }, { x: 9, y: 10 }, { x: 8, y: 10 }], "up");
+  rendered.render(api.getState(), 0, 0, 0);
+  assert(rendered.snakePoints[2] === 9.5 && rendered.snakePoints[3] === 10.5, "替换身体后，弯道没有立即更新");
+  const bodyPositions = rendered.bodyMesh.geometry.getAttribute("position");
+  assert(rendered.bodyMesh.geometry.drawRange.count > 0, "蛇身网格没有可绘制的三角形");
+  assert(Array.from(bodyPositions.array).every(Number.isFinite), "蛇身顶点包含无效坐标");
+  for (let i = 1; i < bodyPositions.array.length; i += 3) {
+    if (i >= (api.getState().snake.length - 1) * 6 * 6 + 6) break;
+    assert(Math.abs(bodyPositions.array[i] - 0.09) < 0.0001, "蛇身应使用同一高度的平面像素贴图");
+  }
+  assert(rendered.headMesh.isMesh, "蛇头应使用与蛇身一致的俯视平面");
+  assert(Math.abs(rendered.headMesh.position.y - 0.092) < 0.0001, "蛇头与身体不在同一俯视平面");
+  const shadowPositions = rendered.bodyShadow.geometry.getAttribute("position");
+  assert(rendered.bodyShadow.geometry.drawRange.count === rendered.bodyMesh.geometry.drawRange.count, "蛇身阴影没有覆盖整条身体");
+  const bodyX = (bodyPositions.getX(0) + bodyPositions.getX(1)) / 2;
+  const bodyZ = (bodyPositions.getZ(0) + bodyPositions.getZ(1)) / 2;
+  const shadowX = (shadowPositions.getX(0) + shadowPositions.getX(1)) / 2;
+  const shadowZ = (shadowPositions.getZ(0) + shadowPositions.getZ(1)) / 2;
+  assert(Math.abs(shadowX - bodyX - 0.08) < 0.0001, "蛇身阴影的横向偏移不正确");
+  assert(Math.abs(shadowZ - bodyZ - 0.13) < 0.0001, "蛇身阴影的纵向偏移不正确");
 
   api.ai.useMock(() => new Promise((resolve) => {
     window.setTimeout(() => resolve({ moves: ["up"], reason: "slow mock" }), 60);
@@ -166,22 +190,19 @@
   assert(api.getState().phase === "playing", "the AI request halted the run");
   await api.ai.waitForIdle(2000);
   assert(api.ai.getStatus().state === "ready", "mock decision did not become ready");
+  assert(api.ai.getStatus().latencyMs >= 50, "慢请求的耗时没有计入状态");
   const beforeHead = api.getState().snake[0];
   api.stepMoves(1);
   assert(api.getState().snake[0].y === beforeHead.y - 1, "AI move was not applied");
+  await api.ai.waitForIdle(2000);
+  await new Promise((resolve) => window.setTimeout(resolve, 30));
+  const decisionLog = api.getAiLog();
+  const newest = decisionLog[decisionLog.length - 1];
+  assert(newest.latencyMs >= 50, "决策记录缺少请求耗时");
+  assert(document.querySelector("#ai-latency").textContent.includes("P90"), "AI 面板没有显示延迟统计");
+  assert(document.querySelector("#ai-log").textContent.startsWith(`#${newest.requestId} ·`), "最新决策记录没有排在顶部");
 
   await document.fonts.ready;
-  const observationNode = document.querySelector("#observation");
-  const style = getComputedStyle(observationNode);
-  const measure = document.createElement("canvas").getContext("2d");
-  measure.font = `${style.fontSize} ${style.fontFamily}`;
-  const cellWidth = measure.measureText("#".repeat(21)).width / 21;
-  const cellHeight = parseFloat(style.lineHeight);
-  assert(
-    cellWidth / cellHeight > 0.8 && cellWidth / cellHeight < 1.25,
-    `observation cells are not square: ${cellWidth.toFixed(2)}x${cellHeight.toFixed(2)}`,
-  );
-
   assert(document.querySelector("#restart-over-ai"), "AI restart button is missing");
   const manualButton = document.querySelector("#start-manual");
   assert(manualButton, "manual start button is missing");
@@ -213,7 +234,6 @@
   console.log("PASS", {
     tick: api.getState().tick,
     score: api.getState().score,
-    observationLines: observation.map.split("\n").length,
     aiLog: api.getAiLog().length,
   });
 })();

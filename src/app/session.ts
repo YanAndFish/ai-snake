@@ -4,6 +4,7 @@ import {
   type AiStatusView,
   AiController,
 } from "../ai/controller";
+import { DecisionTelemetry, type DecisionContext } from "../ai/context";
 import { normalizePlan } from "../ai/response";
 import {
   advanceMove,
@@ -21,7 +22,7 @@ import {
 import { checkInvariants, InvariantError } from "../sim/invariants";
 import { checkInvariantsMask } from "../sim/invariants.hot";
 import { advanceClockHot } from "../sim/tick.hot";
-import { buildMap, buildObservation, type Observation } from "../sim/observation";
+import { buildObservation, type Observation } from "../sim/observation";
 import {
   type Cell,
   type Direction,
@@ -94,6 +95,7 @@ export class GameSession {
   private detached = false;
   private frozen = false;
   private fatal: string | null = null;
+  private telemetry = new DecisionTelemetry();
 
   constructor(options: SessionOptions) {
     this.controller = options.controller;
@@ -105,6 +107,7 @@ export class GameSession {
     this.onEvents = options.onEvents ?? null;
     this.onFatal = options.onFatal ?? null;
     this.state = createGame({ difficulty: this.difficulty });
+    this.telemetry.reset(this.state);
   }
 
   getBestScore(): number {
@@ -178,6 +181,7 @@ export class GameSession {
 
     this.state = startGame(this.state, options?.seed ?? freshSeed());
     this.state = setDifficultyGame(this.state, this.difficulty);
+    this.telemetry.reset(this.state);
     this.events.length = 0;
     this.emit([{ type: "start", tick: 0 }]);
 
@@ -196,6 +200,13 @@ export class GameSession {
     return this.start({ seed, ai: this.aiEnabled });
   }
 
+  private decisionContext(): DecisionContext {
+    return this.telemetry.context(this.state, {
+      queue: [...this.state.queue],
+      plan: [...this.controller.plan],
+    });
+  }
+
   private requestDecision(): void {
     if (!this.aiEnabled || this.requestInFlight || this.state.phase !== "playing") return;
     const runId = this.runId;
@@ -204,7 +215,10 @@ export class GameSession {
     const controller = new AbortController();
     this.abortController = controller;
     this.requestInFlight = true;
-    const observation = buildObservation(this.state);
+    const context = this.decisionContext();
+    const observation = buildObservation(this.state, context);
+    const requestStartedAt = performance.now();
+    let completed = false;
     this.emit([{ type: "think", tick: this.state.tick }]);
 
     this.requestPromise = (async () => {
@@ -214,11 +228,12 @@ export class GameSession {
           model: this.model,
           apiKey: this.keyStore.get(),
           signal: controller.signal,
-          observation: observation.map,
           currentDirection: this.state.direction,
           legalMoves: observation.legalMoves,
+          choiceDescriptions: observation.choiceDescriptions,
           requestId,
         });
+        completed = true;
         if (runId !== this.runId || !this.aiEnabled || this.state.phase !== "playing") return;
         if (this.controller.plan.length > 0) {
           this.emit([{ type: "ready", tick: this.state.tick }]);
@@ -226,6 +241,7 @@ export class GameSession {
       } catch {
         // The game keeps moving; a slow or failed request can cost the run.
       } finally {
+        if (completed) this.telemetry.recordLatency(performance.now() - requestStartedAt);
         if (this.abortController === controller) {
           this.abortController = null;
           this.requestInFlight = false;
@@ -253,6 +269,7 @@ export class GameSession {
 
     const result = advanceMove(this.state);
     this.state = result.state;
+    this.telemetry.recordMove(this.state, result.events);
     this.emit(result.events);
     this.updateBestScore();
     this.assertInvariantsHot();
@@ -309,12 +326,14 @@ export class GameSession {
 
   setSnake(cells: Cell[], dir: Direction): StateView {
     this.state = setSnakeGame(this.state, cells, dir);
+    this.telemetry.reset(this.state);
     this.assertInvariants();
     return viewState(this.state);
   }
 
   setFood(cell: Cell | null): StateView {
     this.state = setFoodGame(this.state, cell);
+    this.telemetry.reset(this.state);
     this.assertInvariants();
     return viewState(this.state);
   }
@@ -408,15 +427,15 @@ export class GameSession {
   }
 
   getObservation(): Observation {
-    return buildObservation(this.state);
-  }
-
-  getMap(): string {
-    return buildMap(this.state);
+    return buildObservation(this.state, this.decisionContext());
   }
 
   getPrompt(): string {
-    return buildObservation(this.state).prompt;
+    return this.getObservation().prompt;
+  }
+
+  getDecisionContext(): DecisionContext {
+    return this.decisionContext();
   }
 
   getInvariantReport(): { ok: boolean; violations: string[] } {

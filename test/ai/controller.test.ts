@@ -4,11 +4,10 @@ import { AiController } from "../../src/ai/controller";
 
 function args(signal = new AbortController().signal) {
   return {
-    prompt: "SNAKE/1\nMAP",
+    prompt: "SNAKE/2\nSTATE",
     model: "gpt-6-luna",
     apiKey: "sk-test",
     signal,
-    observation: "#################\n#.....ssH.......#\n#################",
     currentDirection: "right" as const,
     legalMoves: ["up", "down", "right"] as const,
     requestId: 1,
@@ -26,8 +25,9 @@ describe("AI controller", () => {
     const log = controller.getLog();
     expect(log).toHaveLength(1);
     expect(log[0].reason).toBe("mock plan");
-    expect(log[0].observation).toContain("#################");
     expect(controller.getVersion()).toBeGreaterThan(0);
+    controller.plan.shift();
+    expect(controller.getLog()[0].moves).toEqual(["up", "right"]);
   });
 
   it("logs a failed request", async () => {
@@ -39,6 +39,34 @@ describe("AI controller", () => {
     expect(controller.getStatus().state).toBe("error");
     expect(controller.getStatus().error).toContain("network down");
     expect(controller.getLog()[0].error).toContain("network down");
+  });
+
+  it("请求成功时，状态和记录包含实际耗时", async () => {
+    const clock = vi.spyOn(performance, "now");
+    clock.mockReturnValueOnce(100).mockReturnValueOnce(347);
+    try {
+      const controller = new AiController({ decide: async () => '{"moves":["up"]}' });
+      expect(controller.getStatus().latencyMs).toBeNull();
+      await controller.request(args());
+      expect(controller.getStatus().latencyMs).toBe(247);
+      expect(controller.getLog()[0].latencyMs).toBe(247);
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it("请求失败时，记录耗时并隐藏错误里的 Key", async () => {
+    const clock = vi.spyOn(performance, "now");
+    clock.mockReturnValueOnce(10).mockReturnValueOnce(500);
+    try {
+      const controller = new AiController({ decide: async () => { throw new Error("invalid sk-test"); } });
+      await expect(controller.request(args())).rejects.toThrow();
+      expect(controller.getLog()[0].latencyMs).toBe(490);
+      expect(JSON.stringify(controller.getLog())).not.toContain("sk-test");
+      expect(controller.getStatus().error).not.toContain("sk-test");
+    } finally {
+      clock.mockRestore();
+    }
   });
 
   it("keeps only the latest request result when responses race", async () => {

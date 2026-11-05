@@ -21,7 +21,7 @@ npm run check
 | `test/sim/tick.hot.test.ts` | 每个 tick 推进时钟，到移动边界才返回 due，非 playing 不推进 |
 | `test/sim/invariants.test.ts` | 每条游戏不变式都能被点名；600 次动作 fuzz；64 个种子的自动运行；位掩码和名称一致 |
 | `test/sim/conformance.test.ts` | TLA+ 的 Start、Pause、Resume、Turn、Advance、AIRequest、AIError 对应到真实 reducer 和会话；AI 请求期间游戏继续移动 |
-| `test/sim/observation.test.ts` | 地图边界、唯一的 `H` 和 `*`、身体数量、合法方向、提示词里的移动分析和任务 |
+| `test/sim/observation.test.ts` | 棋盘尺寸和关键坐标、合法方向、提示词里的移动分析和任务；确认不生成文本地图 |
 | `test/sim/analysis.test.ts` | 每个合法转向的撞墙/撞身、尾格释放、吃食物、可达空间、房间宽窄和食物最短路 |
 | `test/engine/loop.hot.test.ts` | 固定步数、追帧上限、暂停清空累加器、步进导致停住 |
 | `test/engine/loop.test.ts` | Loop 包装、注入时钟、调度和取消、帧渲染 |
@@ -30,6 +30,7 @@ npm run check
 | `test/ai/client.test.ts` | Decisions 请求体、choice 问题、默认模型、answer 解析、refusal、非法选择、HTTP 错误不泄露 Key、abort、默认 fetch 接收者 |
 | `test/ai/response.test.ts` | 兼容 JSON、代码围栏、单 action、大小写、反向截断、未知 token、超长截断、垃圾输入、理由清洗 |
 | `test/ai/controller.test.ts` | mock 走真实解析、错误日志、竞态只保留最新、abort、`waitForIdle` 超时、日志上限 |
+| `test/ai/context.test.ts` | 延迟分位数、当前移动进度、入队转向、等待期间变速、冷启动场景、食物进度、循环检测和状态只读性 |
 | `test/app/keyStore.test.ts` | Key 的存取、清除、不可序列化 |
 | `test/app/session.test.ts` | 手动和 AI 启动、请求不暂停、慢请求死亡、一个在飞请求、暂停、停止 AI、控制台计划、错误重试、best score、不泄露 Key、致命不变式 |
 | `test/app/frame.hot.test.ts` | 只在阶段、分数、长度、AI 版本或致命状态变化时通知 UI |
@@ -85,15 +86,18 @@ await eval(source);
 
 - 固定种子重复得到相同状态。
 - tick、暂停冻结、吃食物、长度、分数、撞墙、撞身体、追尾、反向。
-- 观察地图唯一的头、食物和正确身体数量，提示词包含 `MOVE ANALYSIS` 和 `TASK`。
+- 提示词包含棋盘尺寸、头/食物坐标、`MOVE ANALYSIS`、`DELAY`、`HIST`、`SCEN` 和 `TASK`，且不包含文本地图。
 - 一个 60ms 的慢 mock 决策下，AI 请求还在飞时蛇已经移动两次，阶段仍是 `playing`。
-- 19x19 的观察地图、正方形字符格。
+- 页面不再有 `#observation` 观察地图节点。
 - 难度按钮组（顶栏和开局菜单）同步、无下拉框。
 - 结束菜单有 AI 重开按钮。
 - 撞墙后蛇头停在当前格，不出现回退。
-- 人工移动一步后，右侧观察地图同步刷新。
 - 点击手动开始后背景音乐进入运行状态。
-- mock 响应经过真实的控制器和解析路径，日志里有理由。
+- mock 响应经过真实的控制器和解析路径，记录里有理由和耗时。
+- AI 面板显示最近耗时和 P50/P90，最新决策记录排在顶部。
+- 连续蛇身的顶点坐标有效，替换同一蛇头位置的身体后立即显示新形状。
+- 蛇头与身体使用同一俯视平面，四个方向都能辨认眼睛和舌头。
+- 蛇身阴影覆盖整条身体，投影方向与食物一致。
 - 输入假 Key 后，`localStorage`、`sessionStorage`、cookie、DOM 和状态视图都没有 Key。
 - 不变式报告为空。
 
@@ -105,7 +109,7 @@ await eval(source);
 
 ## Key 审计
 
-`KeyStore` 使用真正的私有字段 `#value`，没有 `toJSON`，`JSON.stringify` 输出空对象。代码里没有把 Key 写进浏览器存储的路径。AI 日志只保存模型、方向、理由和观察文本。请求头里的 Key 不会被拼进错误消息。`test/app/session.test.ts` 和浏览器脚本都检查状态、日志、DOM 和存储里没有 Key。
+`KeyStore` 使用真正的私有字段 `#value`，没有 `toJSON`，`JSON.stringify` 输出空对象。代码里没有把 Key 写进浏览器存储的路径。AI 日志只保存模型、方向、理由和错误。请求头里的 Key 不会被拼进错误消息。`test/app/session.test.ts` 和浏览器脚本都检查状态、日志、DOM 和存储里没有 Key。
 
 ## 失败路径
 

@@ -139,11 +139,10 @@
         <button id="stop-ai" class="btn" type="button">停止 AI</button>
         <button id="retry-ai" class="btn" type="button">重试</button>
       </div>
-      <section class="panel-section">
-        <h3 class="section-title">观察地图</h3>
-        <pre id="observation" class="observation"></pre>
-      </section>
-
+      <div class="latency-card">
+        <p id="ai-latency" class="latency-value" aria-live="polite">决策延迟：等待首次响应</p>
+        <p class="latency-hint">请求期间蛇照常移动。P50 / P90 为最近 20 次请求的延迟分位数。</p>
+      </div>
       <section class="panel-section log-section">
         <h3 class="section-title">决策记录</h3>
         <pre id="ai-log" class="ai-log"></pre>

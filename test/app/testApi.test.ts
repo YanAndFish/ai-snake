@@ -60,7 +60,8 @@ describe("console test API", () => {
   it("exposes observations and prompts", () => {
     const { api } = harness();
     api.start({ seed: 5 });
-    expect(api.getObservation().map.match(/H/g)).toHaveLength(1);
+    expect(api.getObservation().prompt).toContain("board 19x19");
+    expect(api.getObservation().prompt).toContain("head (");
     expect(api.getPrompt()).toContain("MOVE ANALYSIS");
   });
 

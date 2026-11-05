@@ -217,6 +217,28 @@ body[data-phase="menu"] #hud .difficulty-group {
   padding: 7px 11px;
 }
 
+.latency-card {
+  margin-top: 14px;
+  padding: 11px;
+  border: 2px solid var(--line);
+  background: #0a140d;
+}
+
+.latency-value {
+  margin: 0;
+  color: var(--green-bright);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.7;
+}
+
+.latency-hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
 .phase-chip {
   font-family: var(--ui);
   font-size: 12px;
@@ -510,7 +532,6 @@ body[data-phase="menu"] #hud .difficulty-group {
   font-weight: 700;
 }
 
-.observation,
 .ai-log {
   margin: 0;
   padding: 10px;
@@ -520,24 +541,6 @@ body[data-phase="menu"] #hud .difficulty-group {
   font-family: var(--mono);
   font-size: 10px;
   line-height: 1.35;
-}
-
-.observation {
-  max-height: 260px;
-  overflow: auto;
-  white-space: pre;
-  word-break: normal;
-  padding: 12px 11px;
-  color: #d2e6bc;
-  font-family: var(--pixel);
-  font-size: 10px;
-  line-height: 1;
-  letter-spacing: 0;
-  font-variant-ligatures: none;
-  text-rendering: geometricPrecision;
-}
-
-.ai-log {
   max-height: 190px;
   overflow: auto;
   white-space: pre-wrap;

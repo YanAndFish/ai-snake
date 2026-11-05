@@ -39,7 +39,7 @@ npm run preview
 
 场地保持正方向，只有透视俯视的仰角，没有 45 度旋转。地面是明亮的苔绿像素草地；可玩区是均匀的割草草地，没有格线，外圈是一圈低矮的木栅栏，立柱和两道横杆把边界清楚地标出来。栅栏内沿完全位于可玩格之外。
 
-蛇头是独立的 32x32 大眼像素角色，有深绿斑块、亮面、奶白下颌和分叉红舌。蛇身由相互重叠的胶囊贴片连成一条连续身体，带奶白腹边和深绿斑块，竖直段按镜头仰角投影缩短，尾端有圆形尾帽。蛇、苹果和粒子都有偏移的扁平阴影，木栅栏也参与三维落点，所以角色仍是二维贴片，但落在三维场地里。观察面板使用像素等宽字体和正方形字符格，21 列的 ASCII 地图不会横向或纵向变形。人工和 AI 每走一步都会刷新右侧观察地图。
+蛇头是独立的 32x32 像素角色，有额头、两侧的小黑眼和白色高光、奶白下颌、短红舌。蛇身由相互重叠的胶囊贴片连成一条连续身体，带亮绿顶面、中绿侧面、深绿下侧和窄奶白腹边；水平贴图是 25x18，竖直贴图是 18x20，旋转后像素不被拉伸。相邻段端部不画黑边，深绿大斑纹跨段延续；转弯处用软边接头填充，避免方形缺口。没有独立尾帽，身体在尾格自然收束。蛇、苹果和粒子都有偏移的扁平阴影，木栅栏也参与三维落点，所以角色仍是二维贴片，但落在三维场地里。AI 面板不再显示 ASCII 观察地图，决策所需信息由紧凑的坐标和动态上下文提供。
 
 ## 让 Decisions API 玩
 
@@ -47,12 +47,12 @@ npm run preview
 2. 模型固定为 `gpt-6-luna`，对应 Decisions API。
 3. 点「开始 AI」或菜单里的「让 AI 来玩」。
 
-请求遵循 [OpenAI Decisions 指南](https://developers.openai.com/api/docs/guides/decisions)，使用 `POST https://api.openai.com/v1/decisions`。`input` 里是每个合法转向的移动分析（撞墙/撞身、可达空间、空间是否充足、到食物的最短路）、当前方向和头/颈/尾/食物坐标。正文是 `model`、`input` 和一个 `choice` 问题：
+请求遵循 [OpenAI Decisions 指南](https://developers.openai.com/api/docs/guides/decisions)，使用 `POST https://api.openai.com/v1/decisions`。`input` 里是当前坐标、最近请求延迟分布、运动历史、食物获取进度，以及按延迟场景预测的每个合法转向结果（撞墙/撞身、可达空间、到食物的最短路、执行时是否已越过食物）。正文是 `model`、`input` 和一个 `choice` 问题：
 
 ```json
 {
   "model": "gpt-6-luna",
-  "input": "SNAKE/1 ... 坐标与候选分析 ...",
+  "input": "SNAKE/2 ... 坐标、延迟、历史与预测 ...",
   "questions": [
     {
       "type": "choice",
@@ -85,7 +85,7 @@ __snake.help()
 __snake.start({ seed: 42 })
 __snake.stepMoves(3)
 __snake.getState()
-__snake.getObservation().map
+__snake.getObservation().prompt
 __snake.setDifficulty("fast")
 __snake.getInvariantReport()
 ```
@@ -132,12 +132,12 @@ npm run check
 
 当前结果：
 
-- Vitest 17 个测试文件，117 个测试。
-- 覆盖率 91.65% statements，95.82% lines，92.37% functions，83.41% branches。
+- Vitest 18 个测试文件，123 个测试。
+- 覆盖率 91.16% statements，95.60% lines，93.48% functions，82.16% branches。
 - Vite 生产构建通过。
 - 热路径 lint 通过 5 个文件。
 - TLA+ 两套规格通过 TLC。生命周期 64 个状态，规则 38,707 个状态。
-- 真实浏览器控制台脚本 `docs/console-acceptance.js` 输出 `PASS`，覆盖难度按钮组、结束菜单 AI 重开、背景音乐、正方形观察地图和撞墙不回退。
+- 真实浏览器控制台脚本 `docs/console-acceptance.js` 输出 `PASS`，覆盖难度按钮组、结束菜单 AI 重开、背景音乐、决策提示词字段和撞墙不回退。
 
 游戏状态的不变式在每一 tick 和每次状态改变后执行，生产构建也一样，名称与 TLA+ 对应。AI 请求的 `aiPending` 由会话测试和 TLA+ 覆盖。违规时游戏冻结并显示错误。
 
@@ -146,8 +146,8 @@ npm run check
 ```text
 src/
   engine/    固定 60Hz 循环、输入、音频、种子 RNG
-  sim/       GameState、规则、不变式、ASCII 观察编码
-  ai/        Decisions 传输、响应解析、计划控制器
+  sim/       GameState、规则、不变式、决策坐标与移动分析
+  ai/        Decisions 传输、动态上下文、提示词、响应解析、计划控制器
   app/       会话状态机、内存 Key、控制台 API、帧热路径
   render/    Three.js 明亮平面像素场景、程序化纹理、纸片阴影
   ui/        DOM HUD、菜单、AI 面板
@@ -162,6 +162,8 @@ docs/        架构、测试、热路径、浏览器验收
 
 - AI 成功路径需要你自己的 OpenAI Key。没有 Key 时可以用 mock 验证完整链路。
 - Decisions API 一次只返回一个选择，所以 AI 每走一步请求一次。响应慢时蛇会继续直行并可能死亡。
+- 延迟场景和候选结果是基于历史样本的估计，不保证实际执行 Tick 或未来方向；首个请求没有延迟样本。
+- Prompt 只能提高模型的判断质量，不能保证模型遵守，也不能在直线路径先撞死时挽救运行。
 - 浏览器直连 OpenAI 的非 2xx 错误可能被 CORS 隐藏成 `Failed to fetch`。游戏不会静默接管。
 - 19x19 棋盘是这一版的全部玩法范围。没有关卡、障碍、皮肤或排行榜服务。
 - 结束菜单提供「手动再来一局」和「AI 再来一局」。AI 重开复用内存里的 Key；没有 Key 时需要在右侧输入。
