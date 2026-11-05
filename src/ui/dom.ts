@@ -90,6 +90,11 @@ export function updateHud(view: StateView, best: number): void {
   markDifficulty(view.difficulty);
 }
 
+export function updateObservation(observation: string): void {
+  const node = el("observation");
+  if (node) node.textContent = observation;
+}
+
 export function updateAiPanel(
   status: AiStatusView,
   log: AiLogEntry[],
@@ -109,7 +114,7 @@ export function updateAiPanel(
   });
   el("ai-log").textContent = logLines.join("\n") || "暂无决策记录";
 
-  el("observation").textContent = observation;
+  updateObservation(observation);
 }
 
 function show(id: string, visible: boolean): void {

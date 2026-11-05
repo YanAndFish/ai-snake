@@ -30,7 +30,7 @@
 
 ## AI 决策
 
-`src/sim/observation.ts` 仍生成供面板显示的 ASCII 地图。`src/sim/analysis.ts` 对每个合法转向计算撞墙/撞身、尾格释放、可达空间、空间宽窄和到食物的最短路；提示词发送这些候选分析、当前方向和关键坐标，不再重复整张地图、图例、分数和难度。
+`src/sim/observation.ts` 仍生成供面板显示的 ASCII 地图。`handleEvents` 在开始、移动、吃食物、撞墙和胜利事件后刷新地图，所以人工模式也会同步。`src/sim/analysis.ts` 对每个合法转向计算撞墙/撞身、尾格释放、可达空间、空间宽窄和到食物的最短路；提示词发送这些候选分析、当前方向和关键坐标，不再重复整张地图、图例、分数和难度。
 
 `src/ai/client.ts` 默认使用 Decisions API：
 

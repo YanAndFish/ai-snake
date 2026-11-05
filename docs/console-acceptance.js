@@ -143,6 +143,13 @@
   assert(observation.prompt.includes("MOVE ANALYSIS"), "prompt lacks the move analysis");
   assert(observation.prompt.includes("TASK"), "prompt lacks the decision task");
 
+  api.start({ seed: 87 });
+  const manualMapBefore = document.querySelector("#observation").textContent;
+  api.stepMoves(1);
+  const manualMapAfter = document.querySelector("#observation").textContent;
+  assert(manualMapBefore !== manualMapAfter, "manual play did not refresh the observation map");
+  assert(manualMapAfter.split("\n").length === api.getState().height + 2, "manual observation map rows are wrong");
+
   const rendered = window.__pixelSerpent.scene;
   const target = rendered.cameraTarget;
   assert(rendered.camera, "scene camera is missing");

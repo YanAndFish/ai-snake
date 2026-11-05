@@ -21,7 +21,7 @@ import {
 import { checkInvariants, InvariantError } from "../sim/invariants";
 import { checkInvariantsMask } from "../sim/invariants.hot";
 import { advanceClockHot } from "../sim/tick.hot";
-import { buildObservation, type Observation } from "../sim/observation";
+import { buildMap, buildObservation, type Observation } from "../sim/observation";
 import {
   type Cell,
   type Direction,
@@ -409,6 +409,10 @@ export class GameSession {
 
   getObservation(): Observation {
     return buildObservation(this.state);
+  }
+
+  getMap(): string {
+    return buildMap(this.state);
   }
 
   getPrompt(): string {
