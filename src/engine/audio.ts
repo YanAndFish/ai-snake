@@ -67,6 +67,8 @@ const MELODY = [72, 76, 79, 76, 74, 72, 69, 67, 72, 74, 76, 79, 81, 79, 76, 74];
 const BASS = [48, 45, 43, 41];
 const LEAD_LEVEL = 0.026;
 const BASS_LEVEL = 0.04;
+/** 统一放大音效和背景音乐，保留各音符之间的相对音量。 */
+const OUTPUT_VOLUME_MULTIPLIER = 3;
 
 function midiToHz(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12);
@@ -181,6 +183,7 @@ export class AudioEngine {
     this.musicStep += 1;
   }
 
+  /** 创建带音量包络的音符，并按指定时间播放。 */
   private note(
     from: number,
     to: number,
@@ -193,6 +196,7 @@ export class AudioEngine {
     if (this.ctx === null) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
+    const peakVolume = volume * OUTPUT_VOLUME_MULTIPLIER;
     osc.type = type;
     const frequency = osc.frequency;
     if (frequency.setValueAtTime) frequency.setValueAtTime(from, when);
@@ -205,10 +209,10 @@ export class AudioEngine {
     }
     if (gain.gain.setValueAtTime) gain.gain.setValueAtTime(0.0001, when);
     if (gain.gain.exponentialRampToValueAtTime) {
-      gain.gain.exponentialRampToValueAtTime(volume, when + 0.02);
+      gain.gain.exponentialRampToValueAtTime(peakVolume, when + 0.02);
       ramp(gain.gain, 0.0001, when + duration);
     } else {
-      gain.gain.value = volume;
+      gain.gain.value = peakVolume;
     }
     osc.connect(gain);
     gain.connect(destination);
