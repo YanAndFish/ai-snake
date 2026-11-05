@@ -187,8 +187,11 @@
   assert(Math.abs(shadowX - bodyX - 0.08) < 0.0001, "蛇身阴影的横向偏移不正确");
   assert(Math.abs(shadowZ - bodyZ - 0.13) < 0.0001, "蛇身阴影的纵向偏移不正确");
 
-  api.ai.useMock(() => new Promise((resolve) => {
-    window.setTimeout(() => resolve({ moves: ["up"], reason: "slow mock" }), 60);
+  let firstRouteDirection = null;
+  api.ai.useMock((prompt) => new Promise((resolve) => {
+    const direction = prompt.match(/^Route (up|down|left|right):/m)?.[1];
+    if (firstRouteDirection === null) firstRouteDirection = direction;
+    window.setTimeout(() => resolve({ moves: [direction], reason: "slow mock" }), 60);
   }));
   api.start({ seed: 83, ai: true });
   assert(api.getState().phase === "playing", "AI start paused the run");
@@ -200,7 +203,14 @@
   assert(api.ai.getStatus().latencyMs >= 50, "慢请求的耗时没有计入状态");
   const beforeHead = api.getState().snake[0];
   api.stepMoves(1);
-  assert(api.getState().snake[0].y === beforeHead.y - 1, "AI move was not applied");
+  assert(api.getState().snake[0].x === beforeHead.x + 1, "提前响应修改了正在执行的前缀");
+  assert(api.ai.getExecutionStats().apiMoves === 0, "提前响应在预测起点之前执行");
+  api.stepMoves(13);
+  const routeStart = api.getState().snake[0];
+  const delta = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[firstRouteDirection];
+  api.stepMoves(1);
+  assert(api.getState().snake[0].x === routeStart.x + delta[0] && api.getState().snake[0].y === routeStart.y + delta[1], "模型选择的路线没有从预测起点执行");
+  assert(api.ai.getExecutionStats().apiMoves === 1, "路线移动没有计入 API 来源");
   await api.ai.waitForIdle(2000);
   const decisionLog = api.getAiLog();
   const newest = decisionLog[decisionLog.length - 1];
@@ -214,7 +224,7 @@
   const newestLogLine = () => document.querySelector("#ai-log").textContent.split("\n")[0] || "";
   await waitFor(
     () =>
-      newestLogLine().startsWith("↑") &&
+      /^(?:\[[^\]]+\]\s*)?[↑↓←→]/.test(newestLogLine()) &&
       newestLogLine().includes(`${newest.latencyMs} ms`),
     "最新决策记录没有排在顶部",
   );

@@ -241,15 +241,65 @@ describe("game", () => {
     expect(run(77)).toEqual(run(77));
   });
 
-  it("maps food eaten and difficulty to the speed curve", () => {
+  it("手动模式每吃 6 个食物提速一次", () => {
+    let state = configured(
+      [{ x: 2, y: 9 }, { x: 1, y: 9 }, { x: 0, y: 9 }],
+      "right",
+    );
+    for (let eaten = 1; eaten <= 12; eaten += 1) {
+      state = setFood(state, { x: eaten + 2, y: 9 });
+      state = moves(state, 1);
+      expect(state.eaten).toBe(eaten);
+      expect(state.moveEveryTicks).toBe(eaten < 6 ? 10 : eaten < 12 ? 9 : 8);
+      expect(checkInvariants(state)).toEqual([]);
+    }
+  });
+
+  it("手动模式提速后停在难度规定的最短间隔", () => {
     expect(moveEveryTicksFor(0)).toBe(10);
-    expect(moveEveryTicksFor(2)).toBe(10);
-    expect(moveEveryTicksFor(3)).toBe(9);
+    expect(moveEveryTicksFor(5)).toBe(10);
+    expect(moveEveryTicksFor(6)).toBe(9);
     expect(moveEveryTicksFor(30)).toBe(5);
+    expect(moveEveryTicksFor(300)).toBe(5);
     expect(moveEveryTicksFor(0, "chill")).toBe(13);
-    expect(moveEveryTicksFor(30, "chill")).toBe(7);
+    expect(moveEveryTicksFor(30, "chill")).toBe(8);
+    expect(moveEveryTicksFor(36, "chill")).toBe(7);
+    expect(moveEveryTicksFor(300, "chill")).toBe(7);
     expect(moveEveryTicksFor(0, "fast")).toBe(8);
-    expect(moveEveryTicksFor(30, "fast")).toBe(4);
+    expect(moveEveryTicksFor(24, "fast")).toBe(4);
+    expect(moveEveryTicksFor(300, "fast")).toBe(4);
+  });
+
+  it("AI 吃食物时保留手动设置的移动间隔", () => {
+    let state: GameState = { ...playing(13), control: "ai" };
+    state = setSpeed(state, 3);
+    state = setSnake(state, [
+      { x: 7, y: 9 }, { x: 6, y: 9 }, { x: 5, y: 9 }, { x: 4, y: 9 },
+      { x: 3, y: 9 }, { x: 2, y: 9 }, { x: 1, y: 9 }, { x: 0, y: 9 },
+    ], "right");
+    state = setFood(state, { x: 8, y: 9 });
+    expect(state.moveEveryTicks).toBe(3);
+    state = moves(state, 1);
+    expect(state.eaten).toBe(6);
+    expect(state.moveEveryTicks).toBe(3);
+    expect(checkInvariants(state)).toEqual([]);
+  });
+
+  it.each([
+    { difficulty: "chill", ticks: 13 },
+    { difficulty: "normal", ticks: 10 },
+    { difficulty: "fast", ticks: 8 },
+  ] as const)("AI 切换为 $difficulty 时按基础速度移动", ({ difficulty, ticks }) => {
+    let state: GameState = { ...playing(14), control: "ai" };
+    state = setSnake(state, [
+      { x: 8, y: 9 }, { x: 7, y: 9 }, { x: 6, y: 9 }, { x: 5, y: 9 },
+      { x: 4, y: 9 }, { x: 3, y: 9 }, { x: 2, y: 9 }, { x: 1, y: 9 },
+      { x: 0, y: 9 },
+    ], "right");
+    state = setSpeed(state, 2);
+    state = setDifficulty(state, difficulty);
+    expect(state.eaten).toBe(6);
+    expect(state.moveEveryTicks).toBe(ticks);
   });
 
   it("validates test mutations and clamps speed", () => {

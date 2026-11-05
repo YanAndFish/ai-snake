@@ -203,7 +203,7 @@ describe("decision context", () => {
     expect(down?.outcomes.at(-1)?.applicable).toBe(false);
   });
 
-  it("等待期间吃到食物时，后续预测使用改变后的速度", () => {
+  it("手动模式等待期间吃到食物时，预测按难度重算速度", () => {
     let state = setSpeed(game(), 2);
     state = setFood(state, { x: 10, y: 9 });
     const telemetry = new DecisionTelemetry();
@@ -217,6 +217,20 @@ describe("decision context", () => {
     expect(state.eaten).toBe(0);
   });
 
+  it("AI 等待期间吃到食物时，预测保持自定义速度", () => {
+    let state = setSpeed({ ...game(), control: "ai" }, 2);
+    state = setFood(state, { x: 10, y: 9 });
+    const telemetry = new DecisionTelemetry();
+    telemetry.reset(state);
+    telemetry.recordLatency(MS_PER_TICK * 6);
+    const context = telemetry.context(state, { queue: [], plan: [] });
+    const likely = context.scenarios.find((scenario) => scenario.likely);
+    expect(likely?.moves).toBe(3);
+    expect(likely?.head).toEqual({ x: 12, y: 9 });
+    expect(state.moveEveryTicks).toBe(2);
+    expect(state.eaten).toBe(0);
+  });
+
   it("没有延迟样本时，展示等待一到两步的风险", () => {
     const state = game();
     const telemetry = new DecisionTelemetry();
@@ -226,9 +240,10 @@ describe("decision context", () => {
     expect(context.scenarios.every((scenario) => !scenario.likely)).toBe(true);
   });
 
-  it("吃食物加速后，保留完成移动次数不同的延迟场景", () => {
+  it("手动模式吃第 6 个食物提速后，保留不同移动次数的延迟场景", () => {
     let state = setSnake(game(), [
       { x: 9, y: 9 }, { x: 8, y: 9 }, { x: 7, y: 9 }, { x: 6, y: 9 }, { x: 5, y: 9 },
+      { x: 4, y: 9 }, { x: 3, y: 9 }, { x: 2, y: 9 },
     ], "right");
     state = setFood(state, { x: 10, y: 9 });
     const telemetry = new DecisionTelemetry();

@@ -1,0 +1,45 @@
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -12,0 +13 @@
++/** 一档难度的名称和移动间隔。 */
+@@ -13,0 +15 @@
++  /** 界面显示的难度名称。 */
+@@ -14,0 +17 @@
++  /** 新局每次移动间隔的 tick 数。 */
+@@ -15,0 +19 @@
++  /** 手动模式提速后最短的移动间隔。 */
+@@ -30,0 +35 @@
++/** 返回手动模式的移动间隔，每吃 6 个食物减少 1 tick。 */
+@@ -33 +38 @@
+-  return Math.max(profile.minTicks, profile.baseTicks - Math.floor(eaten / 3));
++  return Math.max(profile.minTicks, profile.baseTicks - Math.floor(eaten / 6));
+--- a/src/sim/game.ts
++++ b/src/sim/game.ts
+@@ -179,0 +180 @@
++/** 前进一步并返回事件，AI 吃食物时保留当前移动间隔。 */
+@@ -245 +246 @@
+-      moveEveryTicks: moveEveryTicksFor(eaten, s.difficulty),
++      moveEveryTicks: s.control === "ai" ? s.moveEveryTicks : moveEveryTicksFor(eaten, s.difficulty),
+@@ -275,0 +277 @@
++/** 替换蛇身并更新分数，AI 模式保留当前移动间隔。 */
+@@ -312 +314 @@
+-    moveEveryTicks: moveEveryTicksFor(eaten, state.difficulty),
++    moveEveryTicks: state.control === "ai" ? state.moveEveryTicks : moveEveryTicksFor(eaten, state.difficulty),
+@@ -348,0 +351 @@
++/** 切换难度，手动模式按吃食物数量计算速度，AI 使用基础速度。 */
+@@ -353 +356 @@
+-    moveEveryTicks: moveEveryTicksFor(state.eaten, difficulty),
++    moveEveryTicks: moveEveryTicksFor(state.control === "ai" ? 0 : state.eaten, difficulty),
+--- a/src/app/session.ts
++++ b/src/app/session.ts
+@@ -182 +182,4 @@
+-    this.state = startGame(this.state, options?.seed ?? freshSeed());
++    this.state = {
++      ...startGame(this.state, options?.seed ?? freshSeed()),
++      control: ai ? "ai" : "human",
++    };
+@@ -189 +191,0 @@
+-      this.state = { ...this.state, control: "ai" };
+@@ -191,2 +192,0 @@
+-    } else {
+-      this.state = { ...this.state, control: "human" };

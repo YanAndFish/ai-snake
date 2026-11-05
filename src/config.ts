@@ -10,9 +10,13 @@ export const MAX_QUEUE = 2;
 
 export type Difficulty = "chill" | "normal" | "fast";
 
+/** 一档难度的名称和移动间隔。 */
 export interface SpeedProfile {
+  /** 界面显示的难度名称。 */
   label: string;
+  /** 新局每次移动间隔的 tick 数。 */
   baseTicks: number;
+  /** 手动模式提速后最短的移动间隔。 */
   minTicks: number;
 }
 
@@ -28,7 +32,8 @@ export function isDifficulty(value: string): value is Difficulty {
   return value === "chill" || value === "normal" || value === "fast";
 }
 
+/** 返回手动模式的移动间隔，每吃 6 个食物减少 1 tick。 */
 export function moveEveryTicksFor(eaten: number, difficulty: Difficulty = DEFAULT_DIFFICULTY): number {
   const profile = DIFFICULTIES[difficulty];
-  return Math.max(profile.minTicks, profile.baseTicks - Math.floor(eaten / 3));
+  return Math.max(profile.minTicks, profile.baseTicks - Math.floor(eaten / 6));
 }

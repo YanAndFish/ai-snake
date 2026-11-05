@@ -55,7 +55,7 @@ describe("GameSession", () => {
     expect(game.getAiStatus().state).toBe("needKey");
   });
 
-  it("runs AI without pausing the simulation", async () => {
+  it("AI 响应早到时等待前缀走完再执行", async () => {
     const game = session({ mock: { moves: ["up"], reason: "up" }, seed: 2 });
     const view = game.start({ seed: 2, ai: true });
     expect(view.phase).toBe("playing");
@@ -65,10 +65,16 @@ describe("GameSession", () => {
     await game.waitForIdle(1000);
     expect(game.getAiStatus().state).toBe("ready");
     game.stepMoves(1);
-    expect(game.getState().snake[0].y).toBe(8);
+    expect(game.getState().snake[0].y).toBe(9);
+    expect(game.getAiExecutionStats().apiMoves).toBe(0);
+    game.stepMoves(12);
+    const startHead = game.getState().snake[0];
+    game.stepMoves(1);
+    expect(game.getState().snake[0].y).toBe(startHead.y - 1);
+    expect(game.getAiExecutionStats().apiMoves).toBe(1);
   });
 
-  it("keeps moving while a decision is pending and can die from the wait", () => {
+  it("请求挂起时按避险方向推进且只有一个请求", () => {
     const gate = deferredTransport();
     const game = session({ transport: gate.transport, seed: 3 });
     game.setCredentials("sk-test");
@@ -76,8 +82,11 @@ describe("GameSession", () => {
     expect(game.getState().phase).toBe("playing");
     expect(gate.calls).toHaveLength(1);
     game.stepMoves(20);
-    expect(game.getState().phase).toBe("over");
-    expect(game.getAiStatus().state).toBe("off");
+    expect(game.getState().phase).toBe("playing");
+    expect(game.getState().moveCount).toBe(20);
+    expect(game.getAiExecutionStats().bridgeMoves).toBe(20);
+    expect(gate.calls).toHaveLength(1);
+    game.stopAi();
   });
 
   it("allows only one request in flight", async () => {
@@ -91,7 +100,7 @@ describe("GameSession", () => {
     gate.calls[0].resolve('{"moves":["up"],"reason":"one"}');
     await game.waitForIdle(1000);
     expect(game.getAiStatus().state).toBe("ready");
-    game.stepMoves(1);
+    game.stepMoves(13);
     expect(gate.calls).toHaveLength(2);
     gate.calls[1].resolve('{"moves":["left"],"reason":"two"}');
     await game.waitForIdle(1000);
@@ -99,7 +108,7 @@ describe("GameSession", () => {
   });
 
   it("records request latency and movement in the decision context", async () => {
-    const game = session({ mock: { moves: ["right"], reason: "context" }, seed: 21 });
+    const game = session({ mock: { moves: ["left"], reason: "context" }, seed: 21 });
     game.start({ seed: 21, ai: true });
     await game.waitForIdle(1000);
     const prompt = game.getPrompt();
@@ -160,7 +169,8 @@ describe("GameSession", () => {
     expect(game.getAiStatus().state).toBe("error");
     game.stepMoves(2);
     expect(game.getState().phase).toBe("playing");
-    game.setMock({ moves: ["up"], reason: "recovered" });
+    await game.waitForIdle(1000);
+    game.setMock({ moves: ["left"], reason: "recovered" });
     game.retryAi();
     await game.waitForIdle(1000);
     expect(game.getAiStatus().state).toBe("ready");
@@ -226,6 +236,45 @@ describe("GameSession", () => {
     const started = game.start({ seed: 13, difficulty: "chill" });
     expect(started.difficulty).toBe("chill");
     expect(started.moveEveryTicks).toBe(13);
+  });
+
+  it.each([
+    { difficulty: "chill", ticks: 13 },
+    { difficulty: "normal", ticks: 10 },
+    { difficulty: "fast", ticks: 8 },
+  ] as const)("AI 以 $difficulty 开局后吃 6 个食物保持基础速度", ({ difficulty, ticks }) => {
+    const game = session({ mock: { moves: ["right"] } });
+    game.start({ seed: 22 });
+    game.setSnake([
+      { x: 8, y: 9 }, { x: 7, y: 9 }, { x: 6, y: 9 }, { x: 5, y: 9 },
+      { x: 4, y: 9 }, { x: 3, y: 9 }, { x: 2, y: 9 }, { x: 1, y: 9 },
+      { x: 0, y: 9 },
+    ], "right");
+    const started = game.start({ seed: 22, ai: true, difficulty });
+    expect(started.control).toBe("ai");
+    expect(started.eaten).toBe(0);
+    expect(started.moveEveryTicks).toBe(ticks);
+    for (let eaten = 1; eaten <= 6; eaten += 1) {
+      game.setFood({ x: eaten + 9, y: 9 });
+      const state = game.stepMoves(1);
+      expect(state.eaten).toBe(eaten);
+      expect(state.moveEveryTicks).toBe(ticks);
+    }
+    expect(game.getInvariantReport().ok).toBe(true);
+    game.stopAi();
+  });
+
+  it("AI 自定义速度在吃食物后保留，切换难度时使用基础速度", () => {
+    const game = session({ mock: { moves: ["right"] } });
+    game.start({ seed: 23, ai: true });
+    game.setSpeed(3);
+    for (let eaten = 1; eaten <= 6; eaten += 1) {
+      game.setFood({ x: eaten + 9, y: 9 });
+      expect(game.stepMoves(1).moveEveryTicks).toBe(3);
+    }
+    expect(game.setDifficulty("chill").moveEveryTicks).toBe(13);
+    expect(game.getState().eaten).toBe(6);
+    game.stopAi();
   });
 
   it("validates test mutations", () => {

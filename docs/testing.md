@@ -1,4 +1,4 @@
-# 测试与验收
+# 测试与检查
 
 ## 命令
 
@@ -12,6 +12,8 @@ npm run check
 ```
 
 `npm run check` 依次运行热路径 lint、Vitest、构建和 TLC。
+
+当前完整检查包含 172 个测试，`npm run check` 和 `npm run test:coverage` 均通过。真实 API 与延迟模拟的实验方法、结果和限制见 [AI 延迟评估](ai-latency.md)。真实网络运行步骤见 [比较真实模型的得分和存活时间](evaluate-live.md)。
 
 ## 测试文件
 
@@ -32,12 +34,14 @@ npm run check
 | `test/ai/response.test.ts` | 兼容 JSON、代码围栏、单 action、大小写、反向截断、未知 token、超长截断、垃圾输入、理由清洗 |
 | `test/ai/controller.test.ts` | mock 走真实解析、错误日志、竞态只保留最新、abort、`waitForIdle` 超时、日志上限 |
 | `test/ai/context.test.ts` | 延迟分位数、当前移动进度、入队转向、等待期间变速、冷启动场景、食物进度、循环检测和状态只读性 |
+| `test/ai/routes.test.ts` | 最近 8 次成功延迟决定路线长度、至少 16 步延伸检查、避险前缀、已知食物限制、完整起点比较和满盘获胜 |
 | `test/app/keyStore.test.ts` | Key 的存取、清除、不可序列化 |
-| `test/app/session.test.ts` | 手动和 AI 启动、请求不暂停、慢请求死亡、一个在飞请求、暂停、停止 AI、控制台计划、错误重试、best score、不泄露 Key、致命不变式 |
+| `test/app/session.test.ts` | 手动和 AI 启动、挂起请求时避险、一个在飞请求、暂停、停止 AI、控制台计划、错误重试、AI 固定速度、best score、Key 隐藏和致命不变式 |
+| `test/app/routesSession.test.ts` | 提前响应等待起点、迟到丢弃、失败重试间隔、暂停取消、重开丢弃旧响应、脚本计划优先、满盘获胜和移动来源计数 |
 | `test/app/frame.hot.test.ts` | 只在阶段、分数、长度、AI 版本或致命状态变化时通知 UI |
 | `test/app/testApi.test.ts` | 控制台接口的状态拷贝、detach、步进、输入校验、观察、mock AI、暂停和重开 |
 
-覆盖率门槛写在 `vitest.config.ts`，只统计规则、AI、循环、RNG、会话和控制台接口。Three.js 场景和 DOM 皮肤在真实浏览器里验收，不用 jsdom 假装 WebGL。
+覆盖率门槛写在 `vitest.config.ts`，只统计规则、AI、循环、RNG、会话和控制台接口。Three.js 场景和 DOM 在真实浏览器里检查。
 
 ## 控制台接口
 
@@ -54,11 +58,11 @@ npm run check
 | `setSnake(cells, dir)` | 替换蛇身，要求至少 3 格、在盘内、唯一、四邻连续 |
 | `setFood(cell)` | 放置食物，不能放在蛇身上 |
 | `setSpeed(ticks)` | 每多少 tick 移动一次，范围 1 到 60 |
-| `setDifficulty(level)` | `chill`、`normal` 或 `fast`，按当前吃到数重算速度曲线 |
+| `setDifficulty(level)` | `chill`、`normal` 或 `fast`，手动模式按吃食物数量重算速度，AI 使用基础速度 |
 | `pause()` / `resume()` | 暂停 / 继续 |
 | `getState()` | 返回状态副本 |
-| `getObservation()` | 返回 `{map, prompt, legalMoves, view}` |
-| `getPrompt()` | 当前观察文本 |
+| `getObservation()` | 返回当前棋盘的 `{prompt, legalMoves, choiceDescriptions, view}` |
+| `getPrompt()` | 当前棋盘的 `SNAKE/2` 分析文本 |
 | `getInvariantReport()` | `{ok, violations}` |
 | `getEvents()` | 取走并清空事件 |
 | `getAiLog()` | 取走 AI 日志副本 |
@@ -66,13 +70,18 @@ npm run check
 | `ai.useMock(answer)` | 替换传输层，保留真实解析和方向校验 |
 | `ai.clearMock()` | 恢复真实传输 |
 | `ai.getStatus()` | 状态、计划长度、模型、错误 |
-| `ai.waitForIdle(ms)` | 等待当前请求结束，不承诺游戏没移动 |
+| `ai.getExecutionStats()` | 本局请求结果、API 路线、本地避险、唯一候选和脚本的移动来源计数 |
+| `ai.waitForIdle(ms)` | 等待当前请求结束，超时只结束等待 |
 
-`start({ difficulty })` 和 `setDifficulty()` 都会改变速度曲线，但不改变规则。控制台仍然可以 `setSpeed()` 覆盖单次速度；下一次吃苹果时会按当前难度重新计算。
+手动模式每吃 6 个苹果，移动间隔减少 1 tick，直到当前难度的最短间隔。AI 模式吃苹果时保持当前速度。`start({ difficulty })` 使用所选难度的基础速度。`setDifficulty()` 在手动模式下按吃食物数量重算速度，在 AI 模式下使用基础速度。
+
+`setSpeed()` 可以覆盖当前移动间隔。手动模式下一次吃苹果时按难度重算速度。AI 模式会保留设置的速度，直到切换难度或重新开局。
 
 所有会改状态的控制台方法先 `detach`。这是为了避免测试和 `requestAnimationFrame` 同时写状态。
 
-## 浏览器验收
+`getPrompt()` 和 `getObservation()` 用于分析当前棋盘。网络请求的 `SNAKE/3 ROUTES` 描述已确定前缀执行完毕后的棋盘。`ai.waitForIdle()` 结束只表示当前请求已结束，早到路线会等待指定起点。用 `ai.getExecutionStats()` 检查实际执行来源。
+
+## 浏览器检查
 
 1. 启动 `npm run dev -- --host 127.0.0.1`。
 2. 在浏览器打开页面。
@@ -89,7 +98,7 @@ await eval(source);
 - tick、暂停冻结、吃食物、长度、分数、撞墙、撞身体、追尾、反向。
 - 提示词包含棋盘尺寸、头/食物坐标、`MOVE ANALYSIS`、`DELAY`、`HIST`、`SCEN` 和 `TASK`，且不包含文本地图。
 - 一个 60ms 的慢 mock 决策下，AI 请求还在飞时蛇已经移动两次，阶段仍是 `playing`。
-- 页面不再有 `#observation` 观察地图节点。
+- 页面没有 `#observation` 观察地图节点。
 - 难度按钮组（顶栏和开局菜单）同步、无下拉框。
 - 结束菜单有 AI 重开按钮。
 - 撞墙后蛇头停在当前格，不出现回退。
@@ -105,7 +114,7 @@ await eval(source);
 
 看到 `PASS` 即通过。脚本结束时会停止 AI，不保留测试 Key。
 
-## 移动端验收
+## 移动端检查
 
 在浏览器设备工具栏依次检查 320x568、390x844、844x390 和 768x1024。
 
@@ -128,9 +137,10 @@ await eval(source);
 
 ## 失败路径
 
-- Decisions API 返回 refusal、非法 choice 或非 choice 类型：控制器进入错误状态，游戏继续移动。
-- 网络错误或超时：控制器进入错误状态，游戏继续移动，可以重试或手动接管。
-- 请求很慢：没有计划可用，蛇继续按当前方向移动，可能撞死。这是设计。
+- Decisions API 返回 refusal、非法 choice 或非 choice 类型时，控制器显示错误。会话至少等待 60 tick，再在移动边界重试。
+- 响应迟到时丢弃该响应，并在下一个移动边界准备请求。等待期间执行本地避险。
+- 请求挂起时没有自动超时。暂停或停止 AI 会取消请求。`ai.waitForIdle(ms)` 超时只结束调用方的等待。
+- 本地避险和有限步数的路线检查都可能遇到死路。
 - 浏览器直连 Decisions API 的非 2xx 响应可能被 CORS 隐藏成 `Failed to fetch`。这是没有后端时的边界。
 
 ## 重新生成 TLA+ 图表
@@ -139,4 +149,79 @@ await eval(source);
 statechart spec/SnakeFlow.tla --view spec/SnakeFlowView.ts --out /tmp/snake-flow-chart
 ```
 
-把生成的 `chart.mmd` 覆盖到 `spec/SnakeFlow.mmd`。`SnakeRules` 超过 500 个状态的图表预算，所以只保留 TLC 报告。
+把生成的 `chart.mmd` 覆盖到 `spec/SnakeFlow.mmd`。`SnakeRules` 超过 500 个状态的图表上限，所以只保留 TLC 报告。
+
+## 运行无头浏览器检查
+
+安装系统 Chrome 后运行以下命令。脚本自动启动独立端口的 Vite，并在结束时关闭自己创建的服务和浏览器。
+
+```sh
+npm run test:browser
+npm run test:browser -- --output /tmp/ai-snake-browser.json
+```
+
+命令执行 `docs/console-acceptance.js`，成功时打印 `PASS`。断言失败、页面异常、资源加载失败或站外 HTTP 请求都会让命令以非零状态退出。脚本只使用测试占位文本启用 AI。
+
+复用已有服务或指定 Chrome 可执行文件时，运行以下命令。
+
+```sh
+npm run test:browser -- --origin http://127.0.0.1:5173
+npm run test:browser -- --executable /path/to/chrome
+```
+
+## 比较真实 API 的得分与存活
+
+`npm run eval:live` 使用 Chrome 原生 fetch、真实 Decisions API 和生产解析器。每局按真实 rAF 推进。复现命令和字段解释见 [真实评估脚本](evaluate-live.md)，正式配对结果见 [AI 延迟评估](ai-latency.md)。
+
+真实 API 与下面两类模拟使用独立结果文件。`--self-check` 只检查运行脚本，不计入真实模型比较。
+
+## 用真实时钟模拟响应延迟
+
+以下命令在独立浏览器 context 中并行运行四个六秒场景。注入的响应延迟分别为 0、250、600 和 1200 毫秒。
+
+```sh
+node scripts/evaluate-browser.mjs --output /tmp/ai-snake-evaluation.json
+node scripts/evaluate-browser.mjs --origin http://127.0.0.1:5173 --scenarios /tmp/scenarios.json --concurrency 4 --output /tmp/ai-snake-evaluation.json
+```
+
+场景文件是 JSON 数组。例如以下两个场景使用相同种子和十秒得分窗口。
+
+```json
+[
+  { "name": "固定延迟", "seed": 83, "delayMs": 600, "durationMs": 10000, "difficulty": "normal", "policy": "first" },
+  { "name": "抖动延迟", "seed": 83, "delayMs": [250, 600, 1200], "durationMs": 10000, "difficulty": "normal", "policy": "first" }
+]
+```
+
+`policy: "first"` 选择请求中的第一个候选项。路线候选下，`greedy` 按公开描述中的吃食步数和食物距离变化排序。单格候选下，`greedy` 按请求时的棋盘选择安全邻格，再比较食物距离。`straight` 优先选择当前方向。它们都是确定性的假响应，结果不代表真实模型效果。
+
+实验使用生产传输层和解析器。游戏由真实 `requestAnimationFrame` 推进。站外 HTTP 请求会被阻止。每个场景在配置的窗口结束后读取得分，死亡后也会等待到窗口结束。
+
+JSON 结果包含得分、吃食数、存活毫秒数、tick、移动数、请求和解析数量、请求最大并发、取消次数、页面错误和游戏约束报告。完整文件还包含采样和每次请求的实际延迟。死亡时间每 25 毫秒采样一次，`maxSampleGapMs` 给出本轮最大的采样间隔。
+
+`passed` 表示运行、时钟和错误检查通过。完整链路检查还需确认 `parsedResponseCount > 0`，并在页面通过 `__snake.ai.getExecutionStats().apiMoves > 0` 确认选中路线已执行。得分窗口短于首个响应延迟时，零解析也可以是有效的延迟样本。
+
+`clockRatio` 是存活期间实际 tick 与墙钟预期 60 Hz tick 的比值。比值超出 0.9 到 1.1、采样间隔超过 250 毫秒或窗口超时超过 5% 时，`clockHealthy` 为 false，命令以非零状态退出。此类结果需要降低并发后重跑，不能用慢时钟下的存活时间判断方案更好。
+
+两个脚本都支持 `SNAKE_ORIGIN`、`CHROME_EXECUTABLE` 和 `SNAKE_OUTPUT`。比较方案时，对相同种子、难度和延迟序列做多次配对运行，同时比较固定窗口得分与死亡比例。
+
+## 用虚拟时钟模拟完整会话
+
+运行以下命令，在独立 worker 中并行执行真实 `GameSession`、`AiController`、`DecisionsTransport` 和解析器。所有网络响应由内存中的假 fetch 提供。
+
+```sh
+npm run eval:ai -- --output /tmp/ai-snake-main.json
+npm run eval:ai -- --holdout --output /tmp/ai-snake-holdout.json
+npm run eval:ai -- --root /path/to/baseline --output /tmp/ai-snake-baseline.json
+npm run eval:ai -- --seeds 2 --ticks 600 --concurrency 4 --output /tmp/ai-snake-smoke.json
+```
+
+主矩阵使用种子 1 至 12、`normal` 和 `fast`，每局固定推进 3600 tick。响应延迟依次为 100、600、1200 毫秒，以及循环序列 `[100,300,1200,600]`。`--holdout` 使用种子 101 至 112，延迟改为 240、900、1800 毫秒，以及 `[100,100,300,100,1800,100,900,3600]`。
+
+延迟按 60 Hz 向上取整到 tick。`performance.now()` 使用同一虚拟时钟，已完成响应的耗时会进入真实的延迟采样。脚本在每个 tick 排空 Promise 队列，尚未到达的响应不会阻止游戏推进。死亡后保留分数，计分窗口照常走完。
+
+默认同时运行 `food` 和 `first` 选择器。`first` 选第一个候选。`food` 优先选择更早吃到已知食物的路线，其次比较候选公开描述中的食物距离变化。单格基线使用请求时的真实移动函数和曼哈顿距离。两者只用于比较调度机制，结果不代表真实模型效果。用 `--selectors food` 或 `--selectors first` 可以缩小范围。
+
+JSON 包含 `metadata`、分组 `summary` 和每局 `raw`。每局记录得分、吃食数、阶段、存活 tick、移动数、请求数、响应数、最大并发、API 移动、本地移动、过期响应、错误和不变式报告。请求格式错误、并发超过 1、移动计数不符、解析错误或不变式失败都会让命令以非零状态退出。`--help` 列出全部选项。
+
+`ok` 表示运行约束通过。验证响应确实影响移动时，还需检查 `completed > 0` 和 `apiMoves > 0`。完整主矩阵与独立矩阵的可移植汇总见 [ai-latency-results.json](ai-latency-results.json)。
