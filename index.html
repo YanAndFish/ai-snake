@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preload" href="/node_modules/@fontsource/press-start-2p/files/press-start-2p-latin-400-normal.woff2"
     as="font" type="font/woff2" crossorigin />
@@ -34,8 +34,8 @@
           <span class="brand">PIXEL SERPENT</span>
           <div class="hud-item"><span class="label">分数</span><span id="score">0</span></div>
           <div class="hud-item"><span class="label">最高</span><span id="best">0</span></div>
-          <div class="hud-item"><span class="label">长度</span><span id="length">3</span></div>
-          <div class="hud-item"><span class="label">节拍</span><span id="speed">10</span></div>
+          <div class="hud-item hud-length"><span class="label">长度</span><span id="length">3</span></div>
+          <div class="hud-item hud-speed"><span class="label">节拍</span><span id="speed">10</span></div>
           <div class="hud-item difficulty-group" role="group" aria-label="难度">
             <span class="label">难度</span>
             <button class="difficulty-option" type="button" data-difficulty="chill" aria-pressed="false">悠闲</button>
@@ -66,6 +66,7 @@
             <span><b>R</b> 重开</span>
             <span><b>M</b> 音乐 / 音效</span>
           </div>
+          <p class="hint touch-hint">手机上在棋盘区域滑动即可转向。</p>
           <div class="menu-difficulty" role="group" aria-label="开局难度">
             <span>难度</span>
             <button class="difficulty-option" type="button" data-difficulty="chill" aria-pressed="false">悠闲</button>
@@ -121,7 +122,11 @@
           <p class="eyebrow">DECISION API</p>
           <h2 class="panel-title">AI 控制台</h2>
         </div>
-        <span id="ai-status" class="status">关闭</span>
+        <div class="panel-head-actions">
+          <span id="ai-status" class="status">未启动</span>
+          <button id="ai-close" class="panel-close" type="button" aria-label="关闭 AI 控制台"
+            title="关闭 AI 控制台">×</button>
+        </div>
       </div>
 
       <div class="field">
@@ -148,6 +153,9 @@
         <pre id="ai-log" class="ai-log"></pre>
       </section>
     </aside>
+
+    <button id="ai-tab" class="ai-tab" type="button" aria-controls="ai-panel" aria-expanded="false"
+      aria-label="打开 AI 控制台" title="打开 AI 控制台">AI</button>
   </div>
   <script type="module" src="/src/main.ts"></script>
 </body>

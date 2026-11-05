@@ -98,6 +98,8 @@ export class Scene implements SceneHot {
   private readonly shadowGeometry: THREE.PlaneGeometry;
   private readonly shadowMaterial: THREE.MeshBasicMaterial;
   private readonly decorations = new THREE.Group();
+  private lastBufferWidth = 0;
+  private lastBufferHeight = 0;
 
   constructor(canvas: HTMLCanvasElement, seed = 1) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
@@ -352,8 +354,12 @@ export class Scene implements SceneHot {
   }
 
   resize(cssWidth: number, cssHeight: number): void {
-    const width = Math.max(240, Math.floor(cssWidth / 2));
-    const height = Math.max(180, Math.floor(cssHeight / 2));
+    if (cssWidth <= 0 || cssHeight <= 0) return;
+    const width = Math.max(1, Math.round(cssWidth / 2));
+    const height = Math.max(1, Math.round(cssHeight / 2));
+    if (width === this.lastBufferWidth && height === this.lastBufferHeight) return;
+    this.lastBufferWidth = width;
+    this.lastBufferHeight = height;
     this.renderer.setSize(width, height, false);
     const aspect = width / height;
     this.camera.aspect = aspect;

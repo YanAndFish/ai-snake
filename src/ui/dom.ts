@@ -3,7 +3,7 @@ import { isDifficulty, type Difficulty } from "../config";
 import type { StateView } from "../sim/types";
 
 const STATUS_LABELS: Record<AiStatusView["state"], string> = {
-  off: "关闭",
+  off: "未启动",
   needKey: "等待 Key",
   thinking: "请求中",
   ready: "计划就绪",
@@ -63,6 +63,29 @@ function markDifficulty(value: Difficulty): void {
   });
 }
 
+const COMPACT_QUERY = "(max-width: 900px)";
+
+function setAiPanelOpen(open: boolean): void {
+  document.body.dataset.aiPanel = open ? "open" : "closed";
+  const tab = document.getElementById("ai-tab");
+  if (tab) tab.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+export function openAiPanel(): void {
+  setAiPanelOpen(true);
+}
+
+export function closeAiPanelIfCompact(): void {
+  if (window.matchMedia(COMPACT_QUERY).matches) closeAiPanel();
+}
+
+function closeAiPanel(): void {
+  const panel = document.getElementById("ai-panel");
+  const restoreFocus = panel !== null && panel.contains(document.activeElement);
+  setAiPanelOpen(false);
+  if (restoreFocus) document.getElementById("ai-tab")?.focus();
+}
+
 export function bindUi(handlers: UiHandlers): void {
   el("start-manual").addEventListener("click", handlers.onStartManual);
   el("start-ai").addEventListener("click", handlers.onStartAi);
@@ -79,6 +102,23 @@ export function bindUi(handlers: UiHandlers): void {
   el("pause").addEventListener("click", handlers.onPause);
   el("restart").addEventListener("click", handlers.onRestart);
   el("mute").addEventListener("click", handlers.onMute);
+
+  const compact = window.matchMedia(COMPACT_QUERY);
+  setAiPanelOpen(!compact.matches);
+  compact.addEventListener("change", (event) => {
+    if (event.matches) closeAiPanel();
+  });
+
+  el("ai-tab").addEventListener("click", () => {
+    openAiPanel();
+    el<HTMLElement>("ai-close").focus();
+  });
+  el("ai-close").addEventListener("click", closeAiPanel);
+  window.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (document.body.dataset.aiPanel !== "open") return;
+    closeAiPanel();
+  });
 }
 
 export function updateHud(view: StateView, best: number): void {
