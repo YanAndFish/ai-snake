@@ -9,6 +9,16 @@ function alignedGame() {
 }
 
 describe("AI 方向信息", () => {
+  it("KEEP 与当前朝向使用相同分析并保留方向选项", () => {
+    const observation = buildObservation(alignedGame());
+    expect(observation.legalMoves).toEqual(["up", "down", "right"]);
+    expect(Object.keys(observation.choiceDescriptions)).toEqual(["up", "down", "right", "keep"]);
+    expect(observation.choiceDescriptions.keep?.split(": ").slice(1).join(": "))
+      .toBe(observation.choiceDescriptions.right?.split(": ").slice(1).join(": "));
+    expect(observation.prompt).toContain("allowed=U,D,R,KEEP");
+    expect(observation.prompt).toContain("keeps moving at the same speed");
+  });
+
   it("食物在直线上时给出到达步数", () => {
     const observation = buildObservation(alignedGame());
     expect(observation.choiceDescriptions.right).toContain("food_on_straight=4");

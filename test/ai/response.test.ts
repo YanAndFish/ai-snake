@@ -2,19 +2,24 @@ import { describe, expect, it } from "vitest";
 import { normalizePlan, parseAiResponse } from "../../src/ai/response";
 
 describe("AI response parsing", () => {
+  it.each(["up", "down", "left", "right"] as const)("KEEP 保留当前 %s 方向并记录操作", (direction) => {
+    const parsed = parseAiResponse('{"action":" keep "}', direction);
+    expect(parsed).toEqual({ moves: [direction], action: "keep", reason: "" });
+  });
+
   it("JSON 响应返回一个方向", () => {
-    expect(parseAiResponse('{"moves":["U"],"reason":"go"}', "right")).toEqual({ moves: ["up"], reason: "go" });
+    expect(parseAiResponse('{"moves":["U"],"reason":"go"}', "right")).toEqual({ moves: ["up"], action: "up", reason: "go" });
   });
 
   it("代码块中的响应返回一个方向", () => {
-    expect(parseAiResponse('```json\n{"moves":["D"],"note":"turn"}\n```', "right")).toEqual({ moves: ["down"], reason: "turn" });
+    expect(parseAiResponse('```json\n{"moves":["D"],"note":"turn"}\n```', "right")).toEqual({ moves: ["down"], action: "down", reason: "turn" });
   });
 
   it("action 字段支持小写方向", () => {
     expect(parseAiResponse('{"action":"u"}', "right").moves).toEqual(["up"]);
   });
 
-  it.each([["U", "R"], ["U", "D", "R"], ["north", "U"], []])("多个或缺失方向被拒绝：%j", (...moves) => {
+  it.each([["U", "R"], ["U", "D", "R"], ["north", "U"], ["KEEP", "U"], []])("多个或缺失方向被拒绝：%j", (...moves) => {
     expect(() => parseAiResponse(JSON.stringify({ moves }), "right")).toThrow("一个方向");
   });
 

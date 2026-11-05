@@ -13,6 +13,16 @@ function jsonResponse(payload: unknown, status = 200): Response {
 const choices = { legalMoves: ["up", "down", "right"] as const };
 
 describe("Decisions transport", () => {
+  it("KEEP 选项通过真实响应校验并保留在结果中", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse({ answers: [{ type: "choice", choice: "KEEP" }] }));
+    const transport = new DecisionsTransport(fetchImpl);
+    const content = await transport.decide({ prompt: "p", model: "m", apiKey: "k", signal: signal(), legalMoves: ["up"] });
+    expect(JSON.parse(content).moves).toEqual(["KEEP"]);
+    const body = JSON.parse(String(fetchImpl.mock.calls[0][1]?.body));
+    expect(body.questions[0].choices.map((choice: Record<"value", string>) => choice.value)).toEqual(["U", "KEEP"]);
+    expect(body.questions[0].choices[1].description).toContain("does not pause");
+  });
+
   it("posts a typed choice question and maps the answer to one move", async () => {
     const fetchImpl = vi.fn(async () =>
       jsonResponse({
@@ -53,7 +63,7 @@ describe("Decisions transport", () => {
     expect(body.input).toContain("SNAKE/2");
     expect(body.questions[0].type).toBe("choice");
     expect(body.questions[0].name).toBe("next_move");
-    expect(body.questions[0].choices.map((choice) => choice.value)).toEqual(["U", "D", "R"]);
+    expect(body.questions[0].choices.map((choice) => choice.value)).toEqual(["U", "D", "R", "KEEP"]);
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer sk-test-secret");
     expect(init.body).not.toContain("response_format");
   });
@@ -64,13 +74,14 @@ describe("Decisions transport", () => {
     await transport.decide({
       prompt: "SNAKE/2", model: "gpt-6-luna", apiKey: "sk-test", signal: signal(),
       legalMoves: ["up", "right"],
-      choiceDescriptions: { up: "U: S0 OK run=9 tail=yes", right: "R: S0 X" },
+      choiceDescriptions: { up: "U: S0 OK run=9 tail=yes", right: "R: S0 X", keep: "KEEP: S0 X" },
     });
     const init = fetchImpl.mock.calls[0][1];
     const body = JSON.parse(String(init?.body));
     expect(body.questions[0].choices).toEqual([
       { value: "U", description: "U: S0 OK run=9 tail=yes" },
       { value: "R", description: "R: S0 X" },
+      { value: "KEEP", description: "KEEP: S0 X" },
     ]);
   });
 
@@ -127,7 +138,7 @@ describe("Decisions transport", () => {
         model: "m",
         apiKey: "k",
         signal: signal(),
-        legalMoves: ["up"],
+        legalMoves: [],
       }),
     ).rejects.toThrow(/two legal choices/);
     expect(noFetch).not.toHaveBeenCalled();

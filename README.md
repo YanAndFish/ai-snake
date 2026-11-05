@@ -49,7 +49,7 @@ npm run preview
 2. 模型固定为 `gpt-6-luna`，对应 Decisions API。
 3. 点「开始 AI」或菜单里的「让 AI 来玩」。
 
-浏览器通过 `POST https://api.openai.com/v1/decisions` 请求当前方向。`input` 使用 `SNAKE/4 CURRENT`，包含当前棋盘、蛇身坐标、食物、移动速度、食物停留时间和响应延迟。每个方向的分析仅供 AI 判断。
+浏览器通过 `POST https://api.openai.com/v1/decisions` 请求当前方向或 KEEP。`input` 使用 `SNAKE/4 CURRENT`，包含当前棋盘、蛇身坐标、食物、移动速度、食物停留时间和响应延迟。每个方向的分析仅供 AI 判断。
 
 ```json
 {
@@ -59,22 +59,25 @@ npm run preview
     {
       "type": "choice",
       "name": "next_move",
-      "instructions": "Choose one current direction. Eat apples and stay alive ...",
+      "instructions": "Choose one direction or KEEP (no turn; keep moving). Eat apples and stay alive ...",
       "choices": [
         { "value": "U", "description": "U (up): S1 LIKELY: safe_for=1500ms margin=900ms food_on_straight=none food_distance=4 space=358 tail=true" },
         { "value": "D", "description": "D (down): S1 LIKELY: safe_for=1500ms margin=900ms food_on_straight=2 food_distance=1 space=358 tail=true" },
-        { "value": "R", "description": "R (right): S1 LIKELY: safe_for=1000ms margin=400ms food_on_straight=none food_distance=3 space=358 tail=true" }
+        { "value": "R", "description": "R (right): S1 LIKELY: safe_for=1000ms margin=400ms food_on_straight=none food_distance=3 space=358 tail=true" },
+        { "value": "KEEP", "description": "KEEP (no turn; continue right): S1 LIKELY: safe_for=1000ms margin=400ms food_on_straight=none food_distance=3 space=358 tail=true" }
       ]
     }
   ]
 }
 ```
 
-`U`、`D`、`L`、`R` 分别表示向上、向下、向左、向右。`answers[0].choice` 是一次方向输入，在响应到达后的下一次移动执行。模型每次只能返回一个方向。
+`U`、`D`、`L`、`R` 分别表示向上、向下、向左、向右。`KEEP` 表示本次不转向，蛇按当前方向和速度移动。`answers[0].choice` 每次只接受一个操作，在响应到达后的下一次移动执行。
+
+当前朝右时，`R` 和 `KEEP` 的移动结果相同。AI 日志会分别显示右箭头和 `KEEP`，便于观察模型是否主动选择保持朝向。KEEP 也可能撞墙或撞身。
 
 关键行为：
 
-- 游戏按固定 60 Hz 推进。开局、恢复游戏和执行完方向输入后，用当前棋盘请求 AI，同时最多一个请求。
+- 游戏按固定 60 Hz 推进。开局、恢复游戏和执行完操作后，用当前棋盘请求 AI，同时最多一个请求。
 - 所有符合转向规则的方向都会提供给 AI，包括会撞墙或撞身的方向。反向由游戏规则禁止。即使只有一个安全方向，也由 AI 选择。
 - 等待响应或请求失败时，蛇按当前方向移动。AI 选择的危险方向照常执行，碰撞后游戏结束。
 - 本地提供单步碰撞、可达空间、食物距离、直行余量和延迟分析。分析函数只返回信息，所有转向由 AI 输出。
@@ -82,11 +85,11 @@ npm run preview
 - Key 仅保存在页面内存中，启动 AI 后输入框清空。刷新页面需要重新输入。
 - 网络或解析失败时显示错误，至少等待 60 tick，再在移动边界重试。
 
-控制台的 `getPrompt()` 和 `getObservation()` 使用与真实请求相同的信息生成逻辑。`__snake.ai.getExecutionStats()` 区分 AI 方向输入、没有新输入时的移动，以及控制台脚本输入。
+控制台的 `getPrompt()` 和 `getObservation()` 使用与真实请求相同的信息生成逻辑。`__snake.ai.getExecutionStats()` 区分 AI 操作（包含 KEEP）、没有新输入时的移动，以及控制台脚本输入。
 
 方向说明中的 `safe_for` 是选择该方向后，从第一次移动到直行碰撞的时间。`margin` 减去近期响应 P90，用来观察下一次响应是否可能来不及。`food_on_straight` 表示沿该方向直行时，第几步吃到已知食物。所有指标只供模型判断。
 
-真实 API 的对照方法、逐局结果和限制见 [提示词实验报告](docs/ai-prompt-evaluation.md)。
+真实 API 的对照方法、逐局结果和限制见 [提示词实验报告](docs/ai-prompt-evaluation.md) 和 [更多提示词与 KEEP 实验](docs/ai-prompt-exploration.md)。
 
 ## 控制台测试接口
 
@@ -102,12 +105,12 @@ __snake.setDifficulty("fast")
 __snake.getInvariantReport()
 ```
 
-注入一个计划：
+用 KEEP 模拟一次 AI 操作：
 
 ```js
-__snake.ai.useMock({ moves: ["up", "right"], reason: "test" })
+__snake.ai.useMock({ action: "KEEP" })
 __snake.start({ seed: 42, ai: true })
-__snake.stepMoves(2) // 请求在飞时蛇继续移动
+__snake.stepMoves(2) // 响应到达前按当前方向移动
 await __snake.ai.waitForIdle(2000)
 __snake.stepMoves(1)
 __snake.getAiLog()
@@ -144,7 +147,7 @@ npm run check
 npm run test:browser
 ```
 
-测试覆盖单方向输入、等待期间按当前方向移动、危险方向执行、请求取消和错误重试。真实浏览器检查通过 mock 运行完整控制链路，无需 API Key。
+测试覆盖单次方向或 KEEP 操作、等待期间按当前方向移动、危险方向执行、请求取消和错误重试。真实浏览器检查通过 mock 运行完整控制链路，无需 API Key。
 
 游戏状态的不变式在每一 tick 和每次状态改变后执行，生产构建也一样，名称与 TLA+ 对应。AI 请求的 `aiPending` 由会话测试和 TLA+ 覆盖。违规时游戏冻结并显示错误。
 

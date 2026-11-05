@@ -1,5 +1,6 @@
 import { DEFAULT_MODEL, OPENAI_ENDPOINT } from "../config";
 import type { Direction } from "../sim/types";
+import type { AiAction } from "./types";
 
 export interface DecisionRequest {
   /** 棋盘状态和候选移动的分析。 */
@@ -12,8 +13,8 @@ export interface DecisionRequest {
   signal: AbortSignal;
   /** 游戏规则允许的方向，仅排除反向。 */
   legalMoves: readonly Direction[];
-  /** 选项的局面分析；省略时使用方向说明。 */
-  choiceDescriptions?: Partial<Record<Direction, string>>;
+  /** 各方向和 KEEP 的局面分析；省略时使用操作说明。 */
+  choiceDescriptions?: Partial<Record<AiAction, string>>;
 }
 
 export interface DecisionTransport {
@@ -62,13 +63,17 @@ export class DecisionsTransport implements DecisionTransport {
   }
 
   async decide(request: DecisionRequest): Promise<string> {
-    if (request.legalMoves.length < 2) {
-      throw new Error("The Decisions API needs at least two legal choices");
-    }
     const choices = request.legalMoves.map((dir) => ({
       value: TOKEN[dir],
       description: request.choiceDescriptions?.[dir] ?? DESCRIPTION[dir],
     }));
+    choices.push({
+      value: "KEEP",
+      description: request.choiceDescriptions?.keep ?? "Keep the current heading without turning. The snake keeps moving at the same speed; this does not pause the game.",
+    });
+    if (choices.length < 2) {
+      throw new Error("The Decisions API needs at least two legal choices");
+    }
     const body = {
       model: request.model || DEFAULT_MODEL,
       input: request.prompt,
@@ -77,7 +82,7 @@ export class DecisionsTransport implements DecisionTransport {
           type: "choice",
           name: "next_move",
           instructions:
-            "Choose one current direction. Eat apples and stay alive. Compare LIKELY and late-arrival outcomes; S0 only describes now. Leave enough time for the next response, then prioritize food rather than extra space. Your choice is executed without local rescue.",
+            "Choose one direction or KEEP (no turn; keep moving). Eat apples and stay alive. Compare LIKELY and late-arrival outcomes; S0 only describes now. Leave enough time for the next response, then prioritize food rather than extra space. Your choice is executed without local rescue.",
           choices,
         },
       ],

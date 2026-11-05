@@ -240,9 +240,10 @@ async function runBrowserGame({ scenario, apiKey, endpoint }) {
     const previousPhase = this.state.phase;
     const directionInput = controller.plan[0] ?? null;
     const requestId = directionInput === null ? null : latestParsedRequestId;
+    const actionInput = requestId === null ? null : parsed.get(requestId)?.selectedAction ?? directionInput;
     realStepTick.call(this);
     if (this.state.moveCount !== previousMove || (previousPhase === "playing" && this.state.phase === "over")) {
-      executions.push({ elapsedMs: now(), requestId, directionInput, state: observeBoard(this.state) });
+      executions.push({ elapsedMs: now(), requestId, actionInput, directionInput, state: observeBoard(this.state) });
     }
   };
 
@@ -265,7 +266,7 @@ async function runBrowserGame({ scenario, apiKey, endpoint }) {
       dispatchMs: now(), dispatchTick: state.tick, dispatchMove: state.moveCount, dispatchState: observeBoard(state), payload: null,
       httpStatus: null, apiRequestId: null, headersLatencyMs: null, fetchLatencyMs: null,
       parsedLatencyMs: null, parsedAtMs: null, responseTick: null, responseMove: null,
-      responseComplete: false, choice: null, selectedDirection: null, responseState: null,
+      responseComplete: false, choice: null, selectedAction: null, selectedDirection: null, responseState: null,
       expectedStartMove: /^Start move=(\d+)/m.exec(args.prompt)?.[1] ?? null, expiredOnArrival: null,
       abortAtMs: null, abortReason: null, error: null, parsed: false };
     records.push(record);
@@ -277,12 +278,14 @@ async function runBrowserGame({ scenario, apiKey, endpoint }) {
       latestParsedRequestId = args.requestId;
       record.responseState = observeBoard(api.getState());
       record.selectedDirection = moves[0] ?? null;
-      record.choice = { up: "U", down: "D", left: "L", right: "R" }[moves[0]] ?? null;
+      const entry = controller.getLog().find((item) => item.requestId === args.requestId && item.error === null);
+      record.selectedAction = entry?.action ?? record.selectedDirection;
+      record.choice = { up: "U", down: "D", left: "L", right: "R", keep: "KEEP" }[record.selectedAction] ?? null;
       record.responseMove = api.getState().moveCount;
       record.expiredOnArrival = record.expectedStartMove === null ? null : record.responseMove > Number(record.expectedStartMove);
       record.parsedAtMs = now();
       record.parsedLatencyMs = now() - record.dispatchMs;
-      parsed.set(args.requestId, true);
+      parsed.set(args.requestId, record);
     }, (error) => {
       record.parsedAtMs = now();
       record.parsedLatencyMs = now() - record.dispatchMs;
@@ -421,8 +424,9 @@ async function runScenario(runtime, scenario, key, selfCheck) {
       "Access-Control-Allow-Methods": "POST,OPTIONS", "Access-Control-Expose-Headers": "x-request-id", "x-request-id": "self-check" };
     if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers });
     const body = route.request().postDataJSON();
+    const choice = body.questions[0].choices.find((item) => item.value === "KEEP") ?? body.questions[0].choices[0];
     return route.fulfill({ status: 200, headers, contentType: "application/json", body: JSON.stringify({
-      answers: [{ type: "choice", name: "next_move", choice: body.questions[0].choices[0].value, confidence: 1 }],
+      answers: [{ type: "choice", name: "next_move", choice: choice.value, confidence: 1 }],
     }) });
   });
   try {

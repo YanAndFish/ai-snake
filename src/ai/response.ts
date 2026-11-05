@@ -1,11 +1,18 @@
 import { MAX_PLAN_MOVES } from "../config";
 import { isOpposite, type Direction } from "../sim/types";
+import type { AiAction } from "./types";
 
 export interface ParsedPlan {
   /** 已解析的方向输入，AI 响应只有一个方向。 */
   moves: Direction[];
   /** 响应附带的简短说明。 */
   reason: string;
+}
+
+/** 已解析的单次 AI 操作及其对应的移动方向。 */
+export interface ParsedDecision extends ParsedPlan {
+  /** 模型实际选择的操作，keep 与明确选择当前方向分别记录。 */
+  action: AiAction;
 }
 
 function toDirection(token: unknown): Direction | null {
@@ -100,22 +107,23 @@ function extractReason(parsed: unknown): string {
   return "";
 }
 
-/** 解析一个方向输入，拒绝多步计划、未知方向和反向。 */
+/** 解析一次操作。KEEP 对应当前方向，并单独保留在 action 中。 */
 export function parseAiResponse(
   text: string,
   currentDirection: Direction,
-): ParsedPlan {
+): ParsedDecision {
   if (typeof text !== "string" || text.trim() === "") {
     throw new Error("empty AI response");
   }
   const parsed = extractJson(text);
   const tokens = extractMoves(parsed);
-  if (tokens.length !== 1) throw new Error("AI 必须只返回一个方向");
-  const direction = toDirection(tokens[0]);
+  if (tokens.length !== 1) throw new Error("AI 必须只返回一个方向或 KEEP 操作");
+  const keep = typeof tokens[0] === "string" && tokens[0].trim().toUpperCase() === "KEEP";
+  const direction = keep ? currentDirection : toDirection(tokens[0]);
   if (direction === null || isOpposite(direction, currentDirection)) {
     throw new Error("AI 返回的方向无效或与当前方向相反");
   }
-  return { moves: [direction], reason: extractReason(parsed) };
+  return { moves: [direction], action: keep ? "keep" : direction, reason: extractReason(parsed) };
 }
 
 function tokenizePlanString(s: string): string[] {
