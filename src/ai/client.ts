@@ -10,7 +10,7 @@ export interface DecisionRequest {
   apiKey: string;
   /** 取消当前请求的信号。 */
   signal: AbortSignal;
-  /** 允许模型选择的方向。 */
+  /** 允许模型选择的路线首方向，每个方向标记一条路线。 */
   legalMoves: readonly Direction[];
   /** 选项的局面分析；省略时使用方向说明。 */
   choiceDescriptions?: Partial<Record<Direction, string>>;
@@ -77,7 +77,7 @@ export class DecisionsTransport implements DecisionTransport {
           type: "choice",
           name: "next_move",
           instructions:
-            "Choose the direction that survives the response delay and reaches food efficiently. Compare the per-choice execution scenarios: OK is safe, X crashes, NA is illegal, P dies before execution. Use [likely] timing and check later timing; run is the number of safe straight moves including the chosen move. Prefer enough run for the next response, a path to the tail, then E (eats) or smaller reachable f (food distance). Break loops with a safe escape. Continuing straight is only a tie-breaker. Return exactly one listed choice.",
+            "Choose one listed route from its future start board. A direction token identifies the complete route in its description. Prefer surviving and reaching known food sooner, using eatAt and progress. Routes are already checked by the game rules. An early answer waits for the specified start; a late answer is discarded. Return exactly one listed choice.",
           choices,
         },
       ],

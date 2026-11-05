@@ -1,0 +1,436 @@
+{
+  "metadata": {
+    "date": "2026-11-05",
+    "purpose": "使用虚拟时钟、注入延迟和固定选择器检查调度与路线执行。真实 API 结果见 ai-live-results.json。",
+    "virtualClockHz": 60,
+    "ticksPerGame": 3600,
+    "gameSeconds": 60,
+    "aiSpeed": "双方 AI 均固定速度，吃食物不加速。",
+    "scoring": "每局运行固定窗口，死亡后保留分数，窗口内不重开。",
+    "selectors": {
+      "food": "按公开描述优先选择更早吃到已知食物的路线，其次比较距离缩短量。",
+      "first": "选择请求中的第一个候选。"
+    },
+    "main": {
+      "firstSeed": 1,
+      "seeds": 12,
+      "delaysMs": {
+        "fixed100": [
+          100
+        ],
+        "fixed600": [
+          600
+        ],
+        "fixed1200": [
+          1200
+        ],
+        "jitter": [
+          100,
+          300,
+          1200,
+          600
+        ]
+      }
+    },
+    "holdout": {
+      "firstSeed": 101,
+      "seeds": 12,
+      "delaysMs": {
+        "fixed240": [
+          240
+        ],
+        "fixed900": [
+          900
+        ],
+        "fixed1800": [
+          1800
+        ],
+        "longtail": [
+          100,
+          100,
+          300,
+          100,
+          1800,
+          100,
+          900,
+          3600
+        ]
+      }
+    },
+    "concurrency": 4,
+    "executionPath": [
+      "GameSession",
+      "AiController",
+      "DecisionsTransport",
+      "fake fetch",
+      "parser",
+      "reducers"
+    ],
+    "realRequests": 0,
+    "limitations": [
+      "延迟按 60 Hz 向上取整，performance.now 使用同一虚拟时钟。",
+      "food 和 first 是固定选择器，路线生成器自身会追逐已知食物。",
+      "API 来源移动占比说明所选路线被执行，不能衡量模型的选择质量。",
+      "这些有限种子和注入延迟不能代表所有棋盘或真实网络分布。"
+    ],
+    "kind": "simulation",
+    "realModelMeasured": false,
+    "liveResults": "ai-live-results.json"
+  },
+  "datasets": {
+    "baselineMain": {
+      "samples": 192,
+      "checks": {
+        "errors": 0,
+        "constraintFailures": 0,
+        "maxConcurrency": 1
+      },
+      "summary": [
+        {
+          "selector": "food",
+          "difficulty": "normal",
+          "n": 48,
+          "meanScore": 64.375,
+          "survived": 13,
+          "scoreMin": 0,
+          "scoreMax": 290,
+          "apiRatio": 0.7488964346349746,
+          "requests": 4459,
+          "completed": 4414,
+          "apiMoves": 4411,
+          "localMoves": 1479,
+          "expired": 0
+        },
+        {
+          "selector": "food",
+          "difficulty": "fast",
+          "n": 48,
+          "meanScore": 72.29166666666667,
+          "survived": 6,
+          "scoreMin": 0,
+          "scoreMax": 360,
+          "apiRatio": 0.9102292429204393,
+          "requests": 4773,
+          "completed": 4741,
+          "apiMoves": 4725,
+          "localMoves": 466,
+          "expired": 0
+        },
+        {
+          "selector": "first",
+          "difficulty": "normal",
+          "n": 48,
+          "meanScore": 0.625,
+          "survived": 0,
+          "scoreMin": 0,
+          "scoreMax": 10,
+          "apiRatio": 0.34782608695652173,
+          "requests": 240,
+          "completed": 204,
+          "apiMoves": 192,
+          "localMoves": 360,
+          "expired": 0
+        },
+        {
+          "selector": "first",
+          "difficulty": "fast",
+          "n": 48,
+          "meanScore": 0.8333333333333334,
+          "survived": 0,
+          "scoreMin": 0,
+          "scoreMax": 10,
+          "apiRatio": 0.2916666666666667,
+          "requests": 216,
+          "completed": 192,
+          "apiMoves": 168,
+          "localMoves": 408,
+          "expired": 0
+        }
+      ]
+    },
+    "candidateMain": {
+      "samples": 192,
+      "checks": {
+        "errors": 0,
+        "constraintFailures": 0,
+        "maxConcurrency": 1
+      },
+      "summary": [
+        {
+          "selector": "food",
+          "difficulty": "normal",
+          "n": 48,
+          "meanScore": 147.5,
+          "survived": 48,
+          "scoreMin": 110,
+          "scoreMax": 230,
+          "apiRatio": 0.9185185185185185,
+          "requests": 5158,
+          "completed": 5124,
+          "apiMoves": 15872,
+          "localMoves": 1408,
+          "expired": 12
+        },
+        {
+          "selector": "food",
+          "difficulty": "fast",
+          "n": 48,
+          "meanScore": 180.41666666666666,
+          "survived": 48,
+          "scoreMin": 130,
+          "scoreMax": 280,
+          "apiRatio": 0.9224074074074075,
+          "requests": 6370,
+          "completed": 6331,
+          "apiMoves": 19924,
+          "localMoves": 1676,
+          "expired": 12
+        },
+        {
+          "selector": "first",
+          "difficulty": "normal",
+          "n": 48,
+          "meanScore": 93.54166666666667,
+          "survived": 48,
+          "scoreMin": 0,
+          "scoreMax": 150,
+          "apiRatio": 0.9232638888888889,
+          "requests": 5197,
+          "completed": 5161,
+          "apiMoves": 15954,
+          "localMoves": 1326,
+          "expired": 12
+        },
+        {
+          "selector": "first",
+          "difficulty": "fast",
+          "n": 48,
+          "meanScore": 113.95833333333333,
+          "survived": 48,
+          "scoreMin": 0,
+          "scoreMax": 180,
+          "apiRatio": 0.9325925925925926,
+          "requests": 6458,
+          "completed": 6419,
+          "apiMoves": 20144,
+          "localMoves": 1456,
+          "expired": 12
+        }
+      ]
+    },
+    "baselineHoldout": {
+      "samples": 192,
+      "checks": {
+        "errors": 0,
+        "constraintFailures": 0,
+        "maxConcurrency": 1
+      },
+      "summary": [
+        {
+          "selector": "food",
+          "difficulty": "normal",
+          "n": 48,
+          "meanScore": 4.375,
+          "survived": 5,
+          "scoreMin": 0,
+          "scoreMax": 70,
+          "apiRatio": 0.44282334384858046,
+          "requests": 1171,
+          "completed": 1123,
+          "apiMoves": 1123,
+          "localMoves": 1413,
+          "expired": 0
+        },
+        {
+          "selector": "food",
+          "difficulty": "fast",
+          "n": 48,
+          "meanScore": 3.75,
+          "survived": 5,
+          "scoreMin": 0,
+          "scoreMax": 70,
+          "apiRatio": 0.4496823804747576,
+          "requests": 1393,
+          "completed": 1345,
+          "apiMoves": 1345,
+          "localMoves": 1646,
+          "expired": 0
+        },
+        {
+          "selector": "first",
+          "difficulty": "normal",
+          "n": 48,
+          "meanScore": 0.20833333333333334,
+          "survived": 0,
+          "scoreMin": 0,
+          "scoreMax": 10,
+          "apiRatio": 0.2619047619047619,
+          "requests": 180,
+          "completed": 132,
+          "apiMoves": 132,
+          "localMoves": 372,
+          "expired": 0
+        },
+        {
+          "selector": "first",
+          "difficulty": "fast",
+          "n": 48,
+          "meanScore": 0.20833333333333334,
+          "survived": 0,
+          "scoreMin": 0,
+          "scoreMax": 10,
+          "apiRatio": 0.2558139534883721,
+          "requests": 180,
+          "completed": 132,
+          "apiMoves": 132,
+          "localMoves": 384,
+          "expired": 0
+        }
+      ]
+    },
+    "candidateHoldout": {
+      "samples": 192,
+      "checks": {
+        "errors": 0,
+        "constraintFailures": 0,
+        "maxConcurrency": 1
+      },
+      "summary": [
+        {
+          "selector": "food",
+          "difficulty": "normal",
+          "n": 48,
+          "meanScore": 114.79166666666667,
+          "survived": 48,
+          "scoreMin": 60,
+          "scoreMax": 160,
+          "apiRatio": 0.8916666666666667,
+          "requests": 1584,
+          "completed": 1549,
+          "apiMoves": 15408,
+          "localMoves": 1872,
+          "expired": 24
+        },
+        {
+          "selector": "food",
+          "difficulty": "fast",
+          "n": 48,
+          "meanScore": 134.16666666666666,
+          "survived": 48,
+          "scoreMin": 70,
+          "scoreMax": 190,
+          "apiRatio": 0.8856944444444445,
+          "requests": 1768,
+          "completed": 1745,
+          "apiMoves": 19131,
+          "localMoves": 2469,
+          "expired": 36
+        },
+        {
+          "selector": "first",
+          "difficulty": "normal",
+          "n": 48,
+          "meanScore": 110.625,
+          "survived": 48,
+          "scoreMin": 60,
+          "scoreMax": 160,
+          "apiRatio": 0.8978587962962963,
+          "requests": 1592,
+          "completed": 1556,
+          "apiMoves": 15515,
+          "localMoves": 1765,
+          "expired": 24
+        },
+        {
+          "selector": "first",
+          "difficulty": "fast",
+          "n": 48,
+          "meanScore": 128.75,
+          "survived": 48,
+          "scoreMin": 70,
+          "scoreMax": 190,
+          "apiRatio": 0.8966203703703703,
+          "requests": 1788,
+          "completed": 1765,
+          "apiMoves": 19367,
+          "localMoves": 2233,
+          "expired": 36
+        }
+      ]
+    }
+  },
+  "fixed100Food": [
+    {
+      "implementation": "baseline",
+      "difficulty": "normal",
+      "games": 12,
+      "meanScore": 250.83333333333334,
+      "survived": 9
+    },
+    {
+      "implementation": "baseline",
+      "difficulty": "fast",
+      "games": 12,
+      "meanScore": 282.5,
+      "survived": 6
+    },
+    {
+      "implementation": "candidate",
+      "difficulty": "normal",
+      "games": 12,
+      "meanScore": 205.83333333333334,
+      "survived": 12
+    },
+    {
+      "implementation": "candidate",
+      "difficulty": "fast",
+      "games": 12,
+      "meanScore": 256.6666666666667,
+      "survived": 12
+    }
+  ],
+  "candidateMainRepeat": {
+    "identicalJsonBytes": true
+  },
+  "browser": {
+    "samples": 8,
+    "durationMs": 12000,
+    "seed": 83,
+    "difficulties": [
+      "normal",
+      "fast"
+    ],
+    "delaySequencesMs": {
+      "fixed100": [
+        100
+      ],
+      "fixed600": [
+        600
+      ],
+      "fixed1200": [
+        1200
+      ],
+      "jitter": [
+        100,
+        300,
+        1200,
+        600
+      ]
+    },
+    "policy": "greedy",
+    "concurrency": 4,
+    "browserVersion": "157.0.8103.39",
+    "allPassed": true,
+    "allSurvived": true,
+    "clockRatioRange": [
+      0.9922369600753218,
+      0.9997417333736274
+    ],
+    "completedResponses": 140,
+    "maxConcurrency": 1,
+    "pageErrors": 0,
+    "externalRequests": 0,
+    "resourceErrors": 0,
+    "realModelMeasured": false
+  }
+}

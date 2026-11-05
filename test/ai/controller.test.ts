@@ -15,18 +15,18 @@ function args(signal = new AbortController().signal) {
 }
 
 describe("AI controller", () => {
-  it("uses the real parser and log path through a mock", async () => {
+  it("Mock 响应经过真实解析器且不修改活动路线", async () => {
     const controller = new AiController({ decide: async () => "" });
     controller.useMock({ moves: ["up", "right"], reason: "mock plan" });
     const moves = await controller.request(args());
     expect(moves).toEqual(["up", "right"]);
-    expect(controller.plan).toEqual(["up", "right"]);
+    expect(controller.plan).toEqual([]);
     expect(controller.getStatus().state).toBe("ready");
     const log = controller.getLog();
     expect(log).toHaveLength(1);
     expect(log[0].reason).toBe("mock plan");
     expect(controller.getVersion()).toBeGreaterThan(0);
-    controller.plan.shift();
+    controller.setPlan(["right"]);
     expect(controller.getLog()[0].moves).toEqual(["up", "right"]);
   });
 
@@ -69,7 +69,7 @@ describe("AI controller", () => {
     }
   });
 
-  it("keeps only the latest request result when responses race", async () => {
+  it("请求响应乱序时只保留最新请求记录", async () => {
     let release!: (value: string) => void;
     const pending = new Promise<string>((resolve) => {
       release = resolve;
@@ -82,7 +82,7 @@ describe("AI controller", () => {
     const results = await Promise.allSettled([first, second]);
     expect(results[0].status).toBe("rejected");
     expect(results[1].status).toBe("fulfilled");
-    expect(controller.plan).toEqual(["down"]);
+    expect(controller.plan).toEqual([]);
     expect(controller.getLog()).toHaveLength(1);
   });
 

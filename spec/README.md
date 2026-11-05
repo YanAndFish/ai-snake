@@ -1,69 +1,80 @@
-# TLA+ models
+# TLA+ 模型
 
-Two models check the same run from different angles. `SnakeFlow` checks the lifecycle and the AI request behavior. `SnakeRules` checks the board rules.
+`SnakeFlow` 检查游戏阶段和 AI 请求的生命周期。`SnakeRules` 检查棋盘规则。
 
 ## SnakeFlow
 
-`SnakeFlow.tla` models the run phase: menu, playing, paused, and over. An AI request sets `aiPending` but never changes the phase and never stops the tick. TLC checked 64 states and 172 steps. The generated chart is `SnakeFlow.mmd`.
+`SnakeFlow.tla` 的游戏阶段只有 menu、playing、paused 和 over。AI 请求使用 `aiPending` 表示，等待响应时游戏照常移动。TLC 生成 214 个状态，发现 73 个不同状态，没有发现错误。生命周期图是 `SnakeFlow.mmd`。
 
-| Invariant | Meaning |
+| 不变量 | 含义 |
 |---|---|
-| `TypeOK` | Every variable stays in its declared set. |
-| `HaltFreezesTicks` | Pausing or ending the run keeps the tick at the halt value. |
-| `AIPendingOnlyInAI` | Only an AI run can have a request pending. |
-| `NoReverse` | The queued direction is never the reverse of the current direction. |
-| `LengthAtLeastThree` | The snake never has fewer than three segments. |
-| `MenuAtZero` | The menu does not advance the tick. |
-| `NoDeadlock` | Every state has an enabled step. |
+| `TypeOK` | 每个变量都在规定的取值范围内，包含 `aiReady` 和 `readyDir`。 |
+| `HaltFreezesTicks` | 暂停或结束时，tick 等于停止时记录的值。 |
+| `AIPendingOnlyInAI` | 只有 AI 游戏可以等待 AI 响应。 |
+| `NoReverse` | 待执行方向不是当前方向的反方向。 |
+| `LengthAtLeastThree` | 蛇至少有三节。 |
+| `MenuAtZero` | 菜单中的 tick 为 0。 |
+| `NoDeadlock` | 每个状态都有可执行动作。 |
 
-The `Tick` action is enabled while `aiPending` is true. That is the model's statement of the product rule: the game keeps moving while the decision API is being called. If the answer is slow, the snake can die.
+AI 响应和方向应用是两个动作。
+
+- `AIRequest` 只在没有待处理请求和缓存选择时发起请求。
+- `AIRespond` 清除 `aiPending`，设置 `aiReady` 和 `readyDir`。它不改变待执行方向。
+- `AIApply` 表示到达匹配的执行起点。它清除缓存，并把合法方向写入 `nextDir`。
+- `AIDiscard` 表示结果过期或起点不匹配。它清除缓存，方向不变。
+- 暂停、死亡和重开会清除请求和缓存。恢复或开始 AI 游戏后，由 `AIRequest` 发起请求。
+
+`aiPending` 或 `aiReady` 为 true 时，`Tick` 都可以执行。响应过慢时蛇可能死亡。
 
 ## SnakeRules
 
-`SnakeRules.tla` models a 3x3 board with at most two food pickups. TLC checked 38,707 states and found no error. The bound keeps model checking finite. The real game uses a 19x19 board, and the Vitest fuzz test covers states beyond the bound.
+`SnakeRules.tla` 使用 3×3 棋盘，最多吃两个食物。TLC 检查了 38,707 个不同状态，没有发现错误。这个限制让模型检查能够结束。实际游戏使用 19×19 棋盘，Vitest 随机测试覆盖模型范围以外的状态。
 
-| Invariant | Meaning |
+| 不变量 | 含义 |
 |---|---|
-| `TypeOK` | Every variable stays in its declared type. |
-| `BodyOnBoard` | Every segment is a board cell. |
-| `NoOverlap` | No two segments occupy the same cell. |
-| `FoodOnEmpty` | Food is null or on a cell the snake does not occupy. |
-| `FoodExistsInPlay` | A playing or paused run always has food. |
-| `ScoreMatchesFood` | `score = 10 * eaten`. |
-| `LengthMatchesFood` | `snake.length = 3 + eaten`. |
-| `NoReverse` | The next direction is not the reverse of the current direction. |
-| `HaltFreezesTicks` | A paused or ended run does not advance its tick. |
-| `AIPendingOnlyInAI` | A pending request belongs to an AI run. |
-| `HeadIsFirst` | The body sequence has a head. |
-| `MenuAtZero` | The menu does not advance the tick. |
-| `NoDeadlock` | Every state has an enabled step. |
+| `TypeOK` | 每个变量都符合规定的类型。 |
+| `BodyOnBoard` | 每一节蛇身都位于棋盘内。 |
+| `NoOverlap` | 两节蛇身不会占据同一个格子。 |
+| `FoodOnEmpty` | 食物为空，或位于蛇身以外的格子。 |
+| `FoodExistsInPlay` | 游戏进行中和暂停时都有食物。 |
+| `ScoreMatchesFood` | `score = 10 * eaten`。 |
+| `LengthMatchesFood` | `snake.length = 3 + eaten`。 |
+| `NoReverse` | 待执行方向不是当前方向的反方向。 |
+| `HaltFreezesTicks` | 暂停或结束时 tick 不增加。 |
+| `AIPendingOnlyInAI` | 等待响应的请求属于 AI 游戏。 |
+| `HeadIsFirst` | 蛇身序列中存在蛇头。 |
+| `MenuAtZero` | 菜单中的 tick 为 0。 |
+| `NoDeadlock` | 每个状态都有可执行动作。 |
 
-## Abstraction
+## 模型的范围
 
-- The model uses a 3x3 board and `eaten <= 2`. The game uses a 19x19 board and has no food limit.
-- TLA+ `food = 0` means no food. The game uses `food = null`.
-- TLA+ has one `nextDir`. The game holds a two-slot direction queue, and the runtime invariant checks every adjacent pair in `[direction, ...queue]`.
-- TLA+ `aiPending` maps to a live request in the controller. `GameState.phase` remains `playing` or `paused`, never an AI thinking phase.
-- The model allows one pending request at a time. The session enforces one in-flight request and starts the next only after the previous decision has been consumed by a move.
-- The model does not cover network latency, failures, or rendering. The session tests cover the one-request rule and the no-pause path. The AI request and the game are separate: the request can finish or fail while the snake keeps moving.
-- The chart hides self-loops and manual steering. It draws the states a reader needs: menu, playing, playing with an AI request in flight, paused, and game over.
+- `SnakeRules` 使用 3×3 棋盘和 `eaten <= 2`。实际游戏使用 19×19 棋盘，食物数量没有上限。
+- TLA+ 的 `food = 0` 表示没有食物。游戏中用 `food = null` 表示。
+- TLA+ 只有一个 `nextDir`。游戏使用最多两个方向的队列，运行时不变量检查 `[direction, ...queue]` 中每对相邻方向。
+- `SnakeFlow` 的 `aiPending` 对应正在进行的请求。`aiReady` 对应已收到、等待未来起点的选择，它不会增加新的游戏阶段。
+- 模型只覆盖网络请求分支。唯一安全候选在本地确定的分支没有单独建模。
+- `AIRespondR` 只枚举 R 方向，用于检查生命周期。`AIApply` 把起点已到达且匹配抽象为一个动作。模型没有保存路线、蛇身或未来起点，不能证明精确执行时间或候选路线安全性。
+- 迟到响应在模型中可用 `AIRespond` 后接 `AIDiscard` 表示。实际会话会直接丢弃迟到响应，随后可以准备新请求。
+- 会话同时最多有一个请求。缓存选择等待起点时也不发新请求。安装路线后，可以为下一个起点准备选择。
+- `test/sim/conformance.test.ts` 通过真实会话检查早到缓存、前缀终点应用、迟到丢弃，以及暂停清理请求和缓存。
+- 图省略同一节点内的移动，只画菜单、游戏中、等待响应、等待执行起点、暂停和结束。
 
-## Run the checker
+## 运行检查
 
-The checker needs Java 17 or later. It uses `TLA_TOOLS_JAR` when set. Otherwise it looks for the jar installed by mise.
+检查需要 Java 17 或以上版本。脚本优先读取 `TLA_TOOLS_JAR`，然后查找 `spec/tla2tools.jar` 和 mise 安装的 jar。
 
 ```sh
 npm run verify:tla
 ```
 
-The command runs TLC for both models and exits non-zero when a rule breaks.
+命令会对两个模型运行 TLC。任何规则检查失败时，命令以非零状态退出。
 
-## Regenerate the chart
+## 更新状态图
 
-The chart comes from the `statechart` skill. Use a new output folder each run.
+`SnakeFlow.mmd` 根据模型和 `SnakeFlowView.ts` 手工同步。本次没有运行 statechart 生成器。安装了 statechart 时，可以使用新的输出目录重新生成。
 
 ```sh
 statechart spec/SnakeFlow.tla --view spec/SnakeFlowView.ts --out /tmp/snake-flow-chart
 ```
 
-Copy the generated `chart.mmd` to `spec/SnakeFlow.mmd`. `SnakeRules` has more than the 500-state chart budget, so the command writes its report but no chart.
+将生成的 `chart.mmd` 复制到 `spec/SnakeFlow.mmd`。`SnakeRules` 超过 500 个状态的绘图上限，生成器只输出报告。

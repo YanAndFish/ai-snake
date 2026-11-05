@@ -8,6 +8,9 @@
     "build": "tsc --noEmit && npm run lint:hot && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:browser": "node scripts/test-browser.mjs",
+    "eval:ai": "node scripts/evaluate-ai.mjs",
+    "eval:live": "node scripts/evaluate-live.mjs",
     "test:coverage": "vitest run --coverage",
     "lint:hot": "node scripts/lint-hot.mjs",
     "verify:tla": "node scripts/verify-tla.mjs",
@@ -21,6 +24,7 @@
   "devDependencies": {
     "@types/three": "^0.187.0",
     "@vitest/coverage-v8": "^5.1.0",
+    "playwright": "^1.64.1",
     "typescript": "^7.0.2",
     "typescript5": "npm:typescript@^5.9.3",
     "vite": "^8.3.6",

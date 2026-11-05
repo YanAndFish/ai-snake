@@ -177,6 +177,7 @@ export function advanceTick(state: GameState): {
   return advanceMove(next);
 }
 
+/** 前进一步并返回事件，AI 吃食物时保留当前移动间隔。 */
 export function advanceMove(state: GameState): {
   state: GameState;
   events: GameEvent[];
@@ -242,7 +243,7 @@ export function advanceMove(state: GameState): {
       ...next,
       eaten,
       score: SCORE_PER_FOOD * eaten,
-      moveEveryTicks: moveEveryTicksFor(eaten, s.difficulty),
+      moveEveryTicks: s.control === "ai" ? s.moveEveryTicks : moveEveryTicksFor(eaten, s.difficulty),
     };
     events.push({ type: "eat", tick: s.tick });
 
@@ -273,6 +274,7 @@ function assertDirection(dir: Direction): void {
   }
 }
 
+/** 替换蛇身并更新分数，AI 模式保留当前移动间隔。 */
 export function setSnake(state: GameState, cells: Cell[], dir: Direction): GameState {
   assertDirection(dir);
   if (!Array.isArray(cells) || cells.length < INITIAL_LENGTH) {
@@ -309,7 +311,7 @@ export function setSnake(state: GameState, cells: Cell[], dir: Direction): GameS
     queue: [],
     eaten,
     score: SCORE_PER_FOOD * eaten,
-    moveEveryTicks: moveEveryTicksFor(eaten, state.difficulty),
+    moveEveryTicks: state.control === "ai" ? state.moveEveryTicks : moveEveryTicksFor(eaten, state.difficulty),
     moveAccumulator: 0,
     overReason: null,
     pauseReason: null,
@@ -346,11 +348,12 @@ export function setFood(state: GameState, cell: Cell | null): GameState {
   return { ...state, food: { ...cell } };
 }
 
+/** 切换难度，手动模式按吃食物数量计算速度，AI 使用基础速度。 */
 export function setDifficulty(state: GameState, difficulty: Difficulty): GameState {
   return {
     ...state,
     difficulty,
-    moveEveryTicks: moveEveryTicksFor(state.eaten, difficulty),
+    moveEveryTicks: moveEveryTicksFor(state.control === "ai" ? 0 : state.eaten, difficulty),
     moveAccumulator: 0,
   };
 }

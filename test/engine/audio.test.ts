@@ -80,23 +80,26 @@ describe("AudioEngine", () => {
     expect(oscillators).toHaveLength(1);
   });
 
-  it("plays the movement sound quieter than other effects", () => {
+  it("转向音效的音量低于进食音效", () => {
     const { ctx, gains } = fakeContext();
     const audio = new AudioEngine(() => ctx);
     audio.ensure();
     audio.play("turn");
     audio.play("eat");
-    expect(gains[0].gain.value).toBeCloseTo(0.01);
+    expect(gains[0].gain.value).toBeCloseTo(0.03);
+    expect(gains[1].gain.value).toBeCloseTo(0.12);
     expect(gains[0].gain.value).toBeLessThan(gains[1].gain.value);
   });
 
-  it("starts a looping background track and mutes it with the master gain", () => {
+  it("背景音乐循环播放并随静音开关停止输出", () => {
     vi.useFakeTimers();
     const { ctx, oscillators, gains } = fakeContext();
     const audio = new AudioEngine(() => ctx);
     audio.startMusic();
     expect(audio.isMusicRunning).toBe(true);
     expect(gains[0].gain.value).toBe(0.62);
+    expect(gains[1].gain.value).toBeCloseTo(0.078);
+    expect(gains[2].gain.value).toBeCloseTo(0.12);
     expect(oscillators.length).toBeGreaterThan(0);
 
     const firstCount = oscillators.length;

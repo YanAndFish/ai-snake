@@ -111,7 +111,7 @@ export class AiController {
   }
 
   getStatus(): AiStatusView {
-    return { ...this.status, latencyMs: this.log.at(-1)?.latencyMs ?? null };
+    return { ...this.status, planLength: this.plan.length, latencyMs: this.log.at(-1)?.latencyMs ?? null };
   }
 
   getVersion(): number {
@@ -128,9 +128,16 @@ export class AiController {
   }
 
   setPlan(moves: Direction[]): void {
-    this.plan = moves;
+    this.plan = [...moves];
     this.status = { state: "ready", error: null, planLength: moves.length, model: this.model };
     this.version += 1;
+  }
+
+  /** 取出下次移动的方向，并通知面板更新剩余步数。 */
+  consumeDirection(): Direction | undefined {
+    const direction = this.plan.shift();
+    if (direction !== undefined) this.version += 1;
+    return direction;
   }
 
   setOff(): void {
@@ -153,11 +160,12 @@ export class AiController {
     };
   }
 
+  /** 返回解析后的方向列表，实际路线由会话根据执行起点安装。 */
   request(args: AiRequestArgs): Promise<Direction[]> {
     const seq = ++this.requestSeq;
     const startedAt = performance.now();
     this.model = args.model;
-    this.status = { state: "thinking", error: null, planLength: 0, model: args.model };
+    this.status = { state: "thinking", error: null, planLength: this.plan.length, model: args.model };
     this.version += 1;
     const transport = this.makeTransport();
 
@@ -172,8 +180,10 @@ export class AiController {
       });
       if (args.signal.aborted || seq !== this.requestSeq) throw abortError();
       const parsed = parseAiResponse(text, args.currentDirection);
-      this.plan = parsed.moves;
-      this.status = { state: "ready", error: null, planLength: parsed.moves.length, model: args.model };
+      if (parsed.moves.length === 0 || !args.legalMoves.includes(parsed.moves[0])) {
+        throw new Error("AI 返回了未提供的路线，请重试");
+      }
+      this.status = { state: "ready", error: null, planLength: this.plan.length, model: args.model };
       this.version += 1;
       this.log.push({
         time: Date.now(),

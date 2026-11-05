@@ -2,7 +2,7 @@
 
 ## 目标
 
-同一局游戏要同时支持键盘、控制台脚本和 OpenAI Decisions API。三者走同一条方向队列。固定种子加同一串操作要得到同一个状态。AI 请求不能停掉模拟，慢响应允许导致死亡。
+同一局游戏要同时支持键盘、控制台脚本和 OpenAI Decisions API。三者走同一条方向队列。固定种子加同一串操作要得到同一个状态。AI 请求期间模拟照常推进，由已确定路线和本地避险覆盖等待时间。
 
 ## 状态
 
@@ -12,7 +12,7 @@
 
 方向是 `direction` 加最多两格的 `queue`。入队只和队尾比较，反向和重复会被忽略。移动只消费队首。
 
-分数不单独维护。`score === 10 * eaten`，`snake.length === 3 + eaten`。运行时不变量和 TLA+ 都检查这两条。难度是 `GameState.difficulty`，取值 `chill`、`normal`、`fast`；速度曲线集中在 `src/config.ts` 的 `DIFFICULTIES`，移动、重开和吃苹果都从这一张表派生。
+分数不单独维护。`score === 10 * eaten`，`snake.length === 3 + eaten`。运行时不变量和 TLA+ 都检查这两条。难度是 `GameState.difficulty`，取值 `chill`、`normal`、`fast`。基础速度和最短移动间隔集中在 `src/config.ts` 的 `DIFFICULTIES`。手动模式每吃 6 个苹果减少 1 tick，直到达到最短间隔。AI 模式吃苹果时保留当前移动间隔，开局和切换难度时使用基础速度。
 
 ## 循环与热路径
 
@@ -30,31 +30,23 @@
 
 ## AI 决策
 
-`src/sim/observation.ts` 生成紧凑的决策文本，不再生成 ASCII 地图。`src/sim/analysis.ts` 对每个合法转向计算撞墙/撞身、尾格释放、可达空间、空间宽窄和到食物的最短路。`src/ai/context.ts` 收集最近请求延迟、运动历史、食物进度和循环特征，并按延迟分布预测执行时点的候选结果；提示词发送棋盘尺寸、关键坐标、动态上下文和候选分析。每个候选项包含可达空间、通往尾部的路径和保持直行的安全步数。等待期间的预测使用游戏时钟和移动规则，计入当前移动进度、入队转向和吃食物后的速度变化。没有延迟样本时也展示等待一到两步的结果。
+`src/ai/routes.ts` 生成连续路线。每个安全首方向对应一个候选，候选先追逐已知食物，吃到后按避险规则延伸。每条候选至少模拟 16 步。候选动作长度可以短于检查长度，因此 1 步选择也需要通过 16 步延伸检查。
 
-`src/ai/client.ts` 默认使用 Decisions API：
+路线长度由最近 8 次成功响应的 P90 决定。P90 不超过当前一次移动的时间时使用 1 步。超过时使用 `ceil(P90 / 一次移动时间) + 2`，限制为 8 至 32 步。没有样本时使用 16 步。
 
-```json
-{
-  "model": "gpt-6-luna",
-  "input": "SNAKE/2 ...",
-  "questions": [
-    {
-      "type": "choice",
-      "name": "next_move",
-      "choices": [
-        { "value": "U", "description": "Move the head up one cell." }
-      ]
-    }
-  ]
-}
-```
+`GameSession` 保存已确定前缀、预测起点和候选路线。当前前缀执行时，会话从它的终点提前请求下一条路线。`projectPrefix` 使用真实移动规则预测完整棋盘，包括蛇身、食物、RNG、方向队列和速度。前缀会吃到当前食物时，新生成食物参与规则模拟，但不作为候选追逐目标。
 
-返回的 `answers[0]` 必须是 `choice`。`refusal`、非法选择和非 choice 类型都报错。Key 只放在 `Authorization` 头里。
+真实请求的 `input` 使用 `SNAKE/3 ROUTES`。`src/ai/client.ts` 把各路线的首方向映射成 `U`、`D`、`L`、`R`。这些值是路线 ID，`answers[0].choice` 选中该 ID 对应的完整动作列表。候选描述提供动作、长度、安全延伸步数、吃到已知食物的步数 `eatAt` 和距离缩短量 `progress`。请求结构见 [README](../README.md#让-decisions-api-玩)。
 
-会话维护最多一个在飞请求。`start` 发第一份请求后立刻返回，蛇继续按当前方向移动。响应到达后成为下一份计划。下一次移动消费计划，消费后立刻发下一份请求。请求慢时没有计划，蛇继续直行，可能撞死。这是设计要求。
+早到响应先暂存。会话到达预测移动次数时，核对完整棋盘再安装路线，tick 和移动累加器不参与起点比较。错过起点的响应会被丢弃。改蛇身、食物、速度、难度或方向时，会话取消请求并清空路线。
 
-`src/ai/controller.ts` 负责状态、日志、mock 和请求序号。旧响应不能覆盖新请求。`src/ai/response.ts` 仍负责解析和方向校验，供控制台计划与 mock 使用。
+冷启动和响应迟到时，`buildBridge` 与 `rescueDirection` 优先直行，在下一步将碰撞时选择可直行更远的安全方向。只有一个候选时，会话直接在前缀终点执行。`getAiExecutionStats()` 分别统计 API 路线、本地避险、唯一候选和脚本的实际移动数，并记录吃食数、失败和过期响应。浏览器通过 `__snake.ai.getExecutionStats()` 读取副本。
+
+会话最多保留一个在飞请求。网络或解析失败后，至少等待 60 tick，再在移动边界重试。挂起请求没有自动超时，可通过暂停或停止 AI 取消。有限步数的候选检查和本地避险都不能保证整局存活。
+
+`src/ai/controller.ts` 负责状态、日志、mock 和请求序号。`src/ai/response.ts` 解析并校验方向。`refusal`、非法选择和非 choice 类型会报错。Key 只保存在内存，通过 `Authorization` 请求头发送。
+
+`src/sim/observation.ts`、`src/sim/analysis.ts` 和 `src/ai/context.ts` 为控制台生成当前棋盘的 `SNAKE/2` 分析，包含单步碰撞、可达空间、食物距离、延迟分布和运动历史。`getPrompt()` 与 `getObservation()` 返回这份分析。实际网络请求使用面向未来起点的 `SNAKE/3 ROUTES`。
 
 ## 渲染
 
@@ -78,19 +70,20 @@ AI 面板把最近一次请求耗时显示为大号数字，并附最近 20 次�
 
 ## 音效与音乐
 
-`src/engine/audio.ts` 用 Web Audio 合成所有声音，不加载音频文件。音效跟随游戏事件；背景音乐是 16 步循环，三角波旋律加正弦低音，第一次点击开始后启动。`M` 或顶栏按钮控制同一个静音状态，主音乐增益和音效同时受控。
+`src/engine/audio.ts` 用 Web Audio 合成所有声音，不加载音频文件。音效跟随游戏事件；背景音乐是 16 步循环，三角波旋律加正弦低音，第一次点击开始后启动。`M` 或顶栏按钮控制同一个静音状态，主音乐增益和音效同时受控。`OUTPUT_VOLUME_MULTIPLIER` 统一缩放每个音符的包络峰值，转向声的音量低于进食声。
 
 ## 验证
 
-`spec/SnakeFlow.tla` 检查生命周期和 AI 请求。`Tick` 在 `aiPending` 为真时仍然启用，TLC 检查 64 个状态。`spec/SnakeRules.tla` 检查 3x3 棋盘规则，TLC 检查 38,707 个状态。
+`spec/SnakeFlow.tla` 检查生命周期和 AI 请求。`Tick` 在 `aiPending` 为真时可以执行，TLC 检查 73 个状态。`spec/SnakeRules.tla` 检查 3x3 棋盘规则，TLC 检查 38,707 个状态。
 
 游戏状态的运行时 `checkInvariantsMask` 与 TLA+ 的游戏不变量同名。每个 tick 和每次状态变化后执行。AI 请求的 `AIPendingOnlyInAI` 由会话测试覆盖。`test/sim/conformance.test.ts` 和会话测试把 TLA+ 动作映射到真实实现。
 
 ## 取舍
 
-- AI 请求不暂停，换取真实响应延迟下的玩法。响应慢会死，这是产品规则。
-- Decisions API 一次只返回一个 `choice`，所以一次请求只产生一步。多步预测需要多个请求，不在当前范围。
+- AI 请求期间模拟照常推进。提前请求和路线缓存覆盖等待时间，迟到时执行本地避险。
+- 一次 `choice` 选择一条有限长度路线。候选生成器负责路径和规则检查，API 在候选中选择。
 - 热路径只覆盖我们自己的代码。Three.js 内部和 DOM 是边界。
 - 19x19 棋盘和 3x3 TLA+ 模型是刻意的抽象。真实棋盘由 Vitest fuzz 覆盖。
 - 难度只改变每个移动需要的 tick 数，不改变规则。速度曲线集中在 `src/config.ts`，运行时和测试共用。
-- 不引入 React、服务器代理或本地 AI 保底策略。浏览器直连 Decisions API，Key 只存在内存。
+- 浏览器直连 Decisions API，Key 只存在内存。等待响应时执行本地避险，唯一候选也直接在本地执行。
+- [AI 延迟评估](ai-latency.md) 分开记录真实 API 比较和固定选择器模拟。真实标准难度试验支持本次整套路线方案的选择，无法单独衡量模型相对本地规则的收益。完整与精简提示词未分胜负，网络请求使用完整信息版本。

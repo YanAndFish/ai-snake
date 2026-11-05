@@ -7,7 +7,7 @@ import type {
 import type { Difficulty } from "../config";
 import type { Observation } from "../sim/observation";
 import type { Cell, Direction, GameEvent, StateView } from "../sim/types";
-import type { GameSession, StartOptions } from "./session";
+import type { AiExecutionStats, GameSession, StartOptions } from "./session";
 
 export const VERSION = "1.0.0";
 
@@ -54,6 +54,8 @@ export interface SnakeApi {
     useMock(answer: MockAnswer): void;
     clearMock(): void;
     getStatus(): AiStatusView;
+    /** 返回本局各来源完成的移动数和请求结果。 */
+    getExecutionStats(): AiExecutionStats;
     waitForIdle(timeout?: number): Promise<void>;
   };
 }
@@ -100,13 +102,14 @@ export function createTestApi(
       setPlan: (moves) => detachAnd(() => session.setPlan(moves)),
       useMock: (answer) => {
         session.detach();
-        controller.useMock(answer);
+        session.setMock(answer);
       },
       clearMock: () => {
         session.detach();
-        controller.clearMock();
+        session.clearMock();
       },
       getStatus: () => session.getAiStatus(),
+      getExecutionStats: () => session.getAiExecutionStats(),
       waitForIdle: (timeout) => session.waitForIdle(timeout),
     },
   };

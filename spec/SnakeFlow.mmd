@@ -1,35 +1,38 @@
 ---
-title: "Snake run lifecycle, AI requests never halt"
+title: "游戏生命周期与 AI 结果缓存"
 ---
 stateDiagram-v2
-  state "Legend" as legend {
-    lg0: Running
-    lg1: Halted
-    lg2: Idle
+  state "图例" as legend {
+    lg0: 运行中
+    lg1: 已暂停
+    lg2: 空闲
   }
   class lg0 blue
   class lg1 orange
   class lg2 tan
-  s0: Menu
-  s1: Playing
-  s2: Playing, AI request in flight
-  s3: Paused
-  s4: Game over
+  s0: 菜单
+  s1: 游戏中
+  s2: 游戏中，等待 AI 响应
+  s3: 游戏中，等待执行起点
+  s4: 已暂停
+  s5: 游戏结束
   [*] --> s0
-  s0 --> s1: you start a run
-  s0 --> s2: you hand the run to the AI
-  s1 --> s3: you pause
-  s2 --> s3: you pause
-  s2 --> s1: the AI request fails or the AI answer arrives
-  s3 --> s1: you resume
-  s3 --> s2: you resume
-  s1 --> s2: the AI request starts
-  s1 --> s4: the run ends
-  s2 --> s4: the run ends
-  s4 --> s1: you run it again
-  s4 --> s2: you let the AI run it again
+  s0 --> s1: 开始游戏或开始 AI 游戏
+  s1 --> s4: 暂停并清空 AI 请求和缓存
+  s2 --> s4: 暂停并清空 AI 请求和缓存
+  s3 --> s4: 暂停并清空 AI 请求和缓存
+  s2 --> s1: AI 请求失败
+  s2 --> s3: 缓存 AI 选择
+  s3 --> s1: 到达起点应用选择，或丢弃失效选择
+  s4 --> s1: 恢复游戏
+  s1 --> s2: 发起 AI 请求
+  s1 --> s5: 游戏结束并清空 AI 请求和缓存
+  s2 --> s5: 游戏结束并清空 AI 请求和缓存
+  s3 --> s5: 游戏结束并清空 AI 请求和缓存
+  s5 --> s1: 重新开始游戏或重新开始 AI 游戏
   class s0 tan
   class s1 blue
   class s2 blue
-  class s3 orange
-  class s4 tan
+  class s3 blue
+  class s4 orange
+  class s5 tan

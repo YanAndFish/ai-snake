@@ -1,0 +1,1850 @@
+{
+  "schemaVersion": 1,
+  "kind": "real-api",
+  "date": "2026-11-05",
+  "selectedVariant": "B",
+  "selectedPrompt": "full",
+  "decision": "本次标准难度五组配对支持完整路线方案。B 与 C 未分胜负，按预设规则保留完整提示词。",
+  "method": {
+    "quantile": "Hyndman-Fan type 7",
+    "latency": "各局先计算成功解析的 P50/P90，再汇总各局结果。",
+    "sampleLimit": "5 个种子只支持本次工程选择，不代表统计显著。",
+    "durationMs": 90000,
+    "tickHz": 60,
+    "deathSamplingIntervalMs": 25,
+    "maxPages": 2,
+    "scoring": "每局一次生命，死亡后得分冻结，固定窗口结束才读数。",
+    "latencyScope": "仅统计成功完成生产解析的请求，取消与未完成请求单列。",
+    "gate": "标准难度至少赢4个种子，配对中位增分至少10且大于差值IQR，总分更高，满窗口存活数与配对中位存活时间不回退。",
+    "fastScope": "疾速仅两对，用于描述边界，不独立选优。",
+    "parsedRequestsApplied": null,
+    "requestApplicationRate": null
+  },
+  "variants": {
+    "A": {
+      "name": "A-baseline",
+      "prompt": "full",
+      "description": "固定 AI 速度的旧单步调度，等待期间直行。",
+      "baseCommit": "233b2219c9cea2c5635d455ad6635d80290bd593",
+      "patch": "ai-live-baseline.patch",
+      "sourceSha256": "647ea73729b4b78679f0e9573a2bff2a763e5b0a54c8538af66113eee8cee8bb"
+    },
+    "B": {
+      "name": "B-routes-full",
+      "prompt": "full",
+      "description": "未来起点、连续路线、本地等待避险和完整提示词。",
+      "sourceSha256": "e8e5e40a6387a4f87a487d0f9cfcb8883eb4f474346d8f717ed5ad973e5e7ba0"
+    },
+    "C": {
+      "name": "C-routes-compact",
+      "prompt": "compact-summary",
+      "description": "与 B 相同，仅删除请求里的身体坐标和逐步动作。",
+      "sourceSha256": "e8e5e40a6387a4f87a487d0f9cfcb8883eb4f474346d8f717ed5ad973e5e7ba0"
+    }
+  },
+  "reproduction": {
+    "script": "scripts/evaluate-live.mjs",
+    "scriptSha256": "b70307d7910249482ccde274b4e59dcee812b70820b140f6d5b25369cac038f2",
+    "instructions": "evaluate-live.md",
+    "endpoint": "https://api.openai.com/v1/decisions",
+    "model": "gpt-6-luna",
+    "browserVersion": "157.0.8103.39",
+    "normalScenarios": [
+      {
+        "name": "A-baseline",
+        "seed": 201,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 1,
+        "variant": "A",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "B-routes-full",
+        "seed": 201,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 1,
+        "variant": "B",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "C-routes-compact",
+        "seed": 201,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "compact-summary",
+        "round": 2,
+        "variant": "C",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "A-baseline",
+        "seed": 202,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 2,
+        "variant": "A",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "B-routes-full",
+        "seed": 202,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 3,
+        "variant": "B",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "C-routes-compact",
+        "seed": 202,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "compact-summary",
+        "round": 3,
+        "variant": "C",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "C-routes-compact",
+        "seed": 203,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "compact-summary",
+        "round": 4,
+        "variant": "C",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "B-routes-full",
+        "seed": 203,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 4,
+        "variant": "B",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "A-baseline",
+        "seed": 203,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 5,
+        "variant": "A",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "C-routes-compact",
+        "seed": 204,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "compact-summary",
+        "round": 5,
+        "variant": "C",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "B-routes-full",
+        "seed": 204,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 6,
+        "variant": "B",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "A-baseline",
+        "seed": 204,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 6,
+        "variant": "A",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "C-routes-compact",
+        "seed": 205,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "compact-summary",
+        "round": 7,
+        "variant": "C",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "B-routes-full",
+        "seed": 205,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 7,
+        "variant": "B",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "A-baseline",
+        "seed": 205,
+        "durationMs": 90000,
+        "difficulty": "normal",
+        "prompt": "full",
+        "round": 8,
+        "variant": "A",
+        "model": "gpt-6-luna"
+      }
+    ],
+    "fastScenarios": [
+      {
+        "name": "A-baseline",
+        "seed": 401,
+        "durationMs": 90000,
+        "difficulty": "fast",
+        "prompt": "full",
+        "round": 1,
+        "variant": "A",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "B-routes-full",
+        "seed": 401,
+        "durationMs": 90000,
+        "difficulty": "fast",
+        "prompt": "full",
+        "round": 1,
+        "variant": "B",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "B-routes-full",
+        "seed": 402,
+        "durationMs": 90000,
+        "difficulty": "fast",
+        "prompt": "full",
+        "round": 2,
+        "variant": "B",
+        "model": "gpt-6-luna"
+      },
+      {
+        "name": "A-baseline",
+        "seed": 402,
+        "durationMs": 90000,
+        "difficulty": "fast",
+        "prompt": "full",
+        "round": 2,
+        "variant": "A",
+        "model": "gpt-6-luna"
+      }
+    ]
+  },
+  "limitations": [
+    "一个模型、五个标准难度种子和两个疾速种子不能证明统计显著或所有棋盘普遍更好。",
+    "满90秒存活是截断观察，不能推断无限存活。",
+    "A 与 B 比较整套方案，包含本地路线规划、调度、避险和提示词。",
+    "apiMoves 和 apiEats 表示本地生成后由模型选中的路线，不能衡量模型独立规划或相对简单规则的净贡献。",
+    "A 的来源计数缺失。未记录逐请求首次执行时刻，请求应用数和应用率为 null。",
+    "成功延迟不包含取消和未完成请求。",
+    "B 与 C 未分胜负，不代表两种提示词等效。"
+  ],
+  "normal": {
+    "rawArtifact": "ai-snake-live-normal.json",
+    "rawArtifactSha256": "048884910a06c85e1253a308d3e2d29988314445b7ea2eb7ac7fbbac24dd003e",
+    "metadata": {
+      "createdAt": "2026-11-05T13:09:27.183Z",
+      "realApiMode": true,
+      "realModelMeasured": true,
+      "transportMode": "browser-native-fetch",
+      "selfCheck": false,
+      "endpoint": "https://api.openai.com/v1/decisions",
+      "browserVersion": "157.0.8103.39",
+      "concurrency": 2,
+      "cpuCount": 8,
+      "loadBefore": [
+        3.316895,
+        4.288086,
+        5.847168
+      ],
+      "loadAfter": [
+        2.977051,
+        2.933594,
+        4.100586
+      ],
+      "sourceStable": true,
+      "passed": true
+    },
+    "formalEvidenceValid": true,
+    "sourceVerified": true,
+    "scenarioMatchesFrozenPlan": true,
+    "models": [
+      "gpt-6-luna"
+    ],
+    "groups": {
+      "A": {
+        "n": 5,
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "scores": {
+          "mean": 36.0,
+          "median": 40.0,
+          "min": 10,
+          "max": 70
+        },
+        "survivalMs": {
+          "mean": 85836.44,
+          "median": 90000.0,
+          "min": 69182.2,
+          "max": 90000
+        },
+        "fullWindowSurvivors": 4,
+        "latencyP50MsAcrossGames": {
+          "mean": 418.59,
+          "median": 421.7,
+          "min": 393.3,
+          "max": 438.9
+        },
+        "latencyP90MsAcrossGames": {
+          "mean": 619.694,
+          "median": 612.7,
+          "min": 587.58,
+          "max": 661.84
+        },
+        "inputMedianBytesAcrossGames": {
+          "mean": 2672.4,
+          "median": 2668.0,
+          "min": 2653.0,
+          "max": 2693.0
+        },
+        "payloadMedianBytesAcrossGames": {
+          "mean": 3857.1,
+          "median": 3854.0,
+          "min": 3836.0,
+          "max": 3876.5
+        },
+        "requests": {
+          "requests": 767,
+          "http200": 764,
+          "parsedSuccess": 764,
+          "parsedWithinWindow": 764,
+          "parsedAfterWindow": 0,
+          "responseComplete": 764,
+          "apiRequestIds": 764,
+          "uniqueApiRequestIds": 764,
+          "pendingAtWindowEnd": 2,
+          "pendingAfterCleanup": 0,
+          "expiredOnArrival": 0
+        },
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 1,
+          "cleanupAbort": 2,
+          "otherAbort": 0
+        },
+        "execution": {
+          "requests": null,
+          "completed": null,
+          "failedResponses": null,
+          "expiredResponses": null,
+          "startMismatches": null,
+          "apiMoves": null,
+          "bridgeMoves": null,
+          "forcedMoves": null,
+          "scriptMoves": null,
+          "apiEats": null,
+          "bridgeEats": null,
+          "forcedEats": null
+        },
+        "executionShares": {
+          "api": {
+            "moves": null,
+            "eats": null
+          },
+          "bridge": {
+            "moves": null,
+            "eats": null
+          },
+          "forced": {
+            "moves": null,
+            "eats": null
+          }
+        },
+        "gamesWithModelRouteMoves": null,
+        "simpleRule": {
+          "evaluated": 0,
+          "matched": 0,
+          "multiChoiceEvaluated": 0,
+          "multiChoiceMatched": 0,
+          "singleChoice": 0,
+          "unavailableParsed": 764,
+          "rate": null,
+          "multiChoiceRate": null
+        },
+        "strictValidGames": 5,
+        "runnerPassedGames": 5,
+        "clockRatio": {
+          "mean": 0.999754,
+          "median": 0.99975,
+          "min": 0.999735,
+          "max": 0.999775
+        },
+        "maxSampleGapMs": 27.6,
+        "maxActiveFetches": 1,
+        "allRequestIdsPresent": true,
+        "sourceSumsMatch": null
+      },
+      "B": {
+        "n": 5,
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "scores": {
+          "mean": 206.0,
+          "median": 210.0,
+          "min": 190,
+          "max": 220
+        },
+        "survivalMs": {
+          "mean": 90000.0,
+          "median": 90000.0,
+          "min": 90000,
+          "max": 90000
+        },
+        "fullWindowSurvivors": 5,
+        "latencyP50MsAcrossGames": {
+          "mean": 420.0,
+          "median": 423.4,
+          "min": 402.8,
+          "max": 434.5
+        },
+        "latencyP90MsAcrossGames": {
+          "mean": 590.428,
+          "median": 591.0,
+          "min": 515.48,
+          "max": 661.18
+        },
+        "inputMedianBytesAcrossGames": {
+          "mean": 1173.2,
+          "median": 1167.0,
+          "min": 1152.0,
+          "max": 1196.0
+        },
+        "payloadMedianBytesAcrossGames": {
+          "mean": 2286.0,
+          "median": 2288.0,
+          "min": 2266.0,
+          "max": 2311.0
+        },
+        "requests": {
+          "requests": 312,
+          "http200": 312,
+          "parsedSuccess": 312,
+          "parsedWithinWindow": 312,
+          "parsedAfterWindow": 0,
+          "responseComplete": 312,
+          "apiRequestIds": 312,
+          "uniqueApiRequestIds": 312,
+          "pendingAtWindowEnd": 0,
+          "pendingAfterCleanup": 0,
+          "expiredOnArrival": 0
+        },
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "execution": {
+          "requests": 312,
+          "completed": 312,
+          "failedResponses": 0,
+          "expiredResponses": 0,
+          "startMismatches": 0,
+          "apiMoves": 2561,
+          "bridgeMoves": 80,
+          "forcedMoves": 56,
+          "scriptMoves": 0,
+          "apiEats": 99,
+          "bridgeEats": 0,
+          "forcedEats": 4
+        },
+        "executionShares": {
+          "api": {
+            "moves": 0.949574,
+            "eats": 0.961165
+          },
+          "bridge": {
+            "moves": 0.029663,
+            "eats": 0.0
+          },
+          "forced": {
+            "moves": 0.020764,
+            "eats": 0.038835
+          }
+        },
+        "gamesWithModelRouteMoves": 5,
+        "simpleRule": {
+          "evaluated": 312,
+          "matched": 247,
+          "multiChoiceEvaluated": 312,
+          "multiChoiceMatched": 247,
+          "singleChoice": 0,
+          "unavailableParsed": 0,
+          "rate": 0.791667,
+          "multiChoiceRate": 0.791667
+        },
+        "strictValidGames": 5,
+        "runnerPassedGames": 5,
+        "clockRatio": {
+          "mean": 0.999825,
+          "median": 0.999775,
+          "min": 0.999749,
+          "max": 0.999933
+        },
+        "maxSampleGapMs": 28,
+        "maxActiveFetches": 1,
+        "allRequestIdsPresent": true,
+        "sourceSumsMatch": true
+      },
+      "C": {
+        "n": 5,
+        "seeds": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "scores": {
+          "mean": 200.0,
+          "median": 200.0,
+          "min": 200,
+          "max": 200
+        },
+        "survivalMs": {
+          "mean": 90000.0,
+          "median": 90000.0,
+          "min": 90000,
+          "max": 90000
+        },
+        "fullWindowSurvivors": 5,
+        "latencyP50MsAcrossGames": {
+          "mean": 416.66,
+          "median": 415.1,
+          "min": 407.3,
+          "max": 433.05
+        },
+        "latencyP90MsAcrossGames": {
+          "mean": 581.328,
+          "median": 578.59,
+          "min": 528.46,
+          "max": 629.3
+        },
+        "inputMedianBytesAcrossGames": {
+          "mean": 959.0,
+          "median": 959.0,
+          "min": 958.5,
+          "max": 959.5
+        },
+        "payloadMedianBytesAcrossGames": {
+          "mean": 1936.8,
+          "median": 1937.0,
+          "min": 1936.0,
+          "max": 1937.0
+        },
+        "requests": {
+          "requests": 313,
+          "http200": 313,
+          "parsedSuccess": 313,
+          "parsedWithinWindow": 313,
+          "parsedAfterWindow": 0,
+          "responseComplete": 313,
+          "apiRequestIds": 313,
+          "uniqueApiRequestIds": 313,
+          "pendingAtWindowEnd": 0,
+          "pendingAfterCleanup": 0,
+          "expiredOnArrival": 1
+        },
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "execution": {
+          "requests": 313,
+          "completed": 313,
+          "failedResponses": 0,
+          "expiredResponses": 1,
+          "startMismatches": 0,
+          "apiMoves": 2566,
+          "bridgeMoves": 93,
+          "forcedMoves": 40,
+          "scriptMoves": 0,
+          "apiEats": 99,
+          "bridgeEats": 0,
+          "forcedEats": 1
+        },
+        "executionShares": {
+          "api": {
+            "moves": 0.950722,
+            "eats": 0.99
+          },
+          "bridge": {
+            "moves": 0.034457,
+            "eats": 0.0
+          },
+          "forced": {
+            "moves": 0.01482,
+            "eats": 0.01
+          }
+        },
+        "gamesWithModelRouteMoves": 5,
+        "simpleRule": {
+          "evaluated": 313,
+          "matched": 274,
+          "multiChoiceEvaluated": 313,
+          "multiChoiceMatched": 274,
+          "singleChoice": 0,
+          "unavailableParsed": 0,
+          "rate": 0.875399,
+          "multiChoiceRate": 0.875399
+        },
+        "strictValidGames": 5,
+        "runnerPassedGames": 5,
+        "clockRatio": {
+          "mean": 0.999896,
+          "median": 0.999933,
+          "min": 0.999745,
+          "max": 0.999941
+        },
+        "maxSampleGapMs": 29.8,
+        "maxActiveFetches": 1,
+        "allRequestIdsPresent": true,
+        "sourceSumsMatch": true
+      }
+    },
+    "games": [
+      {
+        "group": "A",
+        "seed": 201,
+        "round": 1,
+        "score": 40,
+        "survived": false,
+        "survivedMs": 69182.2,
+        "overReason": "wall",
+        "requests": 119,
+        "http200": 118,
+        "parsedSuccess": 118,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 1,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 118,
+          "p50": 426.25,
+          "p90": 661.84,
+          "min": 326.6,
+          "max": 1225.9
+        },
+        "clockRatio": 0.999775,
+        "maxSampleGapMs": 26.8,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "A",
+        "seed": 202,
+        "round": 2,
+        "score": 10,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 159,
+        "http200": 158,
+        "parsedSuccess": 158,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 1,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 158,
+          "p50": 438.9,
+          "p90": 645.57,
+          "min": 342.5,
+          "max": 1137.7
+        },
+        "clockRatio": 0.999735,
+        "maxSampleGapMs": 27.6,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "A",
+        "seed": 203,
+        "round": 5,
+        "score": 10,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 163,
+        "http200": 163,
+        "parsedSuccess": 163,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 163,
+          "p50": 393.3,
+          "p90": 612.7,
+          "min": 323.5,
+          "max": 1189.4
+        },
+        "clockRatio": 0.99975,
+        "maxSampleGapMs": 27.4,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "A",
+        "seed": 204,
+        "round": 6,
+        "score": 50,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 162,
+        "http200": 162,
+        "parsedSuccess": 162,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 162,
+          "p50": 421.7,
+          "p90": 590.78,
+          "min": 327.2,
+          "max": 1128
+        },
+        "clockRatio": 0.999766,
+        "maxSampleGapMs": 27.3,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "A",
+        "seed": 205,
+        "round": 8,
+        "score": 70,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 164,
+        "http200": 163,
+        "parsedSuccess": 163,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 1,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 163,
+          "p50": 412.8,
+          "p90": 587.58,
+          "min": 332.9,
+          "max": 1323.6
+        },
+        "clockRatio": 0.999745,
+        "maxSampleGapMs": 26.8,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "B",
+        "seed": 201,
+        "round": 1,
+        "score": 190,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 63,
+        "http200": 63,
+        "parsedSuccess": 63,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 63,
+          "p50": 423.4,
+          "p90": 661.18,
+          "min": 347.4,
+          "max": 1164.6
+        },
+        "clockRatio": 0.999933,
+        "maxSampleGapMs": 27,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "B",
+        "seed": 202,
+        "round": 3,
+        "score": 200,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 62,
+        "http200": 62,
+        "parsedSuccess": 62,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 62,
+          "p50": 427.4,
+          "p90": 591.0,
+          "min": 344,
+          "max": 1642.2
+        },
+        "clockRatio": 0.999909,
+        "maxSampleGapMs": 28,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "B",
+        "seed": 203,
+        "round": 4,
+        "score": 220,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 63,
+        "http200": 63,
+        "parsedSuccess": 63,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 63,
+          "p50": 411.9,
+          "p90": 532.24,
+          "min": 318.5,
+          "max": 1127.2
+        },
+        "clockRatio": 0.999757,
+        "maxSampleGapMs": 27.7,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "B",
+        "seed": 204,
+        "round": 6,
+        "score": 210,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 59,
+        "http200": 59,
+        "parsedSuccess": 59,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 59,
+          "p50": 434.5,
+          "p90": 652.24,
+          "min": 358.6,
+          "max": 1181.2
+        },
+        "clockRatio": 0.999775,
+        "maxSampleGapMs": 27.9,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "B",
+        "seed": 205,
+        "round": 7,
+        "score": 210,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 65,
+        "http200": 65,
+        "parsedSuccess": 65,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 65,
+          "p50": 402.8,
+          "p90": 515.48,
+          "min": 320.6,
+          "max": 1066.4
+        },
+        "clockRatio": 0.999749,
+        "maxSampleGapMs": 26.9,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "C",
+        "seed": 201,
+        "round": 2,
+        "score": 200,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 61,
+        "http200": 61,
+        "parsedSuccess": 61,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 61,
+          "p50": 415.1,
+          "p90": 629.3,
+          "min": 344,
+          "max": 1531.8
+        },
+        "clockRatio": 0.999941,
+        "maxSampleGapMs": 29.8,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "C",
+        "seed": 202,
+        "round": 3,
+        "score": 200,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 63,
+        "http200": 63,
+        "parsedSuccess": 63,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 63,
+          "p50": 408.2,
+          "p90": 528.46,
+          "min": 341.7,
+          "max": 1142
+        },
+        "clockRatio": 0.999927,
+        "maxSampleGapMs": 28.7,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "C",
+        "seed": 203,
+        "round": 4,
+        "score": 200,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 63,
+        "http200": 63,
+        "parsedSuccess": 63,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 63,
+          "p50": 407.3,
+          "p90": 619.2,
+          "min": 337.5,
+          "max": 1221.2
+        },
+        "clockRatio": 0.999933,
+        "maxSampleGapMs": 27,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "C",
+        "seed": 204,
+        "round": 5,
+        "score": 200,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 64,
+        "http200": 64,
+        "parsedSuccess": 64,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 64,
+          "p50": 433.05,
+          "p90": 551.09,
+          "min": 337.5,
+          "max": 1218.4
+        },
+        "clockRatio": 0.999934,
+        "maxSampleGapMs": 28.3,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "C",
+        "seed": 205,
+        "round": 7,
+        "score": 200,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 62,
+        "http200": 62,
+        "parsedSuccess": 62,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 62,
+          "p50": 419.65,
+          "p90": 578.59,
+          "min": 343.9,
+          "max": 1241.1
+        },
+        "clockRatio": 0.999745,
+        "maxSampleGapMs": 27.7,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      }
+    ],
+    "comparisons": [
+      {
+        "candidate": "B",
+        "reference": "A",
+        "pairedN": 5,
+        "pairs": [
+          {
+            "seed": 201,
+            "scoreDelta": 150,
+            "survivalDeltaMs": 20817.8,
+            "valid": true
+          },
+          {
+            "seed": 202,
+            "scoreDelta": 190,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 203,
+            "scoreDelta": 210,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 204,
+            "scoreDelta": 160,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 205,
+            "scoreDelta": 140,
+            "survivalDeltaMs": 0,
+            "valid": true
+          }
+        ],
+        "scoreWins": 5,
+        "scoreTies": 0,
+        "scoreDelta": {
+          "median": 160.0,
+          "min": 140,
+          "max": 210,
+          "iqr": 40.0
+        },
+        "survivalDeltaMs": {
+          "median": 0.0,
+          "min": 0,
+          "max": 20817.8,
+          "iqr": 0.0
+        },
+        "survivors": {
+          "candidate": 5,
+          "reference": 4
+        },
+        "hasSurvivalRegression": false,
+        "hasScoreRegression": false,
+        "checks": {
+          "completeExpectedPairs": true,
+          "validEvidence": true,
+          "fullWindowSurvivorsNotFewer": true,
+          "medianSurvivalDeltaNonnegative": true,
+          "noUnexplainedSurvivalLossOver5s": true,
+          "scoreWinsAtLeast4": true,
+          "medianScoreDeltaAtLeast10": true,
+          "totalScoreHigher": true,
+          "medianScoreDeltaAboveIqr": true
+        },
+        "passesEngineeringGate": true
+      },
+      {
+        "candidate": "C",
+        "reference": "A",
+        "pairedN": 5,
+        "pairs": [
+          {
+            "seed": 201,
+            "scoreDelta": 160,
+            "survivalDeltaMs": 20817.8,
+            "valid": true
+          },
+          {
+            "seed": 202,
+            "scoreDelta": 190,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 203,
+            "scoreDelta": 190,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 204,
+            "scoreDelta": 150,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 205,
+            "scoreDelta": 130,
+            "survivalDeltaMs": 0,
+            "valid": true
+          }
+        ],
+        "scoreWins": 5,
+        "scoreTies": 0,
+        "scoreDelta": {
+          "median": 160.0,
+          "min": 130,
+          "max": 190,
+          "iqr": 40.0
+        },
+        "survivalDeltaMs": {
+          "median": 0.0,
+          "min": 0,
+          "max": 20817.8,
+          "iqr": 0.0
+        },
+        "survivors": {
+          "candidate": 5,
+          "reference": 4
+        },
+        "hasSurvivalRegression": false,
+        "hasScoreRegression": false,
+        "checks": {
+          "completeExpectedPairs": true,
+          "validEvidence": true,
+          "fullWindowSurvivorsNotFewer": true,
+          "medianSurvivalDeltaNonnegative": true,
+          "noUnexplainedSurvivalLossOver5s": true,
+          "scoreWinsAtLeast4": true,
+          "medianScoreDeltaAtLeast10": true,
+          "totalScoreHigher": true,
+          "medianScoreDeltaAboveIqr": true
+        },
+        "passesEngineeringGate": true
+      },
+      {
+        "candidate": "C",
+        "reference": "B",
+        "pairedN": 5,
+        "pairs": [
+          {
+            "seed": 201,
+            "scoreDelta": 10,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 202,
+            "scoreDelta": 0,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 203,
+            "scoreDelta": -20,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 204,
+            "scoreDelta": -10,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 205,
+            "scoreDelta": -10,
+            "survivalDeltaMs": 0,
+            "valid": true
+          }
+        ],
+        "scoreWins": 1,
+        "scoreTies": 1,
+        "scoreDelta": {
+          "median": -10.0,
+          "min": -20,
+          "max": 10,
+          "iqr": 10.0
+        },
+        "survivalDeltaMs": {
+          "median": 0.0,
+          "min": 0,
+          "max": 0,
+          "iqr": 0.0
+        },
+        "survivors": {
+          "candidate": 5,
+          "reference": 5
+        },
+        "hasSurvivalRegression": false,
+        "hasScoreRegression": true,
+        "checks": {
+          "completeExpectedPairs": true,
+          "validEvidence": true,
+          "fullWindowSurvivorsNotFewer": true,
+          "medianSurvivalDeltaNonnegative": true,
+          "noUnexplainedSurvivalLossOver5s": true,
+          "scoreWinsAtLeast4": false,
+          "medianScoreDeltaAtLeast10": false,
+          "totalScoreHigher": false,
+          "medianScoreDeltaAboveIqr": false
+        },
+        "passesEngineeringGate": false
+      },
+      {
+        "candidate": "B",
+        "reference": "C",
+        "pairedN": 5,
+        "pairs": [
+          {
+            "seed": 201,
+            "scoreDelta": -10,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 202,
+            "scoreDelta": 0,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 203,
+            "scoreDelta": 20,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 204,
+            "scoreDelta": 10,
+            "survivalDeltaMs": 0,
+            "valid": true
+          },
+          {
+            "seed": 205,
+            "scoreDelta": 10,
+            "survivalDeltaMs": 0,
+            "valid": true
+          }
+        ],
+        "scoreWins": 3,
+        "scoreTies": 1,
+        "scoreDelta": {
+          "median": 10.0,
+          "min": -10,
+          "max": 20,
+          "iqr": 10.0
+        },
+        "survivalDeltaMs": {
+          "median": 0.0,
+          "min": 0,
+          "max": 0,
+          "iqr": 0.0
+        },
+        "survivors": {
+          "candidate": 5,
+          "reference": 5
+        },
+        "hasSurvivalRegression": false,
+        "hasScoreRegression": true,
+        "checks": {
+          "completeExpectedPairs": true,
+          "validEvidence": true,
+          "fullWindowSurvivorsNotFewer": true,
+          "medianSurvivalDeltaNonnegative": true,
+          "noUnexplainedSurvivalLossOver5s": true,
+          "scoreWinsAtLeast4": false,
+          "medianScoreDeltaAtLeast10": true,
+          "totalScoreHigher": true,
+          "medianScoreDeltaAboveIqr": false
+        },
+        "passesEngineeringGate": false
+      }
+    ]
+  },
+  "fast": {
+    "rawArtifact": "ai-snake-live-fast.json",
+    "rawArtifactSha256": "6a6a0004bcaca9859aa1c16bf7d7a191e357f3e3282f691de26aa865c13024c3",
+    "metadata": {
+      "createdAt": "2026-11-05T13:13:31.195Z",
+      "realApiMode": true,
+      "realModelMeasured": true,
+      "transportMode": "browser-native-fetch",
+      "selfCheck": false,
+      "endpoint": "https://api.openai.com/v1/decisions",
+      "browserVersion": "157.0.8103.39",
+      "concurrency": 2,
+      "cpuCount": 8,
+      "loadBefore": [
+        1.941406,
+        2.62793,
+        3.904785
+      ],
+      "loadAfter": [
+        2.327637,
+        2.584473,
+        3.632812
+      ],
+      "sourceStable": true,
+      "passed": true
+    },
+    "formalEvidenceValid": true,
+    "sourceVerified": true,
+    "scenarioMatchesFrozenPlan": true,
+    "models": [
+      "gpt-6-luna"
+    ],
+    "groups": {
+      "A": {
+        "n": 2,
+        "seeds": [
+          401,
+          402
+        ],
+        "scores": {
+          "mean": 25.0,
+          "median": 25.0,
+          "min": 20,
+          "max": 30
+        },
+        "survivalMs": {
+          "mean": 35619.6,
+          "median": 35619.6,
+          "min": 22155.5,
+          "max": 49083.7
+        },
+        "fullWindowSurvivors": 0,
+        "latencyP50MsAcrossGames": {
+          "mean": 402.5,
+          "median": 402.5,
+          "min": 401.3,
+          "max": 403.7
+        },
+        "latencyP90MsAcrossGames": {
+          "mean": 567.7,
+          "median": 567.7,
+          "min": 538.1,
+          "max": 597.3
+        },
+        "inputMedianBytesAcrossGames": {
+          "mean": 2659.0,
+          "median": 2659.0,
+          "min": 2651.0,
+          "max": 2667.0
+        },
+        "payloadMedianBytesAcrossGames": {
+          "mean": 3846.25,
+          "median": 3846.25,
+          "min": 3840.0,
+          "max": 3852.5
+        },
+        "requests": {
+          "requests": 140,
+          "http200": 138,
+          "parsedSuccess": 138,
+          "parsedWithinWindow": 138,
+          "parsedAfterWindow": 0,
+          "responseComplete": 138,
+          "apiRequestIds": 138,
+          "uniqueApiRequestIds": 138,
+          "pendingAtWindowEnd": 0,
+          "pendingAfterCleanup": 0,
+          "expiredOnArrival": 0
+        },
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 2,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "execution": {
+          "requests": null,
+          "completed": null,
+          "failedResponses": null,
+          "expiredResponses": null,
+          "startMismatches": null,
+          "apiMoves": null,
+          "bridgeMoves": null,
+          "forcedMoves": null,
+          "scriptMoves": null,
+          "apiEats": null,
+          "bridgeEats": null,
+          "forcedEats": null
+        },
+        "executionShares": {
+          "api": {
+            "moves": null,
+            "eats": null
+          },
+          "bridge": {
+            "moves": null,
+            "eats": null
+          },
+          "forced": {
+            "moves": null,
+            "eats": null
+          }
+        },
+        "gamesWithModelRouteMoves": null,
+        "simpleRule": {
+          "evaluated": 0,
+          "matched": 0,
+          "multiChoiceEvaluated": 0,
+          "multiChoiceMatched": 0,
+          "singleChoice": 0,
+          "unavailableParsed": 138,
+          "rate": null,
+          "multiChoiceRate": null
+        },
+        "strictValidGames": 2,
+        "runnerPassedGames": 2,
+        "clockRatio": {
+          "mean": 0.999326,
+          "median": 0.999326,
+          "min": 0.998999,
+          "max": 0.999653
+        },
+        "maxSampleGapMs": 28,
+        "maxActiveFetches": 1,
+        "allRequestIdsPresent": true,
+        "sourceSumsMatch": null
+      },
+      "B": {
+        "n": 2,
+        "seeds": [
+          401,
+          402
+        ],
+        "scores": {
+          "mean": 255.0,
+          "median": 255.0,
+          "min": 250,
+          "max": 260
+        },
+        "survivalMs": {
+          "mean": 90000.0,
+          "median": 90000.0,
+          "min": 90000,
+          "max": 90000
+        },
+        "fullWindowSurvivors": 2,
+        "latencyP50MsAcrossGames": {
+          "mean": 421.975,
+          "median": 421.975,
+          "min": 416.15,
+          "max": 427.8
+        },
+        "latencyP90MsAcrossGames": {
+          "mean": 606.05,
+          "median": 606.05,
+          "min": 545.84,
+          "max": 666.26
+        },
+        "inputMedianBytesAcrossGames": {
+          "mean": 1194.0,
+          "median": 1194.0,
+          "min": 1191.0,
+          "max": 1197.0
+        },
+        "payloadMedianBytesAcrossGames": {
+          "mean": 2281.5,
+          "median": 2281.5,
+          "min": 2241.0,
+          "max": 2322.0
+        },
+        "requests": {
+          "requests": 137,
+          "http200": 136,
+          "parsedSuccess": 136,
+          "parsedWithinWindow": 136,
+          "parsedAfterWindow": 0,
+          "responseComplete": 136,
+          "apiRequestIds": 136,
+          "uniqueApiRequestIds": 136,
+          "pendingAtWindowEnd": 1,
+          "pendingAfterCleanup": 0,
+          "expiredOnArrival": 2
+        },
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 1,
+          "otherAbort": 0
+        },
+        "execution": {
+          "requests": 137,
+          "completed": 136,
+          "failedResponses": 0,
+          "expiredResponses": 2,
+          "startMismatches": 0,
+          "apiMoves": 1263,
+          "bridgeMoves": 70,
+          "forcedMoves": 16,
+          "scriptMoves": 0,
+          "apiEats": 50,
+          "bridgeEats": 1,
+          "forcedEats": 0
+        },
+        "executionShares": {
+          "api": {
+            "moves": 0.936249,
+            "eats": 0.980392
+          },
+          "bridge": {
+            "moves": 0.05189,
+            "eats": 0.019608
+          },
+          "forced": {
+            "moves": 0.011861,
+            "eats": 0.0
+          }
+        },
+        "gamesWithModelRouteMoves": 2,
+        "simpleRule": {
+          "evaluated": 136,
+          "matched": 105,
+          "multiChoiceEvaluated": 136,
+          "multiChoiceMatched": 105,
+          "singleChoice": 0,
+          "unavailableParsed": 0,
+          "rate": 0.772059,
+          "multiChoiceRate": 0.772059
+        },
+        "strictValidGames": 2,
+        "runnerPassedGames": 2,
+        "clockRatio": {
+          "mean": 0.999826,
+          "median": 0.999826,
+          "min": 0.999744,
+          "max": 0.999908
+        },
+        "maxSampleGapMs": 28.4,
+        "maxActiveFetches": 1,
+        "allRequestIdsPresent": true,
+        "sourceSumsMatch": true
+      }
+    },
+    "games": [
+      {
+        "group": "A",
+        "seed": 401,
+        "round": 1,
+        "score": 30,
+        "survived": false,
+        "survivedMs": 49083.7,
+        "overReason": "wall",
+        "requests": 98,
+        "http200": 97,
+        "parsedSuccess": 97,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 1,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 97,
+          "p50": 403.7,
+          "p90": 538.1,
+          "min": 340.4,
+          "max": 1209
+        },
+        "clockRatio": 0.999653,
+        "maxSampleGapMs": 28,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "A",
+        "seed": 402,
+        "round": 2,
+        "score": 20,
+        "survived": false,
+        "survivedMs": 22155.5,
+        "overReason": "wall",
+        "requests": 42,
+        "http200": 41,
+        "parsedSuccess": 41,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 1,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 41,
+          "p50": 401.3,
+          "p90": 597.3,
+          "min": 334.1,
+          "max": 1115
+        },
+        "clockRatio": 0.998999,
+        "maxSampleGapMs": 28,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "B",
+        "seed": 401,
+        "round": 1,
+        "score": 250,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 75,
+        "http200": 74,
+        "parsedSuccess": 74,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 1,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 74,
+          "p50": 427.8,
+          "p90": 666.26,
+          "min": 337.4,
+          "max": 1140
+        },
+        "clockRatio": 0.999908,
+        "maxSampleGapMs": 28.4,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      },
+      {
+        "group": "B",
+        "seed": 402,
+        "round": 2,
+        "score": 260,
+        "survived": true,
+        "survivedMs": 90000,
+        "overReason": null,
+        "requests": 62,
+        "http200": 62,
+        "parsedSuccess": 62,
+        "errors": {
+          "http": 0,
+          "network": 0,
+          "parse": 0,
+          "deathAbort": 0,
+          "cleanupAbort": 0,
+          "otherAbort": 0
+        },
+        "latencyMs": {
+          "successfulParsedN": 62,
+          "p50": 416.15,
+          "p90": 545.84,
+          "min": 329.9,
+          "max": 2062.8
+        },
+        "clockRatio": 0.999744,
+        "maxSampleGapMs": 27,
+        "maxActiveFetches": 1,
+        "strictValid": true
+      }
+    ],
+    "comparisons": [
+      {
+        "candidate": "B",
+        "reference": "A",
+        "pairedN": 2,
+        "pairs": [
+          {
+            "seed": 401,
+            "scoreDelta": 220,
+            "survivalDeltaMs": 40916.3,
+            "valid": true
+          },
+          {
+            "seed": 402,
+            "scoreDelta": 240,
+            "survivalDeltaMs": 67844.5,
+            "valid": true
+          }
+        ],
+        "scoreWins": 2,
+        "scoreTies": 0,
+        "scoreDelta": {
+          "median": 230.0,
+          "min": 220,
+          "max": 240,
+          "iqr": 10.0
+        },
+        "survivalDeltaMs": {
+          "median": 54380.4,
+          "min": 40916.3,
+          "max": 67844.5,
+          "iqr": 13464.1
+        },
+        "survivors": {
+          "candidate": 2,
+          "reference": 0
+        },
+        "hasSurvivalRegression": false,
+        "hasScoreRegression": false,
+        "checks": {
+          "completeExpectedPairs": true,
+          "validEvidence": true,
+          "fullWindowSurvivorsNotFewer": true,
+          "medianSurvivalDeltaNonnegative": true,
+          "noUnexplainedSurvivalLossOver5s": true,
+          "scoreWinsAtLeast4": false,
+          "medianScoreDeltaAtLeast10": true,
+          "totalScoreHigher": true,
+          "medianScoreDeltaAboveIqr": true
+        },
+        "passesEngineeringGate": null
+      }
+    ]
+  },
+  "totals": {
+    "games": 19,
+    "requests": 1669,
+    "http200": 1663,
+    "parsedSuccess": 1663,
+    "httpErrors": 0,
+    "networkErrors": 0,
+    "parseErrors": 0,
+    "deathAborts": 3,
+    "cleanupAborts": 3
+  }
+}

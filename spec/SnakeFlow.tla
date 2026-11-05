@@ -1,7 +1,7 @@
 ---- MODULE SnakeFlow ----
 EXTENDS Naturals
 
-VARIABLES phase, aiMode, aiPending, ticks, haltTick, score, length, dir, nextDir
+VARIABLES phase, aiMode, aiPending, aiReady, readyDir, ticks, haltTick, score, length, dir, nextDir
 
 Phases == {"menu", "playing", "paused", "over"}
 Dirs == {"R", "L", "U", "D"}
@@ -18,6 +18,8 @@ Init ==
   /\ phase = "menu"
   /\ aiMode = FALSE
   /\ aiPending = FALSE
+  /\ aiReady = FALSE
+  /\ readyDir = "R"
   /\ ticks = 0
   /\ haltTick = 0
   /\ score = 0
@@ -30,6 +32,8 @@ Start ==
   /\ phase' = "playing"
   /\ aiMode' = FALSE
   /\ aiPending' = FALSE
+  /\ aiReady' = FALSE
+  /\ readyDir' = "R"
   /\ ticks' = 0
   /\ haltTick' = 0
   /\ score' = 0
@@ -41,7 +45,9 @@ StartAI ==
   /\ phase = "menu"
   /\ phase' = "playing"
   /\ aiMode' = TRUE
-  /\ aiPending' = TRUE
+  /\ aiPending' = FALSE
+  /\ aiReady' = FALSE
+  /\ readyDir' = "R"
   /\ ticks' = 0
   /\ haltTick' = 0
   /\ score' = 0
@@ -53,40 +59,65 @@ Pause ==
   /\ phase = "playing"
   /\ phase' = "paused"
   /\ haltTick' = ticks
-  /\ UNCHANGED <<aiMode, aiPending, ticks, score, length, dir, nextDir>>
+  /\ aiPending' = FALSE
+  /\ aiReady' = FALSE
+  /\ readyDir' = "R"
+  /\ UNCHANGED <<aiMode, ticks, score, length, dir, nextDir>>
 
 Resume ==
   /\ phase = "paused"
   /\ phase' = "playing"
-  /\ UNCHANGED <<aiMode, aiPending, ticks, haltTick, score, length, dir, nextDir>>
+  /\ UNCHANGED <<aiMode, aiPending, aiReady, readyDir, ticks, haltTick, score, length, dir, nextDir>>
 
 AIRequest ==
   /\ phase = "playing"
   /\ aiMode = TRUE
   /\ ~aiPending
+  /\ ~aiReady
   /\ aiPending' = TRUE
-  /\ UNCHANGED <<phase, aiMode, ticks, haltTick, score, length, dir, nextDir>>
+  /\ UNCHANGED <<phase, aiMode, aiReady, readyDir, ticks, haltTick, score, length, dir, nextDir>>
 
 AIRespond(d) ==
   /\ aiPending = TRUE
   /\ aiMode = TRUE
-  /\ phase \in {"playing", "paused"}
+  /\ phase = "playing"
   /\ d \in Dirs
   /\ aiPending' = FALSE
-  /\ nextDir' = Steer(d)
-  /\ UNCHANGED <<phase, aiMode, ticks, haltTick, score, length, dir>>
+  /\ aiReady' = TRUE
+  /\ readyDir' = d
+  /\ UNCHANGED <<phase, aiMode, ticks, haltTick, score, length, dir, nextDir>>
+
+\* 表示到达匹配的执行起点。精确棋盘匹配由会话测试检查。
+AIApply ==
+  /\ phase = "playing"
+  /\ aiMode = TRUE
+  /\ aiReady
+  /\ readyDir /= Opposite(dir)
+  /\ nextDir' = readyDir
+  /\ aiReady' = FALSE
+  /\ readyDir' = "R"
+  /\ UNCHANGED <<phase, aiMode, aiPending, ticks, haltTick, score, length, dir>>
+
+\* 表示选择已经过期，或实际棋盘与执行起点不同。
+AIDiscard ==
+  /\ phase = "playing"
+  /\ aiMode = TRUE
+  /\ aiReady
+  /\ aiReady' = FALSE
+  /\ readyDir' = "R"
+  /\ UNCHANGED <<phase, aiMode, aiPending, ticks, haltTick, score, length, dir, nextDir>>
 
 AIError ==
   /\ aiPending = TRUE
   /\ aiMode = TRUE
   /\ aiPending' = FALSE
-  /\ UNCHANGED <<phase, aiMode, ticks, haltTick, score, length, dir, nextDir>>
+  /\ UNCHANGED <<phase, aiMode, aiReady, readyDir, ticks, haltTick, score, length, dir, nextDir>>
 
 Turn(d) ==
   /\ phase = "playing"
   /\ d \in Dirs
   /\ nextDir' = Steer(d)
-  /\ UNCHANGED <<phase, aiMode, aiPending, ticks, haltTick, score, length, dir>>
+  /\ UNCHANGED <<phase, aiMode, aiPending, aiReady, readyDir, ticks, haltTick, score, length, dir>>
 
 Tick ==
   /\ phase = "playing"
@@ -95,13 +126,18 @@ Tick ==
   /\ nextDir' = nextDir
   /\ haltTick' = IF ticks' >= 5 THEN ticks' ELSE haltTick
   /\ phase' = IF ticks' >= 5 THEN "over" ELSE "playing"
-  /\ UNCHANGED <<aiMode, aiPending, score, length>>
+  /\ aiPending' = IF phase' = "over" THEN FALSE ELSE aiPending
+  /\ aiReady' = IF phase' = "over" THEN FALSE ELSE aiReady
+  /\ readyDir' = IF phase' = "over" THEN "R" ELSE readyDir
+  /\ UNCHANGED <<aiMode, score, length>>
 
 Restart ==
   /\ phase = "over"
   /\ phase' = "playing"
   /\ aiMode' = FALSE
   /\ aiPending' = FALSE
+  /\ aiReady' = FALSE
+  /\ readyDir' = "R"
   /\ ticks' = 0
   /\ haltTick' = 0
   /\ score' = 0
@@ -113,7 +149,9 @@ RestartAI ==
   /\ phase = "over"
   /\ phase' = "playing"
   /\ aiMode' = TRUE
-  /\ aiPending' = TRUE
+  /\ aiPending' = FALSE
+  /\ aiReady' = FALSE
+  /\ readyDir' = "R"
   /\ ticks' = 0
   /\ haltTick' = 0
   /\ score' = 0
@@ -123,7 +161,7 @@ RestartAI ==
 
 Done ==
   /\ phase = "over"
-  /\ UNCHANGED <<phase, aiMode, aiPending, ticks, haltTick, score, length, dir, nextDir>>
+  /\ UNCHANGED <<phase, aiMode, aiPending, aiReady, readyDir, ticks, haltTick, score, length, dir, nextDir>>
 
 AIRespondR == AIRespond("R")
 
@@ -134,6 +172,8 @@ Next ==
   \/ Resume
   \/ AIRequest
   \/ AIRespondR
+  \/ AIApply
+  \/ AIDiscard
   \/ AIError
   \/ Tick
   \/ Restart
@@ -144,6 +184,8 @@ TypeOK ==
   /\ phase \in Phases
   /\ aiMode \in BOOLEAN
   /\ aiPending \in BOOLEAN
+  /\ aiReady \in BOOLEAN
+  /\ readyDir \in Dirs
   /\ ticks \in Nat
   /\ haltTick \in Nat
   /\ score \in Nat
