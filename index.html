@@ -145,8 +145,9 @@
         <button id="retry-ai" class="btn" type="button">重试</button>
       </div>
       <div class="latency-card">
-        <p id="ai-latency" class="latency-value" aria-live="polite">决策延迟：等待首次响应</p>
-        <p class="latency-hint">请求期间蛇照常移动。P50 / P90 为最近 20 次请求的延迟分位数。</p>
+        <p class="latency-label">最近延迟</p>
+        <p class="latency-value" aria-live="polite"><span id="ai-latency">--</span><span class="latency-unit">ms</span></p>
+        <p id="ai-latency-stats" class="latency-stats"></p>
       </div>
       <section class="panel-section log-section">
         <h3 class="section-title">决策记录</h3>

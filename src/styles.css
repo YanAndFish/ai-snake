@@ -230,24 +230,50 @@ body[data-phase="menu"] #hud .difficulty-group {
 
 .latency-card {
   margin-top: 14px;
-  padding: 11px;
-  border: 2px solid var(--line);
+  padding: 14px 13px;
+  border: 2px solid var(--line-hot);
   background: #0a140d;
 }
 
-.latency-value {
-  margin: 0;
-  color: var(--green-bright);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.7;
+.latency-label {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.12em;
 }
 
-.latency-hint {
-  margin: 6px 0 0;
+.latency-value {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 0;
+  color: var(--green-bright);
+  font-family: var(--pixel);
+  font-size: 32px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 3px 0 #051007;
+}
+
+.latency-unit {
   color: var(--muted);
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+.latency-stats {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-family: var(--mono);
   font-size: 11px;
-  line-height: 1.7;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.latency-stats:empty {
+  display: none;
 }
 
 .phase-chip {
@@ -625,14 +651,14 @@ body[data-ai-panel="closed"] .ai-tab {
 
 .ai-log {
   margin: 0;
-  padding: 10px;
+  padding: 10px 12px;
   color: #a9bda5;
   background: #060b07;
   border: 0;
   font-family: var(--mono);
-  font-size: 10px;
-  line-height: 1.35;
-  max-height: 190px;
+  font-size: 11px;
+  line-height: 1.8;
+  max-height: 200px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
