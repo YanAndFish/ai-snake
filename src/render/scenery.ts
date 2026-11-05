@@ -81,7 +81,7 @@ export function createScenery(seed: number): THREE.Group {
   const reeds = reedsTexture();
   const flowers = [wildflowerTexture("#d1b5d6"), wildflowerTexture("#e3af9d"), wildflowerTexture("#f2e5b3")];
 
-  /** 收集竖立景物，并按体积添加同方向的地面阴影。 */
+  /** 收集竖立景物，并添加贴近底部的地面阴影。 */
   function plant(texture: THREE.Texture, x: number, z: number, height: number, width = height): void {
     let patches = batches.get(texture);
     if (patches === undefined) {
@@ -89,12 +89,19 @@ export function createScenery(seed: number): THREE.Group {
       batches.set(texture, patches);
     }
     patches.push({ x, z, width, height });
+    const isTree = texture === oak || texture === birch || texture === pine;
+    // 树冠决定投影大小，偏移量保持较小，让投影与树根相连。
+    const shadowOffset = isTree ? 1 : height;
     shadows.push({
-      x: x + SHADOW_OFFSET_X * height,
-      z: z + SHADOW_OFFSET_Z * height,
+      x: x + SHADOW_OFFSET_X * shadowOffset,
+      z: z + SHADOW_OFFSET_Z * shadowOffset,
       width: width * 0.85,
       height: width * 0.5,
     });
+    if (isTree) {
+      // 树干与地面接触处更暗，细树干也能看清落点。
+      shadows.push({ x, z, width: width * 0.3, height: width * 0.18 });
+    }
   }
 
   const path = createPatchMesh(pathTexture(), [{ x: BOARD_WIDTH / 2, z: BOARD_HEIGHT / 2, width: 80, height: 80 }], true);

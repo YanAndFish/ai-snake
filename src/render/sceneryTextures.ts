@@ -44,7 +44,8 @@ export function treeTexture(golden = false): THREE.CanvasTexture {
     const rng = new Rng(0x7ee);
     ctx.fillStyle = "#503d2c";
     ctx.fillRect(21, 29, 8, 32);
-    ctx.fillRect(17, 59, 17, 4);
+    // 树根延伸到贴图底边，使可见轮廓与地面锚点重合。
+    ctx.fillRect(17, 59, 17, 5);
     ctx.fillRect(16, 35, 8, 5);
     ctx.fillRect(27, 30, 8, 5);
     ctx.fillStyle = golden ? "#c8c4a0" : "#99704b";
@@ -84,7 +85,8 @@ export function treeTexture(golden = false): THREE.CanvasTexture {
 export function pineTexture(): THREE.CanvasTexture {
   return paintTexture(40, 64, (ctx) => {
     ctx.fillStyle = "#594934";
-    ctx.fillRect(17, 39, 6, 24);
+    ctx.fillRect(17, 39, 6, 25);
+    ctx.fillRect(15, 62, 10, 2);
     ctx.fillStyle = "#9a7f50";
     ctx.fillRect(18, 43, 2, 18);
     for (let tier = 0; tier < 3; tier += 1) {
