@@ -13,8 +13,10 @@ import {
   apiKeyValue,
   bindUi,
   clearApiKeyInput,
+  closeAiPanelIfCompact,
   flashScreen,
   hideAllOverlays,
+  openAiPanel,
   setMuteLabel,
   showFatal,
   showMenu,
@@ -96,8 +98,9 @@ function startAi(): void {
   clearApiKeyInput();
   try {
     session.start({ ai: true });
+    closeAiPanelIfCompact();
   } catch {
-    // the AI panel already shows 等待 Key
+    openAiPanel();
   }
 }
 
@@ -137,7 +140,7 @@ const input = new Input(window, {
   onPause: togglePause,
   onRestart: restart,
   onMute: () => setMuteLabel(audio.toggleMute()),
-});
+}, canvas);
 
 const frameCtx: FrameHotContext = {
   lastPhase: "",
@@ -179,12 +182,12 @@ const loop = new Loop({
 });
 
 function resize(): void {
-  const w = canvas.clientWidth || 640;
-  const h = canvas.clientHeight || 480;
-  scene?.resize(w, h);
+  scene?.resize(canvas.clientWidth, canvas.clientHeight);
 }
 
-window.addEventListener("resize", resize);
+const stageObserver = new ResizeObserver(resize);
+const stageNode = document.getElementById("stage");
+if (stageNode) stageObserver.observe(stageNode);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && session.state.phase === "playing") session.pause();
 });

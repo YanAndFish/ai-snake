@@ -6,6 +6,13 @@
     if (!ok) throw new Error(message);
   };
   const same = (a, b, message) => assert(JSON.stringify(a) === JSON.stringify(b), message);
+  const waitFor = async (check, message, timeoutMs = 1000) => {
+    const started = performance.now();
+    while (!check()) {
+      if (performance.now() - started > timeoutMs) throw new Error(message);
+      await new Promise((resolve) => window.setTimeout(resolve, 20));
+    }
+  };
 
   api.ai.clearMock();
   api.start({ seed: 12345 });
@@ -195,12 +202,39 @@
   api.stepMoves(1);
   assert(api.getState().snake[0].y === beforeHead.y - 1, "AI move was not applied");
   await api.ai.waitForIdle(2000);
-  await new Promise((resolve) => window.setTimeout(resolve, 30));
   const decisionLog = api.getAiLog();
   const newest = decisionLog[decisionLog.length - 1];
   assert(newest.latencyMs >= 50, "决策记录缺少请求耗时");
-  assert(document.querySelector("#ai-latency").textContent.includes("P90"), "AI 面板没有显示延迟统计");
-  assert(document.querySelector("#ai-log").textContent.startsWith(`#${newest.requestId} ·`), "最新决策记录没有排在顶部");
+  await waitFor(
+    () => document.querySelector("#ai-latency").textContent.includes("P90"),
+    "AI 面板没有显示延迟统计",
+  );
+  await waitFor(
+    () => document.querySelector("#ai-log").textContent.startsWith(`#${newest.requestId} ·`),
+    "最新决策记录没有排在顶部",
+  );
+
+  const panel = document.querySelector("#ai-panel");
+  const panelTab = document.querySelector("#ai-tab");
+  const panelClose = document.querySelector("#ai-close");
+  assert(panel && panelTab && panelClose, "AI 控制台缺少关闭或重开按钮");
+  if (getComputedStyle(panel).display === "none") panelTab.click();
+  await waitFor(() => getComputedStyle(panel).display !== "none", "AI 控制台没有打开");
+  const stageBeforeClose = document.querySelector("#stage").clientWidth;
+  panelClose.click();
+  await waitFor(() => getComputedStyle(panel).display === "none", "AI 控制台没有关闭");
+  assert(panelTab.getAttribute("aria-expanded") === "false", "关闭后 aria-expanded 仍为 true");
+  if (window.matchMedia("(min-width: 901px)").matches) {
+    assert(document.querySelector("#stage").clientWidth > stageBeforeClose, "关闭控制台后画布没有释放宽度");
+  }
+  panelTab.click();
+  await waitFor(() => getComputedStyle(panel).display !== "none", "AI 控制台没有重新打开");
+  const canvasNode = document.querySelector("#world");
+  const camera = window.__pixelSerpent.scene.camera;
+  await waitFor(
+    () => Math.abs(camera.aspect - canvasNode.clientWidth / canvasNode.clientHeight) < 0.01,
+    "相机宽高比没有跟随画布",
+  );
 
   await document.fonts.ready;
   assert(document.querySelector("#restart-over-ai"), "AI restart button is missing");
