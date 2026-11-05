@@ -1,0 +1,651 @@
+{
+  "plan": {
+    "baselineCommit": "7eb7e83e6db7ad053211355c69cbbb0af1fabd76",
+    "candidate": "batch",
+    "developmentSeeds": [
+      1201,
+      1202,
+      1203
+    ],
+    "validationSeeds": [
+      1301,
+      1302,
+      1303,
+      1304,
+      1305,
+      1306,
+      1307,
+      1308,
+      1309,
+      1310
+    ],
+    "utility": "score + survivedMs / 2000",
+    "developmentCriteria": "总得分和综合分均提高",
+    "validationCriteria": "平均得分提高，平均综合分至少增加 5；存活和提前死亡单列，不设存活硬门槛",
+    "durationMs": 60000,
+    "concurrency": 2,
+    "apiConcurrencyPerGame": 1,
+    "stop": "固定三对开发、十对独立验证；开发失败可基于明确错误修正一次并使用新开发种子，不反复调参直到通过",
+    "revision": {
+      "reason": "执行完一段再请求会增加等待；允许预测已由 AI 决定的动作终点并提前请求",
+      "seeds": [
+        1211,
+        1212,
+        1213
+      ],
+      "apiConcurrencyPerGame": 1
+    }
+  },
+  "stages": {
+    "development": {
+      "stage": "development",
+      "sourceStable": true,
+      "passed": true,
+      "realModelMeasured": true,
+      "summary": {
+        "baseline": {
+          "games": 3,
+          "scores": [
+            0,
+            0,
+            10
+          ],
+          "survivalSeconds": [
+            1.685,
+            30.0,
+            30.0
+          ],
+          "scoreTotal": 10,
+          "meanScore": 3.3333333333333335,
+          "survivalTotalSeconds": 61.68479999995232,
+          "meanSurvivalSeconds": 20.561599999984104,
+          "meanUtility": 13.614133333325386,
+          "fullWindow": 2,
+          "requests": 105,
+          "parsed": 103,
+          "multiStepResponses": 0,
+          "meanSteps": 1,
+          "latencyMedianMs": 452.7999999523163,
+          "firstResponseDeaths": 1,
+          "errors": {
+            "deathAbort": 1,
+            "cleanupAbort": 1
+          },
+          "expired": 0
+        },
+        "batch": {
+          "games": 3,
+          "scores": [
+            0,
+            0,
+            0
+          ],
+          "survivalSeconds": [
+            1.682,
+            30.0,
+            1.685
+          ],
+          "scoreTotal": 0,
+          "meanScore": 0,
+          "survivalTotalSeconds": 33.36679999995231,
+          "meanSurvivalSeconds": 11.122266666650772,
+          "meanUtility": 5.561133333325386,
+          "fullWindow": 1,
+          "requests": 40,
+          "parsed": 38,
+          "multiStepResponses": 6,
+          "meanSteps": 1.368421052631579,
+          "latencyMedianMs": 568.1499999761581,
+          "firstResponseDeaths": 2,
+          "errors": {
+            "deathAbort": 2
+          },
+          "expired": 0
+        }
+      },
+      "meanUtilityDifference": -8.053,
+      "meetsCriteria": false,
+      "pairs": [
+        {
+          "seed": 1201,
+          "baselineScore": 0,
+          "batchScore": 0,
+          "baselineSurvivalSeconds": 1.6847999999523162,
+          "batchSurvivalSeconds": 1.6822999999523163,
+          "utilityDifference": -0.00125
+        },
+        {
+          "seed": 1202,
+          "baselineScore": 0,
+          "batchScore": 0,
+          "baselineSurvivalSeconds": 30.0,
+          "batchSurvivalSeconds": 30.0,
+          "utilityDifference": 0.0
+        },
+        {
+          "seed": 1203,
+          "baselineScore": 10,
+          "batchScore": 0,
+          "baselineSurvivalSeconds": 30.0,
+          "batchSurvivalSeconds": 1.6845,
+          "utilityDifference": -24.15775
+        }
+      ],
+      "executionAudits": [
+        {
+          "name": "baseline",
+          "seed": 1201,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1201,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1202,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1202,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1203,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1203,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        }
+      ]
+    },
+    "development-v2": {
+      "stage": "development-v2",
+      "sourceStable": true,
+      "passed": true,
+      "realModelMeasured": true,
+      "summary": {
+        "baseline": {
+          "games": 3,
+          "scores": [
+            0,
+            0,
+            40
+          ],
+          "survivalSeconds": [
+            1.683,
+            5.009,
+            30.0
+          ],
+          "scoreTotal": 40,
+          "meanScore": 13.333333333333334,
+          "survivalTotalSeconds": 36.692099999904634,
+          "meanSurvivalSeconds": 12.230699999968211,
+          "meanUtility": 19.44868333331744,
+          "fullWindow": 1,
+          "requests": 62,
+          "parsed": 59,
+          "multiStepResponses": 0,
+          "meanSteps": 1,
+          "latencyMedianMs": 432,
+          "firstResponseDeaths": 1,
+          "errors": {
+            "deathAbort": 1,
+            "http": 1,
+            "cleanupAbort": 1
+          },
+          "expired": 0
+        },
+        "batch": {
+          "games": 3,
+          "scores": [
+            0,
+            20,
+            50
+          ],
+          "survivalSeconds": [
+            1.684,
+            23.185,
+            27.186
+          ],
+          "scoreTotal": 70,
+          "meanScore": 23.333333333333332,
+          "survivalTotalSeconds": 52.054699999809266,
+          "meanSurvivalSeconds": 17.351566666603087,
+          "meanUtility": 32.00911666663488,
+          "fullWindow": 0,
+          "requests": 67,
+          "parsed": 64,
+          "multiStepResponses": 30,
+          "meanSteps": 2.625,
+          "latencyMedianMs": 544.2000000476837,
+          "firstResponseDeaths": 1,
+          "errors": {
+            "deathAbort": 2,
+            "http": 1
+          },
+          "expired": 0
+        }
+      },
+      "meanUtilityDifference": 12.560433333317441,
+      "meetsCriteria": true,
+      "pairs": [
+        {
+          "seed": 1211,
+          "baselineScore": 0,
+          "batchScore": 0,
+          "baselineSurvivalSeconds": 1.6832999999523164,
+          "batchSurvivalSeconds": 1.6838999998569488,
+          "utilityDifference": 0.00029999995231628417
+        },
+        {
+          "seed": 1212,
+          "baselineScore": 0,
+          "batchScore": 20,
+          "baselineSurvivalSeconds": 5.008799999952316,
+          "batchSurvivalSeconds": 23.185299999952317,
+          "utilityDifference": 29.088250000000002
+        },
+        {
+          "seed": 1213,
+          "baselineScore": 40,
+          "batchScore": 50,
+          "baselineSurvivalSeconds": 30.0,
+          "batchSurvivalSeconds": 27.1855,
+          "utilityDifference": 8.59275
+        }
+      ],
+      "executionAudits": [
+        {
+          "name": "baseline",
+          "seed": 1211,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1211,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1212,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1212,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1213,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1213,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        }
+      ]
+    },
+    "validation": {
+      "stage": "validation",
+      "sourceStable": true,
+      "passed": true,
+      "realModelMeasured": true,
+      "summary": {
+        "baseline": {
+          "games": 10,
+          "scores": [
+            0,
+            10,
+            10,
+            10,
+            20,
+            0,
+            20,
+            0,
+            0,
+            30
+          ],
+          "survivalSeconds": [
+            56.357,
+            25.18,
+            44.68,
+            60.0,
+            60.0,
+            60.0,
+            60.0,
+            60.0,
+            53.682,
+            60.0
+          ],
+          "scoreTotal": 100,
+          "meanScore": 10,
+          "survivalTotalSeconds": 539.8992000000477,
+          "meanSurvivalSeconds": 53.98992000000477,
+          "meanUtility": 36.994960000002386,
+          "fullWindow": 6,
+          "requests": 909,
+          "parsed": 900,
+          "multiStepResponses": 0,
+          "meanSteps": 1,
+          "latencyMedianMs": 459.8000000715256,
+          "firstResponseDeaths": 0,
+          "errors": {
+            "http": 3,
+            "deathAbort": 3,
+            "cleanupAbort": 3
+          },
+          "expired": 0
+        },
+        "batch": {
+          "games": 10,
+          "scores": [
+            30,
+            10,
+            10,
+            20,
+            0,
+            0,
+            0,
+            20,
+            0,
+            70
+          ],
+          "survivalSeconds": [
+            60.0,
+            14.357,
+            5.011,
+            60.0,
+            1.681,
+            1.685,
+            1.686,
+            8.011,
+            1.657,
+            43.184
+          ],
+          "scoreTotal": 160,
+          "meanScore": 16,
+          "survivalTotalSeconds": 197.27319999980926,
+          "meanSurvivalSeconds": 19.727319999980924,
+          "meanUtility": 25.863659999990464,
+          "fullWindow": 2,
+          "requests": 262,
+          "parsed": 249,
+          "multiStepResponses": 124,
+          "meanSteps": 2.9558232931726907,
+          "latencyMedianMs": 545.7000000476837,
+          "firstResponseDeaths": 4,
+          "errors": {
+            "http": 1,
+            "cleanupAbort": 2,
+            "deathAbort": 5,
+            "parse": 5
+          },
+          "expired": 5
+        }
+      },
+      "meanUtilityDifference": -11.131300000011922,
+      "meetsCriteria": false,
+      "pairs": [
+        {
+          "seed": 1301,
+          "baselineScore": 0,
+          "batchScore": 30,
+          "baselineSurvivalSeconds": 56.35670000004768,
+          "batchSurvivalSeconds": 60.0,
+          "utilityDifference": 31.82164999997616
+        },
+        {
+          "seed": 1302,
+          "baselineScore": 10,
+          "batchScore": 10,
+          "baselineSurvivalSeconds": 25.17989999985695,
+          "batchSurvivalSeconds": 14.357399999856948,
+          "utilityDifference": -5.41125
+        },
+        {
+          "seed": 1303,
+          "baselineScore": 10,
+          "batchScore": 10,
+          "baselineSurvivalSeconds": 44.680200000047684,
+          "batchSurvivalSeconds": 5.011100000143051,
+          "utilityDifference": -19.834549999952316
+        },
+        {
+          "seed": 1304,
+          "baselineScore": 10,
+          "batchScore": 20,
+          "baselineSurvivalSeconds": 60.0,
+          "batchSurvivalSeconds": 60.0,
+          "utilityDifference": 10.0
+        },
+        {
+          "seed": 1305,
+          "baselineScore": 20,
+          "batchScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "batchSurvivalSeconds": 1.6813999998569489,
+          "utilityDifference": -49.159300000071525
+        },
+        {
+          "seed": 1306,
+          "baselineScore": 0,
+          "batchScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "batchSurvivalSeconds": 1.6846000001430512,
+          "utilityDifference": -29.157699999928475
+        },
+        {
+          "seed": 1307,
+          "baselineScore": 20,
+          "batchScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "batchSurvivalSeconds": 1.6859000000953674,
+          "utilityDifference": -49.15704999995232
+        },
+        {
+          "seed": 1308,
+          "baselineScore": 0,
+          "batchScore": 20,
+          "baselineSurvivalSeconds": 60.0,
+          "batchSurvivalSeconds": 8.011399999856948,
+          "utilityDifference": -5.994300000071526
+        },
+        {
+          "seed": 1309,
+          "baselineScore": 0,
+          "batchScore": 0,
+          "baselineSurvivalSeconds": 53.68240000009537,
+          "batchSurvivalSeconds": 1.656899999856949,
+          "utilityDifference": -26.01275000011921
+        },
+        {
+          "seed": 1310,
+          "baselineScore": 30,
+          "batchScore": 70,
+          "baselineSurvivalSeconds": 60.0,
+          "batchSurvivalSeconds": 43.1845,
+          "utilityDifference": 31.59225
+        }
+      ],
+      "executionAudits": [
+        {
+          "name": "baseline",
+          "seed": 1301,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1301,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1302,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1302,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1303,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1303,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1304,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1304,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1305,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1305,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1306,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1306,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1307,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1307,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1308,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1308,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1309,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1309,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "batch",
+          "seed": 1310,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        },
+        {
+          "name": "baseline",
+          "seed": 1310,
+          "unattributedTurns": 0,
+          "keepTurns": 0,
+          "violations": []
+        }
+      ]
+    }
+  },
+  "traceArchive": {
+    "path": "ai-batch-traces.json.gz",
+    "bytes": 1929837,
+    "sha256": "28fa4f22eb29a5abb5cfbcc7ab613d11a3d70160fe68c14ed6d59579892e150a"
+  }
+}
