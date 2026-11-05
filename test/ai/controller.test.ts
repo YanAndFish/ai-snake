@@ -15,6 +15,13 @@ function args(signal = new AbortController().signal) {
 }
 
 describe("AI controller", () => {
+  it("KEEP 返回当前方向，日志保留独立操作", async () => {
+    const controller = new AiController({ decide: async () => '{"moves":["KEEP"]}' });
+    expect(await controller.request(args())).toEqual(["right"]);
+    expect(controller.getLog()[0]).toMatchObject({ action: "keep", moves: ["right"] });
+    expect(controller.plan).toEqual([]);
+  });
+
   it("Mock 响应经过真实解析器并返回一个方向", async () => {
     const controller = new AiController({ decide: async () => "" });
     controller.useMock({ moves: ["up"], reason: "mock plan" });

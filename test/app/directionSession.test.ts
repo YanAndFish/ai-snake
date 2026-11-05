@@ -3,14 +3,14 @@ import type { DecisionRequest, DecisionTransport } from "../../src/ai/client";
 import { AiController } from "../../src/ai/controller";
 import { KeyStore } from "../../src/app/keyStore";
 import { GameSession } from "../../src/app/session";
-import type { Direction } from "../../src/sim/types";
+import type { AiAction } from "../../src/ai/types";
 
 /** 可由测试决定成功、失败和到达时间的一次请求。 */
 interface Call {
   /** 真实控制器传给网络层的请求参数。 */
   request: DecisionRequest;
-  /** 返回指定方向，省略时返回上。 */
-  answer(direction?: Direction): void;
+  /** 返回指定操作，省略时返回上。 */
+  answer(direction?: AiAction): void;
   /** 让当前请求失败。 */
   fail(): void;
 }
@@ -34,6 +34,52 @@ function harness() {
 }
 
 describe("AI 当前方向控制", () => {
+  it("KEEP 在下一次移动消耗一次操作，沿当前方向正常移动", async () => {
+    const { game, calls, controller } = harness();
+    game.start({ seed: 2, ai: true });
+    game.stepMoves(3);
+    const before = game.getState();
+    calls[0].answer("keep");
+    await game.waitForIdle();
+    expect(game.getState()).toEqual(before);
+    expect(calls).toHaveLength(1);
+    expect(controller.getLog()[0].action).toBe("keep");
+    const after = game.stepMoves(1);
+    expect(after.direction).toBe("right");
+    expect(after.snake[0]).toEqual({ x: 13, y: 9 });
+    expect(after.tick - before.tick).toBe(before.moveEveryTicks);
+    expect(after.moveEveryTicks).toBe(before.moveEveryTicks);
+    expect(after.phase).toBe("playing");
+    expect(calls).toHaveLength(2);
+    expect(game.getAiExecutionStats()).toMatchObject({ apiMoves: 1, coastMoves: 3 });
+    game.stopAi();
+  });
+
+  it("面对墙壁选择 KEEP 时照常碰撞", async () => {
+    const { game, calls } = harness();
+    game.start({ seed: 2, ai: true });
+    game.setSnake([{ x: 18, y: 0 }, { x: 17, y: 0 }, { x: 16, y: 0 }], "right");
+    game.retryAi();
+    expect(calls[1].request.choiceDescriptions?.keep).toContain("COLLISION wall");
+    calls[1].answer("keep");
+    await game.waitForIdle();
+    const state = game.stepMoves(1);
+    expect(state.direction).toBe("right");
+    expect(state.overReason).toBe("wall");
+  });
+
+  it("外部转向后丢弃先前请求返回的 KEEP", async () => {
+    const { game, calls } = harness();
+    game.start({ seed: 2, ai: true });
+    game.setDirection("up");
+    calls[0].answer("keep");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(game.stepMoves(1).direction).toBe("up");
+    expect(game.getAiExecutionStats().apiMoves).toBe(0);
+    game.stopAi();
+  });
+
   it("每次请求使用当前棋盘，响应在下一次移动执行", async () => {
     const { game, calls, controller } = harness();
     const started = game.start({ seed: 2, ai: true });

@@ -1,0 +1,5764 @@
+{
+  "protocol": {
+    "keep-validation-plan.json": {
+      "baselineCommit": "2abd0988d46063fd108512297bd1ef7800b464fe",
+      "candidate": "keep",
+      "developmentSeeds": [
+        601,
+        602,
+        603
+      ],
+      "validationSeeds": [
+        801,
+        802,
+        803,
+        804,
+        805,
+        806,
+        807,
+        808,
+        809,
+        810
+      ],
+      "validationDurationMs": 60000,
+      "concurrency": 2,
+      "difficulty": "normal",
+      "criteria": "分别报告得分与存活，只有总得分提高且存活不下降时才宣称双目标改善",
+      "stopRule": "完成全部十对后判断",
+      "featureRequirement": "保留用户要求的 KEEP 操作支持，实验结果决定是否宣称效果提升",
+      "promptSha256": "784fd8836f28474ecf283e67d52965ea917dfdeebf203731c8e61ac06347818d"
+    },
+    "validation-plan.json": {
+      "baselineCommit": "2abd0988d46063fd108512297bd1ef7800b464fe",
+      "developmentSeeds": [
+        601,
+        602,
+        603
+      ],
+      "validationSeeds": [
+        701,
+        702,
+        703,
+        704,
+        705,
+        706,
+        707,
+        708,
+        709,
+        710
+      ],
+      "validationDurationMs": 60000,
+      "concurrency": 2,
+      "difficulty": "normal",
+      "criteria": "总得分提高，总存活时长和活满窗口局数不下降",
+      "stopRule": "完成全部十对后判断，不因中间结果追加或提前停止",
+      "candidate": "geometry",
+      "promptSha256": "43b96a0ef3233483ecce28bcb9935723583eaf8c3d1392b6142fefa1765b9191"
+    },
+    "food-first-validation-plan.json": {
+      "baselineCommit": "2abd0988d46063fd108512297bd1ef7800b464fe",
+      "baselineVariant": "keep",
+      "candidate": "keep-food-first",
+      "developmentSeeds": [
+        601,
+        602,
+        603
+      ],
+      "diagnosticSeeds": [
+        801,
+        802,
+        803,
+        804,
+        805,
+        806,
+        807,
+        808,
+        809,
+        810
+      ],
+      "validationSeeds": [
+        901,
+        902,
+        903,
+        904,
+        905,
+        906,
+        907,
+        908,
+        909,
+        910
+      ],
+      "validationDurationMs": 60000,
+      "concurrency": 2,
+      "difficulty": "normal",
+      "criteria": "总得分提高，总存活时长和活满窗口局数不下降",
+      "stopRule": "完成全部十对后判断，本轮不追加验证样本",
+      "promptSha256": "5132ef6e86941e94228514949663814569b33ac26bdbeeda350a5f5128a16ce4"
+    }
+  },
+  "stages": [
+    {
+      "name": "momentum",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "baseline": {
+          "games": 3,
+          "scoreTotal": 0,
+          "meanScore": 0,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 155,
+          "keepExecutions": 0,
+          "turns": 145,
+          "recordedMoves": 538
+        },
+        "momentum": {
+          "games": 3,
+          "scoreTotal": 0,
+          "meanScore": 0,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 156,
+          "keepExecutions": 0,
+          "turns": 149,
+          "recordedMoves": 539
+        }
+      },
+      "games": [
+        {
+          "name": "baseline",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 460.10000014305115,
+          "latencyP90Ms": 632.2999999523163,
+          "medianPayloadBytes": 2429.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 50
+          }
+        },
+        {
+          "name": "momentum",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 51,
+          "parsed": 50,
+          "latencyP50Ms": 467.10000014305115,
+          "latencyP90Ms": 651.8000001907349,
+          "medianPayloadBytes": 2832,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 51,
+            "completed": 50,
+            "failedResponses": 0,
+            "apiMoves": 50,
+            "coastMoves": 130,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 49
+          }
+        },
+        {
+          "name": "momentum",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 54,
+          "parsed": 53,
+          "latencyP50Ms": 452.2999999523163,
+          "latencyP90Ms": 561.5,
+          "medianPayloadBytes": 2826.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 54,
+            "completed": 53,
+            "failedResponses": 0,
+            "apiMoves": 53,
+            "coastMoves": 127,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 51
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 53,
+          "parsed": 52,
+          "latencyP50Ms": 449.2999999523163,
+          "latencyP90Ms": 600.5,
+          "medianPayloadBytes": 2425,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 53,
+            "completed": 52,
+            "failedResponses": 0,
+            "apiMoves": 52,
+            "coastMoves": 127,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 51
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 53,
+          "parsed": 52,
+          "latencyP50Ms": 443.90000009536743,
+          "latencyP90Ms": 557.2000000476837,
+          "medianPayloadBytes": 2429,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 53,
+            "completed": 52,
+            "failedResponses": 0,
+            "apiMoves": 52,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 44
+          }
+        },
+        {
+          "name": "momentum",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 54,
+          "parsed": 53,
+          "latencyP50Ms": 443.2000000476837,
+          "latencyP90Ms": 569.1000001430511,
+          "medianPayloadBytes": 2833.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 54,
+            "completed": 53,
+            "failedResponses": 0,
+            "apiMoves": 53,
+            "coastMoves": 126,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 49
+          }
+        }
+      ],
+      "sourceHashes": {
+        "baseline": "760e4d750b551bdaa01dce5fb7cd44564417ba8d37cdcd58465f1e6401ccd1bc",
+        "momentum": "a035d3c638dae39f128ca521f4456fc46101f6af697d7e8395b9c2625688c86f"
+      }
+    },
+    {
+      "name": "geometry",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "baseline": {
+          "games": 3,
+          "scoreTotal": 10,
+          "meanScore": 3.3333333333333335,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 156,
+          "keepExecutions": 0,
+          "turns": 141,
+          "recordedMoves": 538
+        },
+        "geometry": {
+          "games": 3,
+          "scoreTotal": 30,
+          "meanScore": 10,
+          "medianScore": 10,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 157,
+          "keepExecutions": 0,
+          "turns": 135,
+          "recordedMoves": 540
+        }
+      },
+      "games": [
+        {
+          "name": "baseline",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 54,
+          "parsed": 53,
+          "latencyP50Ms": 415.7999999523163,
+          "latencyP90Ms": 654,
+          "medianPayloadBytes": 2431.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 54,
+            "completed": 53,
+            "failedResponses": 0,
+            "apiMoves": 53,
+            "coastMoves": 126,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 52
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 55,
+          "parsed": 54,
+          "latencyP50Ms": 410.7000000476837,
+          "latencyP90Ms": 543.1000001430511,
+          "medianPayloadBytes": 2807,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 55,
+            "completed": 54,
+            "failedResponses": 0,
+            "apiMoves": 54,
+            "coastMoves": 126,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 48
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 465.90000009536743,
+          "latencyP90Ms": 668.5999999046326,
+          "medianPayloadBytes": 2801.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 45
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 458.2999999523163,
+          "latencyP90Ms": 628.5,
+          "medianPayloadBytes": 2426.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 47
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 53,
+          "parsed": 52,
+          "latencyP50Ms": 443.7000000476837,
+          "latencyP90Ms": 608.7000000476837,
+          "medianPayloadBytes": 2429,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 53,
+            "completed": 52,
+            "failedResponses": 0,
+            "apiMoves": 52,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 42
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 20,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 53,
+          "parsed": 52,
+          "latencyP50Ms": 455.19999980926514,
+          "latencyP90Ms": 562.4000000953674,
+          "medianPayloadBytes": 2802,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 53,
+            "completed": 52,
+            "failedResponses": 0,
+            "apiMoves": 52,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 42
+          }
+        }
+      ],
+      "sourceHashes": {
+        "baseline": "760e4d750b551bdaa01dce5fb7cd44564417ba8d37cdcd58465f1e6401ccd1bc",
+        "geometry": "eb99656a1750e7e04b7b83252ae30a15042063b4824d764c9a909ea3e89476fd"
+      }
+    },
+    {
+      "name": "coast",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "baseline": {
+          "games": 3,
+          "scoreTotal": 10,
+          "meanScore": 3.3333333333333335,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 153,
+          "keepExecutions": 0,
+          "turns": 142,
+          "recordedMoves": 539
+        },
+        "coast": {
+          "games": 3,
+          "scoreTotal": 0,
+          "meanScore": 0,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 151,
+          "keepExecutions": 0,
+          "turns": 136,
+          "recordedMoves": 539
+        }
+      },
+      "games": [
+        {
+          "name": "baseline",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 55,
+          "parsed": 54,
+          "latencyP50Ms": 422.5,
+          "latencyP90Ms": 562.5999999046326,
+          "medianPayloadBytes": 2430,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 55,
+            "completed": 54,
+            "failedResponses": 0,
+            "apiMoves": 54,
+            "coastMoves": 126,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 52
+          }
+        },
+        {
+          "name": "coast",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 53,
+          "parsed": 52,
+          "latencyP50Ms": 456.59999990463257,
+          "latencyP90Ms": 578.0999999046326,
+          "medianPayloadBytes": 3462,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 53,
+            "completed": 52,
+            "failedResponses": 0,
+            "apiMoves": 52,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 51
+          }
+        },
+        {
+          "name": "coast",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 48,
+          "parsed": 47,
+          "latencyP50Ms": 510.10000014305115,
+          "latencyP90Ms": 726.7999999523163,
+          "medianPayloadBytes": 3481.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 48,
+            "completed": 47,
+            "failedResponses": 0,
+            "apiMoves": 47,
+            "coastMoves": 132,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 37
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 51,
+          "parsed": 50,
+          "latencyP50Ms": 444.2999999523163,
+          "latencyP90Ms": 657.1000001430511,
+          "medianPayloadBytes": 2430,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 51,
+            "completed": 50,
+            "failedResponses": 0,
+            "apiMoves": 50,
+            "coastMoves": 130,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 46
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 50,
+          "parsed": 49,
+          "latencyP50Ms": 474.80000019073486,
+          "latencyP90Ms": 695.2000000476837,
+          "medianPayloadBytes": 2429.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 50,
+            "completed": 49,
+            "failedResponses": 0,
+            "apiMoves": 49,
+            "coastMoves": 130,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 44
+          }
+        },
+        {
+          "name": "coast",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 53,
+          "parsed": 52,
+          "latencyP50Ms": 425.2999999523163,
+          "latencyP90Ms": 555.7999999523163,
+          "medianPayloadBytes": 3489,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 53,
+            "completed": 52,
+            "failedResponses": 0,
+            "apiMoves": 52,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 48
+          }
+        }
+      ],
+      "sourceHashes": {
+        "baseline": "760e4d750b551bdaa01dce5fb7cd44564417ba8d37cdcd58465f1e6401ccd1bc",
+        "coast": "1af0d928be5b0bc34dfdb761d0d212905a5563f8594d25b5a745bc9b7a14fc3e"
+      }
+    },
+    {
+      "name": "validation",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "baseline": {
+          "games": 10,
+          "scoreTotal": 120,
+          "meanScore": 12,
+          "medianScore": 0.0,
+          "survivalTotalSeconds": 600.0,
+          "meanSurvivalSeconds": 60.0,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 10,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 1018,
+          "keepExecutions": 0,
+          "turns": 962,
+          "recordedMoves": 3596
+        },
+        "geometry": {
+          "games": 10,
+          "scoreTotal": 150,
+          "meanScore": 15,
+          "medianScore": 20.0,
+          "survivalTotalSeconds": 549.387299999714,
+          "meanSurvivalSeconds": 54.938729999971386,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 8,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 946,
+          "keepExecutions": 0,
+          "turns": 814,
+          "recordedMoves": 3292
+        }
+      },
+      "games": [
+        {
+          "name": "baseline",
+          "seed": 701,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 109,
+          "parsed": 108,
+          "latencyP50Ms": 443.59999990463257,
+          "latencyP90Ms": 554.7000000476837,
+          "medianPayloadBytes": 2429,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 109,
+            "completed": 108,
+            "failedResponses": 0,
+            "apiMoves": 108,
+            "coastMoves": 252,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 103
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 701,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 109,
+          "parsed": 108,
+          "latencyP50Ms": 449,
+          "latencyP90Ms": 617.6000001430511,
+          "medianPayloadBytes": 2813,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 109,
+            "completed": 108,
+            "failedResponses": 0,
+            "apiMoves": 108,
+            "coastMoves": 252,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 87
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 702,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 103,
+          "parsed": 103,
+          "latencyP50Ms": 462.10000014305115,
+          "latencyP90Ms": 641,
+          "medianPayloadBytes": 2830,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 103,
+            "completed": 103,
+            "failedResponses": 0,
+            "apiMoves": 102,
+            "coastMoves": 257,
+            "scriptMoves": 0,
+            "apiEats": 2,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 95
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 702,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 107,
+          "parsed": 106,
+          "latencyP50Ms": 454.59999990463257,
+          "latencyP90Ms": 598.2999999523163,
+          "medianPayloadBytes": 2443,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 107,
+            "completed": 106,
+            "failedResponses": 0,
+            "apiMoves": 106,
+            "coastMoves": 254,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 3,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 97
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 703,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 60,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 103,
+          "parsed": 102,
+          "latencyP50Ms": 465.59999990463257,
+          "latencyP90Ms": 603.9000000953674,
+          "medianPayloadBytes": 2446,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 103,
+            "completed": 102,
+            "failedResponses": 0,
+            "apiMoves": 102,
+            "coastMoves": 258,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 5,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 82
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 703,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 20,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 107,
+          "parsed": 106,
+          "latencyP50Ms": 458.60000014305115,
+          "latencyP90Ms": 597.7999999523163,
+          "medianPayloadBytes": 2815,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 107,
+            "completed": 106,
+            "failedResponses": 0,
+            "apiMoves": 106,
+            "coastMoves": 254,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 97
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 704,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 106,
+          "parsed": 105,
+          "latencyP50Ms": 459.09999990463257,
+          "latencyP90Ms": 611.2999999523163,
+          "medianPayloadBytes": 2810.5,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 106,
+            "completed": 105,
+            "failedResponses": 0,
+            "apiMoves": 105,
+            "coastMoves": 255,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 92
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 704,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 98,
+          "parsed": 98,
+          "latencyP50Ms": 468.59999990463257,
+          "latencyP90Ms": 715.2000000476837,
+          "medianPayloadBytes": 2429.5,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 98,
+            "completed": 98,
+            "failedResponses": 0,
+            "apiMoves": 97,
+            "coastMoves": 262,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 96
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 705,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 106,
+          "parsed": 105,
+          "latencyP50Ms": 449.30000019073486,
+          "latencyP90Ms": 640.9000000953674,
+          "medianPayloadBytes": 2425.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 106,
+            "completed": 105,
+            "failedResponses": 0,
+            "apiMoves": 105,
+            "coastMoves": 255,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 99
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 705,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 102,
+          "parsed": 101,
+          "latencyP50Ms": 485.40000009536743,
+          "latencyP90Ms": 630.3999998569489,
+          "medianPayloadBytes": 2798.5,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 102,
+            "completed": 101,
+            "failedResponses": 0,
+            "apiMoves": 101,
+            "coastMoves": 259,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 75
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 706,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 20,
+          "survivedMs": 42532.39999985695,
+          "survived": false,
+          "requests": 76,
+          "parsed": 75,
+          "latencyP50Ms": 426.39999985694885,
+          "latencyP90Ms": 589.8000001907349,
+          "medianPayloadBytes": 2803.5,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 76,
+            "completed": 75,
+            "failedResponses": 0,
+            "apiMoves": 75,
+            "coastMoves": 179,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 255,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 67
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 706,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 99,
+          "parsed": 98,
+          "latencyP50Ms": 464.59999990463257,
+          "latencyP90Ms": 721.7000000476837,
+          "medianPayloadBytes": 2429,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 99,
+            "completed": 98,
+            "failedResponses": 0,
+            "apiMoves": 98,
+            "coastMoves": 262,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 96
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 707,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 97,
+          "parsed": 96,
+          "latencyP50Ms": 469.2000000476837,
+          "latencyP90Ms": 816.3000001907349,
+          "medianPayloadBytes": 2427,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 97,
+            "completed": 96,
+            "failedResponses": 0,
+            "apiMoves": 96,
+            "coastMoves": 264,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 93
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 707,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 20,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 100,
+          "parsed": 99,
+          "latencyP50Ms": 453.10000014305115,
+          "latencyP90Ms": 768.9000000953674,
+          "medianPayloadBytes": 2816.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 100,
+            "completed": 99,
+            "failedResponses": 0,
+            "apiMoves": 99,
+            "coastMoves": 260,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 87
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 708,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 102,
+          "parsed": 102,
+          "latencyP50Ms": 469.2999999523163,
+          "latencyP90Ms": 625.2999999523163,
+          "medianPayloadBytes": 2811.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 102,
+            "completed": 102,
+            "failedResponses": 0,
+            "apiMoves": 101,
+            "coastMoves": 258,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 89
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 708,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 103,
+          "parsed": 102,
+          "latencyP50Ms": 438.7000000476837,
+          "latencyP90Ms": 593.7999999523163,
+          "medianPayloadBytes": 2430,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 103,
+            "completed": 102,
+            "failedResponses": 0,
+            "apiMoves": 102,
+            "coastMoves": 257,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 102
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 709,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 102,
+          "parsed": 101,
+          "latencyP50Ms": 457.5,
+          "latencyP90Ms": 655.6000001430511,
+          "medianPayloadBytes": 2428.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 102,
+            "completed": 101,
+            "failedResponses": 0,
+            "apiMoves": 101,
+            "coastMoves": 258,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 94
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 709,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 20,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 104,
+          "parsed": 103,
+          "latencyP50Ms": 451.2000000476837,
+          "latencyP90Ms": 650.9000000953674,
+          "medianPayloadBytes": 2801.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 104,
+            "completed": 103,
+            "failedResponses": 0,
+            "apiMoves": 103,
+            "coastMoves": 256,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 88
+          }
+        },
+        {
+          "name": "geometry",
+          "seed": 710,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 20,
+          "survivedMs": 26854.89999985695,
+          "survived": false,
+          "requests": 45,
+          "parsed": 44,
+          "latencyP50Ms": 473.59999990463257,
+          "latencyP90Ms": 649.2999999523163,
+          "medianPayloadBytes": 2805,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 45,
+            "completed": 44,
+            "failedResponses": 0,
+            "apiMoves": 44,
+            "coastMoves": 116,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 161,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 37
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 710,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 103,
+          "parsed": 102,
+          "latencyP50Ms": 462.2000000476837,
+          "latencyP90Ms": 688.8000001907349,
+          "medianPayloadBytes": 2429,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 103,
+            "completed": 102,
+            "failedResponses": 0,
+            "apiMoves": 102,
+            "coastMoves": 257,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 100
+          }
+        }
+      ],
+      "sourceHashes": {
+        "baseline": "760e4d750b551bdaa01dce5fb7cd44564417ba8d37cdcd58465f1e6401ccd1bc",
+        "geometry": "eb99656a1750e7e04b7b83252ae30a15042063b4824d764c9a909ea3e89476fd"
+      }
+    },
+    {
+      "name": "actions",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "baseline": {
+          "games": 3,
+          "scoreTotal": 0,
+          "meanScore": 0,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 151,
+          "keepExecutions": 0,
+          "turns": 145,
+          "recordedMoves": 539
+        },
+        "actions": {
+          "games": 3,
+          "scoreTotal": 0,
+          "meanScore": 0,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 146,
+          "keepExecutions": 0,
+          "turns": 127,
+          "recordedMoves": 539
+        }
+      },
+      "games": [
+        {
+          "name": "baseline",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 48,
+          "parsed": 47,
+          "latencyP50Ms": 505.5,
+          "latencyP90Ms": 677.5,
+          "medianPayloadBytes": 2431.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 48,
+            "completed": 47,
+            "failedResponses": 0,
+            "apiMoves": 47,
+            "coastMoves": 133,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 45
+          }
+        },
+        {
+          "name": "actions",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 48,
+          "parsed": 47,
+          "latencyP50Ms": 486,
+          "latencyP90Ms": 1009.5999999046326,
+          "medianPayloadBytes": 2663.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 48,
+            "completed": 47,
+            "failedResponses": 0,
+            "apiMoves": 47,
+            "coastMoves": 133,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 42
+          }
+        },
+        {
+          "name": "actions",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 49,
+          "parsed": 48,
+          "latencyP50Ms": 490.90000009536743,
+          "latencyP90Ms": 742.7999999523163,
+          "medianPayloadBytes": 2660,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 49,
+            "completed": 48,
+            "failedResponses": 0,
+            "apiMoves": 48,
+            "coastMoves": 131,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 45
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 54,
+          "parsed": 53,
+          "latencyP50Ms": 443.09999990463257,
+          "latencyP90Ms": 592.7000000476837,
+          "medianPayloadBytes": 2423.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 54,
+            "completed": 53,
+            "failedResponses": 0,
+            "apiMoves": 53,
+            "coastMoves": 127,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 52
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 450.40000009536743,
+          "latencyP90Ms": 634.6000001430511,
+          "medianPayloadBytes": 2430.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 48
+          }
+        },
+        {
+          "name": "actions",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 458.2999999523163,
+          "latencyP90Ms": 601.9000000953674,
+          "medianPayloadBytes": 2662.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 40
+          }
+        }
+      ],
+      "sourceHashes": {
+        "baseline": "760e4d750b551bdaa01dce5fb7cd44564417ba8d37cdcd58465f1e6401ccd1bc",
+        "actions": "51c5fcf989198f7cc6e6d6bec84a3fbf2069d6b838776f9dd545a77605695463"
+      }
+    },
+    {
+      "name": "progress",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "baseline": {
+          "games": 3,
+          "scoreTotal": 10,
+          "meanScore": 3.3333333333333335,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 153,
+          "keepExecutions": 0,
+          "turns": 142,
+          "recordedMoves": 538
+        },
+        "progress": {
+          "games": 3,
+          "scoreTotal": 10,
+          "meanScore": 3.3333333333333335,
+          "medianScore": 0,
+          "survivalTotalSeconds": 69.68269999980926,
+          "meanSurvivalSeconds": 23.22756666660309,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 2,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 121,
+          "keepExecutions": 0,
+          "turns": 103,
+          "recordedMoves": 416
+        }
+      },
+      "games": [
+        {
+          "name": "baseline",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 464.59999990463257,
+          "latencyP90Ms": 651.5999999046326,
+          "medianPayloadBytes": 2430.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 50
+          }
+        },
+        {
+          "name": "progress",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 9682.699999809265,
+          "survived": false,
+          "requests": 15,
+          "parsed": 14,
+          "latencyP50Ms": 444.40000009536743,
+          "latencyP90Ms": 944.0999999046326,
+          "medianPayloadBytes": 3053,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 15,
+            "completed": 14,
+            "failedResponses": 0,
+            "apiMoves": 14,
+            "coastMoves": 43,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 58,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 11
+          }
+        },
+        {
+          "name": "progress",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 55,
+          "parsed": 54,
+          "latencyP50Ms": 446.5,
+          "latencyP90Ms": 623.0999999046326,
+          "medianPayloadBytes": 3045,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 55,
+            "completed": 54,
+            "failedResponses": 0,
+            "apiMoves": 54,
+            "coastMoves": 125,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 41
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 451.7000000476837,
+          "latencyP90Ms": 636.3000001907349,
+          "medianPayloadBytes": 2427.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 49
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 451.60000014305115,
+          "latencyP90Ms": 592.6000001430511,
+          "medianPayloadBytes": 2428.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 43
+          }
+        },
+        {
+          "name": "progress",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 54,
+          "parsed": 53,
+          "latencyP50Ms": 432.30000019073486,
+          "latencyP90Ms": 575.0999999046326,
+          "medianPayloadBytes": 3057.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 54,
+            "completed": 53,
+            "failedResponses": 0,
+            "apiMoves": 53,
+            "coastMoves": 126,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 51
+          }
+        }
+      ],
+      "sourceHashes": {
+        "baseline": "760e4d750b551bdaa01dce5fb7cd44564417ba8d37cdcd58465f1e6401ccd1bc",
+        "progress": "3c7c57d30b53233391a44cff2ad0926c1c4e16205f350ad6db0c0617e7cf1d08"
+      }
+    },
+    {
+      "name": "lead",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "baseline": {
+          "games": 3,
+          "scoreTotal": 20,
+          "meanScore": 6.666666666666667,
+          "medianScore": 10,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 149,
+          "keepExecutions": 0,
+          "turns": 136,
+          "recordedMoves": 539
+        },
+        "lead": {
+          "games": 3,
+          "scoreTotal": 10,
+          "meanScore": 3.3333333333333335,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 151,
+          "keepExecutions": 0,
+          "turns": 118,
+          "recordedMoves": 539
+        }
+      },
+      "games": [
+        {
+          "name": "baseline",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 49,
+          "parsed": 48,
+          "latencyP50Ms": 487.7000000476837,
+          "latencyP90Ms": 681.6000001430511,
+          "medianPayloadBytes": 2431,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 49,
+            "completed": 48,
+            "failedResponses": 0,
+            "apiMoves": 48,
+            "coastMoves": 132,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 45
+          }
+        },
+        {
+          "name": "lead",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 53,
+          "parsed": 52,
+          "latencyP50Ms": 450.90000009536743,
+          "latencyP90Ms": 622.2999999523163,
+          "medianPayloadBytes": 3404,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 53,
+            "completed": 52,
+            "failedResponses": 0,
+            "apiMoves": 52,
+            "coastMoves": 127,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 41
+          }
+        },
+        {
+          "name": "lead",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 51,
+          "parsed": 50,
+          "latencyP50Ms": 472.59999990463257,
+          "latencyP90Ms": 679.9000000953674,
+          "medianPayloadBytes": 3405,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 51,
+            "completed": 50,
+            "failedResponses": 0,
+            "apiMoves": 50,
+            "coastMoves": 130,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 35
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 51,
+          "parsed": 50,
+          "latencyP50Ms": 435.7999999523163,
+          "latencyP90Ms": 638.5999999046326,
+          "medianPayloadBytes": 2435,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 51,
+            "completed": 50,
+            "failedResponses": 0,
+            "apiMoves": 50,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 47
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 479.40000009536743,
+          "latencyP90Ms": 637.8000001907349,
+          "medianPayloadBytes": 2429.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 44
+          }
+        },
+        {
+          "name": "lead",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 50,
+          "parsed": 49,
+          "latencyP50Ms": 476.7999999523163,
+          "latencyP90Ms": 778.4000000953674,
+          "medianPayloadBytes": 3398.5,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 50,
+            "completed": 49,
+            "failedResponses": 0,
+            "apiMoves": 49,
+            "coastMoves": 131,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 42
+          }
+        }
+      ],
+      "sourceHashes": {
+        "baseline": "760e4d750b551bdaa01dce5fb7cd44564417ba8d37cdcd58465f1e6401ccd1bc",
+        "lead": "c088ceacc8c7ee151777c3e97901830a299e04adfa5560012f26d801a96ccbdf"
+      }
+    },
+    {
+      "name": "keep-discovery",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "baseline": {
+          "games": 3,
+          "scoreTotal": 20,
+          "meanScore": 6.666666666666667,
+          "medianScore": 10,
+          "survivalTotalSeconds": 61.684800000190734,
+          "meanSurvivalSeconds": 20.561600000063578,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 2,
+          "firstResponseDeaths": 1,
+          "keepResponses": 0,
+          "parsed": 101,
+          "keepExecutions": 0,
+          "turns": 90,
+          "recordedMoves": 369
+        },
+        "keep": {
+          "games": 3,
+          "scoreTotal": 0,
+          "meanScore": 0,
+          "medianScore": 0,
+          "survivalTotalSeconds": 33.36460000014305,
+          "meanSurvivalSeconds": 11.121533333381018,
+          "medianSurvivalSeconds": 1.6847000000476837,
+          "fullWindow": 1,
+          "firstResponseDeaths": 2,
+          "keepResponses": 2,
+          "parsed": 48,
+          "keepExecutions": 2,
+          "turns": 43,
+          "recordedMoves": 199
+        }
+      },
+      "games": [
+        {
+          "name": "baseline",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 1684.8000001907349,
+          "survived": false,
+          "requests": 1,
+          "parsed": 0,
+          "latencyP50Ms": null,
+          "latencyP90Ms": null,
+          "medianPayloadBytes": 2407,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 1,
+            "completed": 0,
+            "failedResponses": 0,
+            "apiMoves": 0,
+            "coastMoves": 9,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 10,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 0
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 1684.7000000476837,
+          "survived": false,
+          "requests": 1,
+          "parsed": 0,
+          "latencyP50Ms": null,
+          "latencyP90Ms": null,
+          "medianPayloadBytes": 2909,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 1,
+            "completed": 0,
+            "failedResponses": 0,
+            "apiMoves": 0,
+            "coastMoves": 9,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 10,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 0
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 1679.9000000953674,
+          "survived": false,
+          "requests": 1,
+          "parsed": 0,
+          "latencyP50Ms": null,
+          "latencyP90Ms": null,
+          "medianPayloadBytes": 2908,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 1,
+            "completed": 0,
+            "failedResponses": 0,
+            "apiMoves": 0,
+            "coastMoves": 9,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 10,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 0
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 51,
+          "parsed": 50,
+          "latencyP50Ms": 447.2999999523163,
+          "latencyP90Ms": 630.0999999046326,
+          "medianPayloadBytes": 2431,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 51,
+            "completed": 50,
+            "failedResponses": 0,
+            "apiMoves": 50,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 46
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 470.69999980926514,
+          "latencyP90Ms": 648.5999999046326,
+          "medianPayloadBytes": 2428.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 44
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 49,
+          "parsed": 48,
+          "latencyP50Ms": 520.6999998092651,
+          "latencyP90Ms": 708.4000000953674,
+          "medianPayloadBytes": 2934,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 49,
+            "completed": 48,
+            "failedResponses": 0,
+            "apiMoves": 48,
+            "coastMoves": 131,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 2,
+          "directionAudit": {
+            "recordedMoves": 179,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 2,
+            "turns": 43
+          }
+        }
+      ],
+      "sourceHashes": {
+        "baseline": "760e4d750b551bdaa01dce5fb7cd44564417ba8d37cdcd58465f1e6401ccd1bc",
+        "keep": "5c75e183374b267423d0ca91fcca49686b48ffa21221a08c38ce800fbf4246c2"
+      }
+    },
+    {
+      "name": "keep-validation",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "baseline": {
+          "games": 10,
+          "scoreTotal": 180,
+          "meanScore": 18,
+          "medianScore": 10.0,
+          "survivalTotalSeconds": 524.7102999999523,
+          "meanSurvivalSeconds": 52.47102999999523,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 8,
+          "firstResponseDeaths": 1,
+          "keepResponses": 0,
+          "parsed": 896,
+          "keepExecutions": 0,
+          "turns": 852,
+          "recordedMoves": 3145
+        },
+        "keep": {
+          "games": 10,
+          "scoreTotal": 180,
+          "meanScore": 18,
+          "medianScore": 15.0,
+          "survivalTotalSeconds": 512.5139000000954,
+          "meanSurvivalSeconds": 51.251390000009536,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 8,
+          "firstResponseDeaths": 1,
+          "keepResponses": 22,
+          "parsed": 868,
+          "keepExecutions": 22,
+          "turns": 802,
+          "recordedMoves": 3075
+        }
+      },
+      "games": [
+        {
+          "name": "baseline",
+          "seed": 801,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 99,
+          "parsed": 98,
+          "latencyP50Ms": 495.7999999523163,
+          "latencyP90Ms": 693.7000000476837,
+          "medianPayloadBytes": 2429,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 99,
+            "completed": 98,
+            "failedResponses": 0,
+            "apiMoves": 98,
+            "coastMoves": 262,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 95
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 801,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 97,
+          "parsed": 96,
+          "latencyP50Ms": 481.2000000476837,
+          "latencyP90Ms": 800.0999999046326,
+          "medianPayloadBytes": 2934,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 97,
+            "completed": 96,
+            "failedResponses": 0,
+            "apiMoves": 96,
+            "coastMoves": 264,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 5,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 5,
+            "turns": 86
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 802,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 103,
+          "parsed": 102,
+          "latencyP50Ms": 455,
+          "latencyP90Ms": 620.4000000953674,
+          "medianPayloadBytes": 2942,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 103,
+            "completed": 102,
+            "failedResponses": 0,
+            "apiMoves": 102,
+            "coastMoves": 258,
+            "scriptMoves": 0,
+            "apiEats": 2,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 6,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 6,
+            "turns": 92
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 802,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 30,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 105,
+          "parsed": 104,
+          "latencyP50Ms": 450.5,
+          "latencyP90Ms": 661.6999998092651,
+          "medianPayloadBytes": 2437,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 105,
+            "completed": 104,
+            "failedResponses": 0,
+            "apiMoves": 104,
+            "coastMoves": 255,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 96
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 803,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 107,
+          "parsed": 106,
+          "latencyP50Ms": 460.40000009536743,
+          "latencyP90Ms": 619.5,
+          "medianPayloadBytes": 2454,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 107,
+            "completed": 106,
+            "failedResponses": 0,
+            "apiMoves": 106,
+            "coastMoves": 254,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 3,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 98
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 803,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 103,
+          "parsed": 102,
+          "latencyP50Ms": 450.2999999523163,
+          "latencyP90Ms": 590.5999999046326,
+          "medianPayloadBytes": 2959,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 103,
+            "completed": 102,
+            "failedResponses": 0,
+            "apiMoves": 102,
+            "coastMoves": 258,
+            "scriptMoves": 0,
+            "apiEats": 2,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 95
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 804,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 30,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 104,
+          "parsed": 103,
+          "latencyP50Ms": 457.39999985694885,
+          "latencyP90Ms": 620.7999999523163,
+          "medianPayloadBytes": 2934.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 104,
+            "completed": 103,
+            "failedResponses": 0,
+            "apiMoves": 103,
+            "coastMoves": 257,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 3,
+            "maxInFlight": 1
+          },
+          "keepResponses": 5,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 5,
+            "turns": 90
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 804,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 104,
+          "parsed": 103,
+          "latencyP50Ms": 455.5,
+          "latencyP90Ms": 634.3000001907349,
+          "medianPayloadBytes": 2432.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 104,
+            "completed": 103,
+            "failedResponses": 0,
+            "apiMoves": 103,
+            "coastMoves": 257,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 3,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 92
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 805,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 109,
+          "parsed": 108,
+          "latencyP50Ms": 433.89999985694885,
+          "latencyP90Ms": 561,
+          "medianPayloadBytes": 2433,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 109,
+            "completed": 108,
+            "failedResponses": 0,
+            "apiMoves": 108,
+            "coastMoves": 252,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 107
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 805,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 106,
+          "parsed": 105,
+          "latencyP50Ms": 452.2999999523163,
+          "latencyP90Ms": 614.4000000953674,
+          "medianPayloadBytes": 2937.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 106,
+            "completed": 105,
+            "failedResponses": 0,
+            "apiMoves": 105,
+            "coastMoves": 255,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 1,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 1,
+            "turns": 102
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 806,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 30856,
+          "survived": false,
+          "requests": 49,
+          "parsed": 48,
+          "latencyP50Ms": 465.90000009536743,
+          "latencyP90Ms": 784.3000001907349,
+          "medianPayloadBytes": 2937,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 49,
+            "completed": 48,
+            "failedResponses": 0,
+            "apiMoves": 48,
+            "coastMoves": 136,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 185,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 47
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 806,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 100,
+          "parsed": 99,
+          "latencyP50Ms": 480.39999985694885,
+          "latencyP90Ms": 764.0999999046326,
+          "medianPayloadBytes": 2431.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 100,
+            "completed": 99,
+            "failedResponses": 0,
+            "apiMoves": 99,
+            "coastMoves": 261,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 98
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 807,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 1681.0999999046326,
+          "survived": false,
+          "requests": 1,
+          "parsed": 0,
+          "latencyP50Ms": null,
+          "latencyP90Ms": null,
+          "medianPayloadBytes": 2405,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 1,
+            "completed": 0,
+            "failedResponses": 0,
+            "apiMoves": 0,
+            "coastMoves": 9,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 10,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 0
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 807,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 1657.9000000953674,
+          "survived": false,
+          "requests": 1,
+          "parsed": 0,
+          "latencyP50Ms": null,
+          "latencyP90Ms": null,
+          "medianPayloadBytes": 2906,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 1,
+            "completed": 0,
+            "failedResponses": 0,
+            "apiMoves": 0,
+            "coastMoves": 9,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 10,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 0
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 808,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 109,
+          "parsed": 108,
+          "latencyP50Ms": 445.19999980926514,
+          "latencyP90Ms": 607,
+          "medianPayloadBytes": 2934,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 109,
+            "completed": 108,
+            "failedResponses": 0,
+            "apiMoves": 108,
+            "coastMoves": 252,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 1,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 1,
+            "turns": 105
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 808,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 105,
+          "parsed": 105,
+          "latencyP50Ms": 457.40000009536743,
+          "latencyP90Ms": 632.8999998569489,
+          "medianPayloadBytes": 2427,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 105,
+            "completed": 105,
+            "failedResponses": 0,
+            "apiMoves": 104,
+            "coastMoves": 255,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 99
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 809,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 20,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 105,
+          "parsed": 104,
+          "latencyP50Ms": 456.2999999523163,
+          "latencyP90Ms": 620.2999999523163,
+          "medianPayloadBytes": 2435,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 105,
+            "completed": 104,
+            "failedResponses": 0,
+            "apiMoves": 104,
+            "coastMoves": 255,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 102
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 809,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 30,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 103,
+          "parsed": 102,
+          "latencyP50Ms": 451.90000009536743,
+          "latencyP90Ms": 687.7000000476837,
+          "medianPayloadBytes": 2940,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 103,
+            "completed": 102,
+            "failedResponses": 0,
+            "apiMoves": 102,
+            "coastMoves": 258,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 3,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 94
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 810,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 103,
+          "parsed": 102,
+          "latencyP50Ms": 457.80000019073486,
+          "latencyP90Ms": 701,
+          "medianPayloadBytes": 2958,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 103,
+            "completed": 102,
+            "failedResponses": 0,
+            "apiMoves": 102,
+            "coastMoves": 258,
+            "scriptMoves": 0,
+            "apiEats": 2,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 4,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 4,
+            "turns": 91
+          }
+        },
+        {
+          "name": "baseline",
+          "seed": 810,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 50,
+          "survivedMs": 43029.200000047684,
+          "survived": false,
+          "requests": 70,
+          "parsed": 69,
+          "latencyP50Ms": 495.59999990463257,
+          "latencyP90Ms": 669.2999999523163,
+          "medianPayloadBytes": 2445.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 70,
+            "completed": 69,
+            "failedResponses": 0,
+            "apiMoves": 69,
+            "coastMoves": 188,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 4,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 258,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 65
+          }
+        }
+      ],
+      "sourceHashes": {
+        "baseline": "760e4d750b551bdaa01dce5fb7cd44564417ba8d37cdcd58465f1e6401ccd1bc",
+        "keep": "5c75e183374b267423d0ca91fcca49686b48ffa21221a08c38ce800fbf4246c2"
+      }
+    },
+    {
+      "name": "food-first",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "keep": {
+          "games": 3,
+          "scoreTotal": 0,
+          "meanScore": 0,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 7,
+          "parsed": 155,
+          "keepExecutions": 7,
+          "turns": 138,
+          "recordedMoves": 540
+        },
+        "keep-food-first": {
+          "games": 3,
+          "scoreTotal": 10,
+          "meanScore": 3.3333333333333335,
+          "medianScore": 0,
+          "survivalTotalSeconds": 90.0,
+          "meanSurvivalSeconds": 30.0,
+          "medianSurvivalSeconds": 30.0,
+          "fullWindow": 3,
+          "firstResponseDeaths": 0,
+          "keepResponses": 24,
+          "parsed": 155,
+          "keepExecutions": 24,
+          "turns": 126,
+          "recordedMoves": 540
+        }
+      },
+      "games": [
+        {
+          "name": "keep",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 53,
+          "parsed": 52,
+          "latencyP50Ms": 428.30000019073486,
+          "latencyP90Ms": 641.2000000476837,
+          "medianPayloadBytes": 2937,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 53,
+            "completed": 52,
+            "failedResponses": 0,
+            "apiMoves": 52,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 1,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 1,
+            "turns": 50
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 601,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 51,
+          "parsed": 50,
+          "latencyP50Ms": 437.89999985694885,
+          "latencyP90Ms": 708.7999999523163,
+          "medianPayloadBytes": 3635,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 51,
+            "completed": 50,
+            "failedResponses": 0,
+            "apiMoves": 50,
+            "coastMoves": 130,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 9,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 9,
+            "turns": 39
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 10,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 55,
+          "parsed": 54,
+          "latencyP50Ms": 441.89999985694885,
+          "latencyP90Ms": 563.5,
+          "medianPayloadBytes": 3626,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 55,
+            "completed": 54,
+            "failedResponses": 0,
+            "apiMoves": 54,
+            "coastMoves": 126,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 8,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 8,
+            "turns": 44
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 602,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 423.10000014305115,
+          "latencyP90Ms": 695.5,
+          "medianPayloadBytes": 2927.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 49
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 53,
+          "parsed": 52,
+          "latencyP50Ms": 438.7000000476837,
+          "latencyP90Ms": 602.2000000476837,
+          "medianPayloadBytes": 2932,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 53,
+            "completed": 52,
+            "failedResponses": 0,
+            "apiMoves": 52,
+            "coastMoves": 128,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 6,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 6,
+            "turns": 39
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 603,
+          "difficulty": "normal",
+          "durationMs": 30000,
+          "score": 0,
+          "survivedMs": 30000,
+          "survived": true,
+          "requests": 52,
+          "parsed": 51,
+          "latencyP50Ms": 456.2000000476837,
+          "latencyP90Ms": 585.5,
+          "medianPayloadBytes": 3633.5,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 52,
+            "completed": 51,
+            "failedResponses": 0,
+            "apiMoves": 51,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 7,
+          "directionAudit": {
+            "recordedMoves": 180,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 7,
+            "turns": 43
+          }
+        }
+      ],
+      "sourceHashes": {
+        "keep": "5c75e183374b267423d0ca91fcca49686b48ffa21221a08c38ce800fbf4246c2",
+        "keep-food-first": "b6b41ab95433c479d92f0e7db6ac2f997b9830f056e4756813b2cd2b7ca735bc"
+      }
+    },
+    {
+      "name": "food-first-validation",
+      "realModelMeasured": true,
+      "passed": true,
+      "sourceStable": true,
+      "totals": {
+        "keep": {
+          "games": 10,
+          "scoreTotal": 130,
+          "meanScore": 13,
+          "medianScore": 10.0,
+          "survivalTotalSeconds": 516.8700999999046,
+          "meanSurvivalSeconds": 51.687009999990465,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 7,
+          "firstResponseDeaths": 0,
+          "keepResponses": 9,
+          "parsed": 882,
+          "keepExecutions": 9,
+          "turns": 836,
+          "recordedMoves": 3097
+        },
+        "keep-food-first": {
+          "games": 10,
+          "scoreTotal": 190,
+          "meanScore": 19,
+          "medianScore": 10.0,
+          "survivalTotalSeconds": 356.760899999857,
+          "meanSurvivalSeconds": 35.67608999998569,
+          "medianSurvivalSeconds": 30.095400000095367,
+          "fullWindow": 4,
+          "firstResponseDeaths": 0,
+          "keepResponses": 120,
+          "parsed": 604,
+          "keepExecutions": 120,
+          "turns": 466,
+          "recordedMoves": 2140
+        }
+      },
+      "games": [
+        {
+          "name": "keep",
+          "seed": 901,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 100,
+          "parsed": 99,
+          "latencyP50Ms": 464.2999999523163,
+          "latencyP90Ms": 754.2999999523163,
+          "medianPayloadBytes": 2940.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 100,
+            "completed": 99,
+            "failedResponses": 0,
+            "apiMoves": 99,
+            "coastMoves": 261,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 94
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 901,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 5845,
+          "survived": false,
+          "requests": 9,
+          "parsed": 8,
+          "latencyP50Ms": 466.19999980926514,
+          "latencyP90Ms": 1259.5,
+          "medianPayloadBytes": 3615,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 9,
+            "completed": 8,
+            "failedResponses": 0,
+            "apiMoves": 8,
+            "coastMoves": 26,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 1,
+          "directionAudit": {
+            "recordedMoves": 35,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 1,
+            "turns": 5
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 902,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 20,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 108,
+          "parsed": 107,
+          "latencyP50Ms": 443.7000000476837,
+          "latencyP90Ms": 603.9000000953674,
+          "medianPayloadBytes": 3633.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 108,
+            "completed": 107,
+            "failedResponses": 0,
+            "apiMoves": 107,
+            "coastMoves": 253,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 17,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 17,
+            "turns": 86
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 902,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 107,
+          "parsed": 106,
+          "latencyP50Ms": 432.2999999523163,
+          "latencyP90Ms": 630.7000000476837,
+          "medianPayloadBytes": 2936,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 107,
+            "completed": 106,
+            "failedResponses": 0,
+            "apiMoves": 106,
+            "coastMoves": 253,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 104
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 903,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 105,
+          "parsed": 104,
+          "latencyP50Ms": 439.7999999523163,
+          "latencyP90Ms": 622.2000000476837,
+          "medianPayloadBytes": 2943,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 105,
+            "completed": 104,
+            "failedResponses": 0,
+            "apiMoves": 104,
+            "coastMoves": 256,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 2,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 2,
+            "turns": 102
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 903,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 20,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 107,
+          "parsed": 106,
+          "latencyP50Ms": 424.2999999523163,
+          "latencyP90Ms": 670.9000000953674,
+          "medianPayloadBytes": 3645,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 107,
+            "completed": 106,
+            "failedResponses": 0,
+            "apiMoves": 106,
+            "coastMoves": 254,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 22,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 22,
+            "turns": 80
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 904,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 26683.300000190735,
+          "survived": false,
+          "requests": 46,
+          "parsed": 45,
+          "latencyP50Ms": 446.39999985694885,
+          "latencyP90Ms": 652,
+          "medianPayloadBytes": 3630.5,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 46,
+            "completed": 45,
+            "failedResponses": 0,
+            "apiMoves": 45,
+            "coastMoves": 114,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 7,
+          "directionAudit": {
+            "recordedMoves": 160,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 7,
+            "turns": 37
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 904,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 106,
+          "parsed": 105,
+          "latencyP50Ms": 452.09999990463257,
+          "latencyP90Ms": 596.2999999523163,
+          "medianPayloadBytes": 2935.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 106,
+            "completed": 105,
+            "failedResponses": 0,
+            "apiMoves": 105,
+            "coastMoves": 255,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 99
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 905,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 29180.199999809265,
+          "survived": false,
+          "requests": 46,
+          "parsed": 45,
+          "latencyP50Ms": 478.7999999523163,
+          "latencyP90Ms": 707.2999999523163,
+          "medianPayloadBytes": 2933.0,
+          "passed": true,
+          "errors": {
+            "http": 1,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 46,
+            "completed": 45,
+            "failedResponses": 1,
+            "apiMoves": 45,
+            "coastMoves": 129,
+            "scriptMoves": 0,
+            "apiEats": 2,
+            "coastEats": 2,
+            "maxInFlight": 1
+          },
+          "keepResponses": 2,
+          "directionAudit": {
+            "recordedMoves": 175,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 2,
+            "turns": 40
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 905,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 33507.5,
+          "survived": false,
+          "requests": 54,
+          "parsed": 52,
+          "latencyP50Ms": 471.5,
+          "latencyP90Ms": 665.3999998569489,
+          "medianPayloadBytes": 3633.0,
+          "passed": true,
+          "errors": {
+            "http": 1,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 54,
+            "completed": 52,
+            "failedResponses": 1,
+            "apiMoves": 52,
+            "coastMoves": 148,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 3,
+            "maxInFlight": 1
+          },
+          "keepResponses": 4,
+          "directionAudit": {
+            "recordedMoves": 201,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 4,
+            "turns": 48
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 906,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 9857.899999856949,
+          "survived": false,
+          "requests": 14,
+          "parsed": 12,
+          "latencyP50Ms": 497,
+          "latencyP90Ms": 842.1000001430511,
+          "medianPayloadBytes": 3627.5,
+          "passed": true,
+          "errors": {
+            "http": 1,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 14,
+            "completed": 12,
+            "failedResponses": 1,
+            "apiMoves": 12,
+            "coastMoves": 46,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 2,
+          "directionAudit": {
+            "recordedMoves": 59,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 2,
+            "turns": 9
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 906,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 20,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 105,
+          "parsed": 104,
+          "latencyP50Ms": 465.90000009536743,
+          "latencyP90Ms": 573.0999999046326,
+          "medianPayloadBytes": 2930,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 105,
+            "completed": 104,
+            "failedResponses": 0,
+            "apiMoves": 104,
+            "coastMoves": 255,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 2,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 2,
+            "turns": 99
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 907,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 40,
+          "survivedMs": 57183.10000014305,
+          "survived": false,
+          "requests": 97,
+          "parsed": 95,
+          "latencyP50Ms": 458.5,
+          "latencyP90Ms": 707.5,
+          "medianPayloadBytes": 2956,
+          "passed": true,
+          "errors": {
+            "http": 1,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 97,
+            "completed": 95,
+            "failedResponses": 1,
+            "apiMoves": 95,
+            "coastMoves": 247,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 3,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 343,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 84
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 907,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 70,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 105,
+          "parsed": 104,
+          "latencyP50Ms": 441.10000014305115,
+          "latencyP90Ms": 628.2999999523163,
+          "medianPayloadBytes": 3645,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 105,
+            "completed": 104,
+            "failedResponses": 0,
+            "apiMoves": 104,
+            "coastMoves": 256,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 6,
+            "maxInFlight": 1
+          },
+          "keepResponses": 24,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 24,
+            "turns": 77
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 908,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 14854.799999952316,
+          "survived": false,
+          "requests": 24,
+          "parsed": 23,
+          "latencyP50Ms": 525.1000001430511,
+          "latencyP90Ms": 767.2999999523163,
+          "medianPayloadBytes": 3631.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 24,
+            "completed": 23,
+            "failedResponses": 0,
+            "apiMoves": 23,
+            "coastMoves": 65,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 7,
+          "directionAudit": {
+            "recordedMoves": 89,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 7,
+            "turns": 16
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 908,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 10506.799999952316,
+          "survived": false,
+          "requests": 16,
+          "parsed": 15,
+          "latencyP50Ms": 467,
+          "latencyP90Ms": 1127.5,
+          "medianPayloadBytes": 2932.0,
+          "passed": true,
+          "errors": {
+            "http": 1,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 16,
+            "completed": 15,
+            "failedResponses": 1,
+            "apiMoves": 15,
+            "coastMoves": 47,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 1,
+            "maxInFlight": 1
+          },
+          "keepResponses": 1,
+          "directionAudit": {
+            "recordedMoves": 63,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 1,
+            "turns": 14
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 909,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 106,
+          "parsed": 106,
+          "latencyP50Ms": 442,
+          "latencyP90Ms": 597,
+          "medianPayloadBytes": 2937.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 106,
+            "completed": 106,
+            "failedResponses": 0,
+            "apiMoves": 105,
+            "coastMoves": 254,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 2,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 2,
+            "turns": 101
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 909,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 10,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 107,
+          "parsed": 106,
+          "latencyP50Ms": 428.30000019073486,
+          "latencyP90Ms": 570.4000000953674,
+          "medianPayloadBytes": 3635,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 107,
+            "completed": 106,
+            "failedResponses": 0,
+            "apiMoves": 106,
+            "coastMoves": 254,
+            "scriptMoves": 0,
+            "apiEats": 1,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 24,
+          "directionAudit": {
+            "recordedMoves": 360,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 24,
+            "turns": 79
+          }
+        },
+        {
+          "name": "keep-food-first",
+          "seed": 910,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 26012.39999985695,
+          "survived": false,
+          "requests": 42,
+          "parsed": 41,
+          "latencyP50Ms": 455.2000000476837,
+          "latencyP90Ms": 650.4000000953674,
+          "medianPayloadBytes": 3635.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 1,
+            "cleanupAbort": 0
+          },
+          "executionStats": {
+            "requests": 42,
+            "completed": 41,
+            "failedResponses": 0,
+            "apiMoves": 41,
+            "coastMoves": 114,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 12,
+          "directionAudit": {
+            "recordedMoves": 156,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 12,
+            "turns": 29
+          }
+        },
+        {
+          "name": "keep",
+          "seed": 910,
+          "difficulty": "normal",
+          "durationMs": 60000,
+          "score": 0,
+          "survivedMs": 60000,
+          "survived": true,
+          "requests": 104,
+          "parsed": 103,
+          "latencyP50Ms": 467.59999990463257,
+          "latencyP90Ms": 586.2999999523163,
+          "medianPayloadBytes": 2936.0,
+          "passed": true,
+          "errors": {
+            "http": 0,
+            "network": 0,
+            "parse": 0,
+            "deathAbort": 0,
+            "cleanupAbort": 1
+          },
+          "executionStats": {
+            "requests": 104,
+            "completed": 103,
+            "failedResponses": 0,
+            "apiMoves": 103,
+            "coastMoves": 256,
+            "scriptMoves": 0,
+            "apiEats": 0,
+            "coastEats": 0,
+            "maxInFlight": 1
+          },
+          "keepResponses": 0,
+          "directionAudit": {
+            "recordedMoves": 359,
+            "unattributedTurns": 0,
+            "unmatchedInputs": 0,
+            "unmatchedActions": 0,
+            "keepTurns": 0,
+            "keepExecutions": 0,
+            "turns": 99
+          }
+        }
+      ],
+      "sourceHashes": {
+        "keep": "5c75e183374b267423d0ca91fcca49686b48ffa21221a08c38ce800fbf4246c2",
+        "keep-food-first": "b6b41ab95433c479d92f0e7db6ac2f997b9830f056e4756813b2cd2b7ca735bc"
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "stage": "validation",
+      "baseline": "baseline",
+      "candidate": "geometry",
+      "meetsCriteria": false,
+      "totals": {
+        "baseline": {
+          "games": 10,
+          "scoreTotal": 120,
+          "meanScore": 12,
+          "medianScore": 0.0,
+          "survivalTotalSeconds": 600.0,
+          "meanSurvivalSeconds": 60.0,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 10,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 1018,
+          "keepExecutions": 0,
+          "turns": 962,
+          "recordedMoves": 3596
+        },
+        "geometry": {
+          "games": 10,
+          "scoreTotal": 150,
+          "meanScore": 15,
+          "medianScore": 20.0,
+          "survivalTotalSeconds": 549.387299999714,
+          "meanSurvivalSeconds": 54.938729999971386,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 8,
+          "firstResponseDeaths": 0,
+          "keepResponses": 0,
+          "parsed": 946,
+          "keepExecutions": 0,
+          "turns": 814,
+          "recordedMoves": 3292
+        }
+      },
+      "pairs": [
+        {
+          "seed": 701,
+          "baselineScore": 10,
+          "candidateScore": 10,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 702,
+          "baselineScore": 40,
+          "candidateScore": 40,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 703,
+          "baselineScore": 60,
+          "candidateScore": 20,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 704,
+          "baselineScore": 0,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 705,
+          "baselineScore": 10,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 706,
+          "baselineScore": 0,
+          "candidateScore": 20,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 42.53239999985695
+        },
+        {
+          "seed": 707,
+          "baselineScore": 0,
+          "candidateScore": 20,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 708,
+          "baselineScore": 0,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 709,
+          "baselineScore": 0,
+          "candidateScore": 20,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 710,
+          "baselineScore": 0,
+          "candidateScore": 20,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 26.854899999856947
+        }
+      ]
+    },
+    {
+      "stage": "keep-validation",
+      "baseline": "baseline",
+      "candidate": "keep",
+      "meetsCriteria": false,
+      "totals": {
+        "baseline": {
+          "games": 10,
+          "scoreTotal": 180,
+          "meanScore": 18,
+          "medianScore": 10.0,
+          "survivalTotalSeconds": 524.7102999999523,
+          "meanSurvivalSeconds": 52.47102999999523,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 8,
+          "firstResponseDeaths": 1,
+          "keepResponses": 0,
+          "parsed": 896,
+          "keepExecutions": 0,
+          "turns": 852,
+          "recordedMoves": 3145
+        },
+        "keep": {
+          "games": 10,
+          "scoreTotal": 180,
+          "meanScore": 18,
+          "medianScore": 15.0,
+          "survivalTotalSeconds": 512.5139000000954,
+          "meanSurvivalSeconds": 51.251390000009536,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 8,
+          "firstResponseDeaths": 1,
+          "keepResponses": 22,
+          "parsed": 868,
+          "keepExecutions": 22,
+          "turns": 802,
+          "recordedMoves": 3075
+        }
+      },
+      "pairs": [
+        {
+          "seed": 801,
+          "baselineScore": 0,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 802,
+          "baselineScore": 30,
+          "candidateScore": 40,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 803,
+          "baselineScore": 40,
+          "candidateScore": 40,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 804,
+          "baselineScore": 40,
+          "candidateScore": 30,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 805,
+          "baselineScore": 0,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 806,
+          "baselineScore": 0,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 30.856
+        },
+        {
+          "seed": 807,
+          "baselineScore": 0,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 1.6810999999046325,
+          "candidateSurvivalSeconds": 1.6579000000953674
+        },
+        {
+          "seed": 808,
+          "baselineScore": 0,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 809,
+          "baselineScore": 20,
+          "candidateScore": 30,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 810,
+          "baselineScore": 50,
+          "candidateScore": 40,
+          "baselineSurvivalSeconds": 43.02920000004768,
+          "candidateSurvivalSeconds": 60.0
+        }
+      ]
+    },
+    {
+      "stage": "food-first-validation",
+      "baseline": "keep",
+      "candidate": "keep-food-first",
+      "meetsCriteria": false,
+      "totals": {
+        "keep": {
+          "games": 10,
+          "scoreTotal": 130,
+          "meanScore": 13,
+          "medianScore": 10.0,
+          "survivalTotalSeconds": 516.8700999999046,
+          "meanSurvivalSeconds": 51.687009999990465,
+          "medianSurvivalSeconds": 60.0,
+          "fullWindow": 7,
+          "firstResponseDeaths": 0,
+          "keepResponses": 9,
+          "parsed": 882,
+          "keepExecutions": 9,
+          "turns": 836,
+          "recordedMoves": 3097
+        },
+        "keep-food-first": {
+          "games": 10,
+          "scoreTotal": 190,
+          "meanScore": 19,
+          "medianScore": 10.0,
+          "survivalTotalSeconds": 356.760899999857,
+          "meanSurvivalSeconds": 35.67608999998569,
+          "medianSurvivalSeconds": 30.095400000095367,
+          "fullWindow": 4,
+          "firstResponseDeaths": 0,
+          "keepResponses": 120,
+          "parsed": 604,
+          "keepExecutions": 120,
+          "turns": 466,
+          "recordedMoves": 2140
+        }
+      },
+      "pairs": [
+        {
+          "seed": 901,
+          "baselineScore": 10,
+          "candidateScore": 10,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 5.845
+        },
+        {
+          "seed": 902,
+          "baselineScore": 0,
+          "candidateScore": 20,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 903,
+          "baselineScore": 10,
+          "candidateScore": 20,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 904,
+          "baselineScore": 0,
+          "candidateScore": 10,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 26.683300000190734
+        },
+        {
+          "seed": 905,
+          "baselineScore": 40,
+          "candidateScore": 40,
+          "baselineSurvivalSeconds": 29.180199999809265,
+          "candidateSurvivalSeconds": 33.5075
+        },
+        {
+          "seed": 906,
+          "baselineScore": 20,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 9.857899999856949
+        },
+        {
+          "seed": 907,
+          "baselineScore": 40,
+          "candidateScore": 70,
+          "baselineSurvivalSeconds": 57.18310000014305,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 908,
+          "baselineScore": 10,
+          "candidateScore": 10,
+          "baselineSurvivalSeconds": 10.506799999952316,
+          "candidateSurvivalSeconds": 14.854799999952316
+        },
+        {
+          "seed": 909,
+          "baselineScore": 0,
+          "candidateScore": 10,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 60.0
+        },
+        {
+          "seed": 910,
+          "baselineScore": 0,
+          "candidateScore": 0,
+          "baselineSurvivalSeconds": 60.0,
+          "candidateSurvivalSeconds": 26.01239999985695
+        }
+      ]
+    }
+  ],
+  "keepDiagnostics": {
+    "counts": {
+      "baseline": {
+        "parsed": 896,
+        "keep": 0,
+        "sameHeading": 43,
+        "turnChosen": 853,
+        "comparable": 827,
+        "fartherWithRoom": 326,
+        "fartherAndLongestStraight": 323,
+        "stalledFartherAndLongestStraight": 257,
+        "alignedWithRoom": 20,
+        "turnedAwayAlignedWithRoom": 8
+      },
+      "keep": {
+        "parsed": 868,
+        "keep": 22,
+        "sameHeading": 44,
+        "turnChosen": 802,
+        "comparable": 808,
+        "fartherWithRoom": 306,
+        "fartherAndLongestStraight": 305,
+        "stalledFartherAndLongestStraight": 243,
+        "alignedWithRoom": 19,
+        "turnedAwayAlignedWithRoom": 3
+      }
+    },
+    "examples": [
+      {
+        "seed": 801,
+        "request": 15,
+        "choice": "U",
+        "head": {
+          "x": 7,
+          "y": 11
+        },
+        "food": {
+          "x": 17,
+          "y": 12
+        },
+        "metrics": {
+          "U": {
+            "safe_for": 1833,
+            "margin": 983,
+            "food_distance": 10
+          },
+          "D": {
+            "safe_for": 1167,
+            "margin": 317,
+            "food_distance": 8
+          },
+          "R": {
+            "safe_for": 1500,
+            "margin": 650,
+            "food_distance": 8
+          },
+          "KEEP": {
+            "safe_for": 1500,
+            "margin": 650,
+            "food_distance": 8
+          }
+        }
+      },
+      {
+        "seed": 801,
+        "request": 18,
+        "choice": "L",
+        "head": {
+          "x": 12,
+          "y": 8
+        },
+        "food": {
+          "x": 17,
+          "y": 12
+        },
+        "metrics": {
+          "D": {
+            "safe_for": 1333,
+            "margin": 483,
+            "food_distance": 6
+          },
+          "L": {
+            "safe_for": 2000,
+            "margin": 1150,
+            "food_distance": 8
+          },
+          "KEEP": {
+            "safe_for": 1333,
+            "margin": 483,
+            "food_distance": 6
+          }
+        }
+      },
+      {
+        "seed": 801,
+        "request": 19,
+        "choice": "U",
+        "head": {
+          "x": 11,
+          "y": 10
+        },
+        "food": {
+          "x": 17,
+          "y": 12
+        },
+        "metrics": {
+          "U": {
+            "safe_for": 1667,
+            "margin": 1050,
+            "food_distance": 11
+          },
+          "D": {
+            "safe_for": 1333,
+            "margin": 716,
+            "food_distance": 9
+          },
+          "L": {
+            "safe_for": 1500,
+            "margin": 883,
+            "food_distance": 11
+          },
+          "KEEP": {
+            "safe_for": 1500,
+            "margin": 883,
+            "food_distance": 11
+          }
+        }
+      }
+    ]
+  },
+  "changedProductionFiles": {
+    "momentum": [
+      "src/ai/prompt.ts"
+    ],
+    "geometry": [
+      "src/ai/prompt.ts"
+    ],
+    "coast": [
+      "src/ai/prompt.ts"
+    ],
+    "actions": [
+      "src/ai/prompt.ts"
+    ],
+    "progress": [
+      "src/ai/prompt.ts"
+    ],
+    "lead": [
+      "src/ai/prompt.ts"
+    ],
+    "keep": [
+      "src/ai/client.ts",
+      "src/ai/controller.ts",
+      "src/ai/prompt.ts",
+      "src/ai/response.ts",
+      "src/ai/types.ts",
+      "src/app/session.ts",
+      "src/sim/observation.ts",
+      "src/ui/dom.ts"
+    ],
+    "keep-food-first": [
+      "src/ai/client.ts",
+      "src/ai/controller.ts",
+      "src/ai/prompt.ts",
+      "src/ai/response.ts",
+      "src/ai/types.ts",
+      "src/app/session.ts",
+      "src/sim/observation.ts",
+      "src/ui/dom.ts"
+    ]
+  },
+  "traceArchive": {
+    "path": "docs/ai-prompt-exploration-traces.json.gz",
+    "bytes": 4506617,
+    "sha256": "bf290119acc49493ba7385cb12815e6a7caa1500f2d0a99f925e1ca1b52f9842"
+  }
+}

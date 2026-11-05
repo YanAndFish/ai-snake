@@ -1,6 +1,7 @@
 import type { Direction } from "../sim/types";
 import type { DecisionRequest, DecisionTransport } from "./client";
 import { parseAiResponse } from "./response";
+import type { AiAction } from "./types";
 
 export type AiStatusState = "off" | "needKey" | "thinking" | "ready" | "error";
 
@@ -22,8 +23,10 @@ export interface AiLogEntry {
   time: number;
   /** 本次请求使用的模型。 */
   model: string;
-  /** 模型返回的方向列表。失败时为空。 */
+  /** 操作对应的移动方向列表。失败时为空。 */
   moves: string[];
+  /** 模型实际选择的操作；null 表示请求失败。 */
+  action: AiAction | null;
   /** 返回结果的简短说明。失败时为空。 */
   reason: string;
   /** 会话分配的请求序号。 */
@@ -160,7 +163,7 @@ export class AiController {
     };
   }
 
-  /** 返回 AI 选择的一个方向，由会话在下一次移动时执行。 */
+  /** 返回操作对应的方向，由会话在下一次移动时执行；KEEP 单独记录在日志中。 */
   request(args: AiRequestArgs): Promise<Direction[]> {
     const seq = ++this.requestSeq;
     const startedAt = performance.now();
@@ -180,7 +183,7 @@ export class AiController {
       });
       if (args.signal.aborted || seq !== this.requestSeq) throw abortError();
       const parsed = parseAiResponse(text, args.currentDirection);
-      if (parsed.moves.length === 0 || !args.legalMoves.includes(parsed.moves[0])) {
+      if (parsed.action !== "keep" && !args.legalMoves.includes(parsed.moves[0])) {
         throw new Error("AI 返回了未提供的方向，请重试");
       }
       this.status = { state: "ready", error: null, planLength: this.plan.length, model: args.model };
@@ -189,6 +192,7 @@ export class AiController {
         time: Date.now(),
         model: args.model,
         moves: [...parsed.moves],
+        action: parsed.action,
         reason: parsed.reason,
         requestId: args.requestId,
         error: null,
@@ -206,6 +210,7 @@ export class AiController {
         time: Date.now(),
         model: args.model,
         moves: [],
+        action: null,
         reason: "",
         requestId: args.requestId,
         error: message,

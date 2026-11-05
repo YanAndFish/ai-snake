@@ -41,7 +41,7 @@ function clip(text: string): string {
 function formatLogLine(entry: AiLogEntry): string {
   if (entry.error) return `✕  ${entry.latencyMs} ms · ${clip(entry.error)}`;
   if (entry.moves.length === 0) return "—";
-  const glyphs = entry.moves.map((move) => MOVE_ARROWS[move] ?? move).join("");
+  const glyphs = entry.action === "keep" ? "KEEP" : entry.moves.map((move) => MOVE_ARROWS[move] ?? move).join("");
   return `[${dayjs(entry.time).format("HH:mm:ss.SSS")}] ${glyphs}  ${entry.latencyMs} ms`;
 }
 

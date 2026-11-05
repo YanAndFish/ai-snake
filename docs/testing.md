@@ -13,7 +13,7 @@ npm run check
 
 `npm run check` 依次运行热路径 lint、Vitest、构建和 TLC。
 
-当前完整检查包含 184 个测试，`npm run check` 和 `npm run test:coverage` 均通过。路线方案的实验数据见 [AI 延迟评估](ai-latency.md)，这些结果不代表当前方向控制效果。真实网络运行步骤见 [比较真实模型的得分和存活时间](evaluate-live.md)。
+当前完整检查包含 195 个测试，`npm run check` 和 `npm run test:coverage` 均通过。路线方案的实验数据见 [AI 延迟评估](ai-latency.md)，这些结果不代表当前方向控制效果。真实网络运行步骤见 [比较真实模型的得分和存活时间](evaluate-live.md)。
 
 ## 测试文件
 
@@ -30,14 +30,14 @@ npm run check
 | `test/engine/rng.test.ts` | 种子序列稳定、`Rng.next/int/pick` |
 | `test/engine/input.test.ts` | 摇杆四向转向、14px 判定距离、中心区域忽略小幅移动、对角线附近保持方向轴、明显转向时切换方向轴、浮动摇杆的半径跟随、偏移限制与圆弧换轴 |
 | `test/engine/audio.test.ts` | 事件到音效映射、静音、背景音乐循环与停止、无 AudioContext 时不崩溃 |
-| `test/ai/client.test.ts` | Decisions 请求体、choice 问题、默认模型、answer 解析、refusal、非法选择、HTTP 错误不泄露 Key、abort、默认 fetch 接收者 |
-| `test/ai/response.test.ts` | 兼容 JSON、代码围栏、单 action、大小写、反向截断、未知 token、超长截断、垃圾输入、理由清洗 |
-| `test/ai/prompt.test.ts` | 直线上食物的步数、响应时间余量、危险选项保留、隐藏 RNG 不影响提示词，以及分析不修改游戏状态 |
-| `test/ai/controller.test.ts` | mock 走真实解析、错误日志、竞态只保留最新、abort、`waitForIdle` 超时、日志上限 |
+| `test/ai/client.test.ts` | Decisions 请求体、choice 问题、默认模型、KEEP 选项、answer 解析、refusal、非法选择、HTTP 错误不泄露 Key、abort、默认 fetch 接收者 |
+| `test/ai/response.test.ts` | JSON、代码围栏、单 action、KEEP 保持方向、拒绝多操作和反向、理由清洗 |
+| `test/ai/prompt.test.ts` | KEEP 与当前朝向的分析一致、直线上食物的步数、响应时间余量、危险选项保留、隐藏 RNG 不影响提示词，以及分析不修改游戏状态 |
+| `test/ai/controller.test.ts` | mock 走真实解析、KEEP 操作记录、错误日志、竞态只保留最新、abort、`waitForIdle` 超时、日志上限 |
 | `test/ai/context.test.ts` | 延迟分位数、当前移动进度、入队转向、等待期间变速、冷启动场景、食物进度、循环检测和状态只读性 |
 | `test/app/keyStore.test.ts` | Key 的存取、清除、不可序列化 |
+| `test/app/directionSession.test.ts` | 单次操作在移动边界执行、KEEP 保持方向和速度、危险 KEEP 照常碰撞、外部转向后丢弃旧响应、单请求及输入来源统计 |
 | `test/app/session.test.ts` | 手动和 AI 启动、挂起请求时按当前方向移动、一个在飞请求、暂停、停止 AI、控制台计划、错误重试、AI 固定速度、best score、Key 隐藏和致命不变式 |
-| `test/app/directionSession.test.ts` | 当前棋盘请求、下一步执行方向、危险方向执行、唯一安全方向也请求 AI、失败重试、暂停取消和移动来源计数 |
 | `test/app/frame.hot.test.ts` | 只在阶段、分数、长度、AI 版本或致命状态变化时通知 UI |
 | `test/app/testApi.test.ts` | 控制台接口的状态拷贝、detach、步进、输入校验、观察、mock AI、暂停和重开 |
 
@@ -62,7 +62,7 @@ npm run check
 | `pause()` / `resume()` | 暂停 / 继续 |
 | `getState()` | 返回状态副本 |
 | `getObservation()` | 返回当前棋盘的 `{prompt, legalMoves, choiceDescriptions, view}` |
-| `getPrompt()` | 当前棋盘的 `SNAKE/2` 分析文本 |
+| `getPrompt()` | 当前棋盘的 `SNAKE/4 CURRENT` 分析文本 |
 | `getInvariantReport()` | `{ok, violations}` |
 | `getEvents()` | 取走并清空事件 |
 | `getAiLog()` | 取走 AI 日志副本 |
@@ -70,7 +70,7 @@ npm run check
 | `ai.useMock(answer)` | 替换传输层，保留真实解析和方向校验 |
 | `ai.clearMock()` | 恢复真实传输 |
 | `ai.getStatus()` | 状态、计划长度、模型、错误 |
-| `ai.getExecutionStats()` | 本局请求结果、AI 方向输入、没有新输入时的移动和脚本移动计数 |
+| `ai.getExecutionStats()` | 本局请求结果、AI 操作（包含 KEEP）、没有新输入时的移动和脚本移动计数 |
 | `ai.waitForIdle(ms)` | 等待当前请求结束，超时只结束等待 |
 
 手动模式每吃 6 个苹果，移动间隔减少 1 tick，直到当前难度的最短间隔。AI 模式吃苹果时保持当前速度。`start({ difficulty })` 使用所选难度的基础速度。`setDifficulty()` 在手动模式下按吃食物数量重算速度，在 AI 模式下使用基础速度。

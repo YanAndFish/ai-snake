@@ -224,6 +224,18 @@
   assert(!aiLogText.includes("slow mock"), "决策记录仍显示理由");
   assert(!aiLogText.includes(`#${newest.requestId}`), "决策记录仍显示请求序号");
 
+  api.ai.useMock({ action: "KEEP" });
+  api.start({ seed: 84, ai: true });
+  await api.ai.waitForIdle(2000);
+  const keepBefore = api.getState();
+  assert(api.getAiLog().at(-1).action === "keep", "决策记录没有保留 KEEP 操作");
+  const keepAfter = api.stepMoves(1);
+  assert(keepAfter.direction === keepBefore.direction, "KEEP 改变了移动方向");
+  assert(keepAfter.snake[0].x === keepBefore.snake[0].x + 1, "KEEP 没有按当前方向移动");
+  assert(keepAfter.tick - keepBefore.tick === keepBefore.moveEveryTicks, "KEEP 改变了移动间隔");
+  await api.ai.waitForIdle(2000);
+  await waitFor(() => newestLogLine().includes("KEEP"), "AI 面板没有显示 KEEP 操作");
+
   const panel = document.querySelector("#ai-panel");
   const panelTab = document.querySelector("#ai-tab");
   const panelClose = document.querySelector("#ai-close");

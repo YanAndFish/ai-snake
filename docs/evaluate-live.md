@@ -32,19 +32,20 @@ npm run eval:live -- --env-file .env.local --matrix /tmp/variants.json --seeds 2
 - `realApiMode` 表示启用真实网络。`realModelMeasured` 表示至少有一个真实 HTTP 200 响应完成生产 parser 解析。
 - `score` 是固定窗口结束时的分数。`survivedMs` 是存活时长，死亡时间由每 25 毫秒采样观测。
 - `responseCount` 统计收到响应头的请求。`completedResponseCount` 统计收完响应体的请求。`parsedResponseCount` 统计完成生产 parser 解析的请求。
-- `executionStats.apiMoves` 和 `apiEats` 统计应用 AI 方向输入时完成的移动和吃食。`coastMoves` 和 `coastEats` 统计没有新输入时的移动和吃食。
+- `executionStats.apiMoves` 和 `apiEats` 统计应用 AI 操作时完成的移动和吃食，包括 KEEP。`coastMoves` 和 `coastEats` 统计没有新输入时的移动和吃食。
 - 对于路线实验源码，`expiredResponses` 统计失效响应。当前方向输入从实际位置执行，`expectedStartMove` 和 `expiredOnArrival` 为 `null`。
 - `records[].dispatchState` 和 `responseState` 分别保存请求发出和响应解析完成时的可见棋盘。两者省略 RNG。
-- `executions` 记录每次真实移动或碰撞。`directionInput` 为 `null` 时表示没有新方向输入，`requestId` 将执行关联到模型响应。
+- `records[].selectedAction` 保存模型实际选择的操作，KEEP 记为 `keep`。`selectedDirection` 保存对应的移动方向。
+- `executions` 记录每次真实移动或碰撞。`actionInput` 为 `keep` 时表示执行 KEEP，为 `null` 时表示没有新操作。`directionInput` 保存操作对应的移动方向，`requestId` 将执行关联到模型响应。
 - `maxActiveFetches` 独立统计原生 fetch 并发，覆盖响应体接收时间。`clockRatio` 比较实际 tick 与存活墙钟对应的 60 Hz tick。
 - `errors` 区分 HTTP、网络、解析、死亡取消和窗口结束取消。旧源码没有来源统计时，`executionStats` 与 `decisionApplied` 为 `null`。
 - `sourceBefore` 和 `sourceAfter` 按相对路径与内容计算每份源码 `src/**/*.ts` 的 SHA256，包含逐文件清单。`sourceStable` 表示运行前后内容相同。
 
-当前方向控制的配对实验见 [提示词实验报告](ai-prompt-evaluation.md)。
+当前方向控制的配对实验见 [提示词实验报告](ai-prompt-evaluation.md) 和 [更多提示词与 KEEP 实验](ai-prompt-exploration.md)。
 
 `passed` 只表示页面、时钟、单请求和清理检查通过。检查模型效果时同时查看错误、真实解析数和实际 API 动作，不能仅看 `passed`。
 
-运行无网络自检时，脚本使用浏览器路由返回假响应。它不会读取 Key，也不会调用 API。
+运行无网络自检时，脚本使用浏览器路由返回假响应。它优先返回 KEEP；待测版本没有 KEEP 时返回第一个选项。自检不会读取 Key，也不会调用 API。
 
 ```sh
 npm run eval:live -- --self-check --seeds 83 --duration-ms 2000 --output /tmp/live-selfcheck.json

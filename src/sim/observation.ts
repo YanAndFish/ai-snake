@@ -2,14 +2,15 @@ import type { DecisionContext } from "../ai/context";
 import { buildChoiceDescriptions, buildPrompt } from "../ai/prompt";
 import { DIRECTIONS, isOpposite, type Direction, type GameState, type StateView } from "./types";
 import { viewState } from "./game";
+import type { AiAction } from "../ai/types";
 
 export interface Observation {
   /** 本次决策的棋盘、延迟和移动分析文本。 */
   prompt: string;
   /** 可提交给模型的方向，不包括当前方向的反向。 */
   legalMoves: Direction[];
-  /** 每个候选方向在执行时点的分析。 */
-  choiceDescriptions: Partial<Record<Direction, string>>;
+  /** 每个方向和 KEEP 在执行时点的分析。 */
+  choiceDescriptions: Partial<Record<AiAction, string>>;
   /** 游戏状态副本，调用者修改它不会改变游戏。 */
   view: StateView;
 }

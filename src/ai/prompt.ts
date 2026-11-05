@@ -1,6 +1,7 @@
 import type { DecisionContext, PredictedOutcome, PredictionScenario } from "./context";
 import { analyzeMove, type MoveAnalysis } from "../sim/analysis";
 import { DX, DY, type Cell, type Direction, type GameState } from "../sim/types";
+import type { AiAction } from "./types";
 
 /** 返回 API 使用的单字符方向。 */
 export function directionToken(dir: Direction): string {
@@ -33,22 +34,26 @@ function describeOutcome(outcome: PredictedOutcome, scenario: PredictionScenario
   return `${scenario.label}${scenario.likely ? " LIKELY" : ""}: ${describeMove(outcome.analysis, scenario.food, intervalMs, nextReplyMs)}`;
 }
 
-/** 为每个非反向选项提供相同指标，保留会碰撞的选项和固定顺序。 */
+/** 为所有非反向选项和 KEEP 提供相同指标，危险选项也按固定顺序列出。 */
 export function buildChoiceDescriptions(
   state: GameState,
   legalMoves: Direction[],
   context?: DecisionContext,
-): Partial<Record<Direction, string>> {
-  const descriptions: Partial<Record<Direction, string>> = {};
+): Partial<Record<AiAction, string>> {
+  const descriptions: Partial<Record<AiAction, string>> = {};
   const intervalMs = state.moveEveryTicks * 1000 / 60;
   const nextReplyMs = context !== undefined && context.latency.samples > 0 ? context.latency.p90Ticks * 1000 / 60 : intervalMs * 2;
-  for (const direction of legalMoves) {
+  const actions: AiAction[] = [...legalMoves, "keep"];
+  for (const action of actions) {
+    const direction = action === "keep" ? state.direction : action;
     const prediction = context?.predictions.find((item) => item.direction === direction);
     const details = prediction === undefined || context === undefined
       ? describeMove(analyzeMove(state, direction), state.food, intervalMs, nextReplyMs)
       : [...prediction.outcomes].sort((a, b) => Number(context.scenarios.find((item) => item.label === b.scenario)?.likely) - Number(context.scenarios.find((item) => item.label === a.scenario)?.likely))
         .map((outcome) => describeOutcome(outcome, context.scenarios.find((item) => item.label === outcome.scenario)!, intervalMs, nextReplyMs)).join(" | ");
-    descriptions[direction] = `${directionToken(direction)} (${direction}): ${details}`;
+    descriptions[action] = action === "keep"
+      ? `KEEP (no turn; continue ${direction}): ${details}`
+      : `${directionToken(direction)} (${direction}): ${details}`;
   }
   return descriptions;
 }
@@ -65,7 +70,7 @@ export function buildPrompt(
     "SNAKE/4 CURRENT",
     `board ${state.width}x${state.height}; x right, y down; head (${head.x}, ${head.y}); heading ${directionToken(state.direction)}; food ${food}; score ${state.score}`,
     `body head-to-tail: ${state.snake.map((cell) => `(${cell.x},${cell.y})`).join(" ")}`,
-    `step=${Math.round(state.moveEveryTicks * 1000 / 60)}ms; next_step_in=${Math.round((state.moveEveryTicks - state.moveAccumulator) * 1000 / 60)}ms; allowed=${legalMoves.map(directionToken).join(",")}`,
+    `step=${Math.round(state.moveEveryTicks * 1000 / 60)}ms; next_step_in=${Math.round((state.moveEveryTicks - state.moveAccumulator) * 1000 / 60)}ms; allowed=${legalMoves.map(directionToken).join(",")},KEEP`,
   ];
   if (context !== undefined) {
     const latency = context.latency;
@@ -75,7 +80,7 @@ export function buildPrompt(
     lines.push(`food_unchanged=${Math.round(context.history.foodAgeTicks / 60)}s; no_progress=${Math.round(context.history.noProgressTicks / 60)}s`);
   }
   lines.push(
-    "You control every turn. While waiting, the snake holds its heading. Your choice executes on the first move after arrival; then holds until the next response.",
+    "You control every turn. KEEP means do not turn; the snake keeps moving at the same speed. Choosing the current direction has the same movement effect. While waiting, the snake holds its heading. Your choice executes on the first move after arrival; then holds until the next response.",
     "Option metrics: safe_for=time from first chosen move to straight-line collision; margin=safe_for minus p90 delay (unknown delay assumes 2 moves). food_on_straight=steps to eat the visible apple while holding this direction, none=off line. food_distance=distance after first move. space=reachable cells; tail=connected to tail. Food spawned later is unknown.",
     "Earn 10 points per apple. Seek food when there is enough time for another response. Extra empty space gives no points. Use likely arrival, not snapshot-only food opportunities. All non-reversing choices remain available; collisions end the game.",
   );

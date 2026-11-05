@@ -60,13 +60,13 @@ export interface AiExecutionStats {
   completed: number;
   /** 请求或解析失败的次数，取消请求不计入。 */
   failedResponses: number;
-  /** 应用 AI 方向输入后完成的移动数。 */
+  /** 应用 AI 操作后完成的移动数，包含 KEEP。 */
   apiMoves: number;
   /** 没有新输入时沿当前方向完成的移动数。 */
   coastMoves: number;
   /** 按控制台方向输入完成的移动数。 */
   scriptMoves: number;
-  /** 应用 AI 方向输入时吃到的食物数。 */
+  /** 应用 AI 操作时吃到的食物数，包含 KEEP。 */
   apiEats: number;
   /** 没有新输入时吃到的食物数。 */
   coastEats: number;
