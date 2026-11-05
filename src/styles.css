@@ -82,6 +82,58 @@ body[data-ai-panel="closed"] #ai-panel {
   image-rendering: crisp-edges;
   filter: saturate(1.04);
   touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.touch-joystick {
+  position: fixed;
+  left: var(--joystick-x);
+  top: var(--joystick-y);
+  z-index: 5;
+  width: 112px;
+  height: 112px;
+  border: 2px solid rgba(211, 231, 190, 0.7);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(20, 42, 25, 0.22) 0 32%, rgba(14, 29, 18, 0.55) 34% 100%);
+  box-shadow: 0 0 0 5px rgba(10, 25, 14, 0.18), inset 0 0 20px rgba(8, 24, 12, 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.touch-joystick[hidden] {
+  display: none;
+}
+
+.joystick-axis {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: rgba(211, 231, 190, 0.3);
+  transform: translate(-50%, -50%);
+}
+
+.joystick-axis-x {
+  width: 82px;
+  height: 1px;
+}
+
+.joystick-axis-y {
+  width: 1px;
+  height: 82px;
+}
+
+.joystick-thumb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #d4e5c4;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d0e5b2, #8daf71 65%);
+  box-shadow: 0 3px 8px rgba(4, 16, 7, 0.4);
+  transform: translate(calc(-50% + var(--joystick-dx)), calc(-50% + var(--joystick-dy)));
 }
 
 #scanlines {
@@ -702,6 +754,14 @@ body[data-ai-panel="closed"] .ai-tab {
   #stage {
     border-right: 0;
     border-bottom: 0;
+  }
+
+  #world {
+    image-rendering: auto;
+  }
+
+  #scanlines {
+    background: radial-gradient(ellipse at center, transparent 62%, rgba(12, 28, 14, 0.12) 100%);
   }
 
   #ai-panel {

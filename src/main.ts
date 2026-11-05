@@ -9,6 +9,7 @@ import { Input } from "./engine/input";
 import { Loop } from "./engine/loop";
 import { Scene } from "./render/scene";
 import type { GameEvent } from "./sim/types";
+import { showJoystick } from "./ui/joystick";
 import {
   apiKeyValue,
   bindUi,
@@ -131,6 +132,7 @@ document.getElementById("restart-pause")?.addEventListener("click", restart);
 document.getElementById("restart-over")?.addEventListener("click", startManual);
 document.getElementById("restart-over-ai")?.addEventListener("click", startAi);
 
+const joystick = document.getElementById("touch-joystick");
 const input = new Input(window, {
   onDirection: (dir) => {
     if (session.state.phase === "playing" && session.state.control === "human") {
@@ -140,7 +142,16 @@ const input = new Input(window, {
   onPause: togglePause,
   onRestart: restart,
   onMute: () => setMuteLabel(audio.toggleMute()),
-}, canvas);
+}, {
+  target: canvas,
+  canControl: () => session.state.phase === "playing" && session.state.control === "human",
+  onDrag: (drag) => {
+    if (joystick) showJoystick(joystick, drag);
+  },
+  onEnd: () => {
+    if (joystick) joystick.hidden = true;
+  },
+});
 
 const frameCtx: FrameHotContext = {
   lastPhase: "",
@@ -151,6 +162,7 @@ const frameCtx: FrameHotContext = {
   lastAiVersion: -1,
   lastFatal: null,
   onPhase(phase, reason, score) {
+    input.cancelGesture();
     document.body.dataset.phase = phase;
     if (phase === "menu") showMenu();
     else if (phase === "paused") showPause();
@@ -161,6 +173,7 @@ const frameCtx: FrameHotContext = {
     updateHud(state, best);
   },
   onAi() {
+    if (session.state.control !== "human") input.cancelGesture();
     updateAiPanel(session.getAiStatus(), session.getAiLog());
   },
   onFatal(message) {
@@ -186,6 +199,7 @@ function resize(): void {
 }
 
 const stageObserver = new ResizeObserver(resize);
+window.addEventListener("resize", resize);
 const stageNode = document.getElementById("stage");
 if (stageNode) stageObserver.observe(stageNode);
 document.addEventListener("visibilitychange", () => {

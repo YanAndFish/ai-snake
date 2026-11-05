@@ -28,6 +28,11 @@
   <div id="app">
     <main id="stage">
       <canvas id="world" aria-label="2.5D pixel snake board"></canvas>
+      <div id="touch-joystick" class="touch-joystick" hidden aria-hidden="true">
+        <span class="joystick-axis joystick-axis-x"></span>
+        <span class="joystick-axis joystick-axis-y"></span>
+        <span class="joystick-thumb"></span>
+      </div>
 
       <header id="hud">
         <div class="hud-left">
@@ -66,7 +71,7 @@
             <span><b>R</b> 重开</span>
             <span><b>M</b> 音乐 / 音效</span>
           </div>
-          <p class="hint touch-hint">手机上在棋盘区域滑动即可转向。</p>
+          <p class="hint touch-hint">按住场景拖动摇杆转向，松手收起。也可以快速滑动转向。</p>
           <div class="menu-difficulty" role="group" aria-label="开局难度">
             <span>难度</span>
             <button class="difficulty-option" type="button" data-difficulty="chill" aria-pressed="false">悠闲</button>
