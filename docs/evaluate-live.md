@@ -34,9 +34,13 @@ npm run eval:live -- --env-file .env.local --matrix /tmp/variants.json --seeds 2
 - `responseCount` 统计收到响应头的请求。`completedResponseCount` 统计收完响应体的请求。`parsedResponseCount` 统计完成生产 parser 解析的请求。
 - `executionStats.apiMoves` 和 `apiEats` 统计应用 AI 方向输入时完成的移动和吃食。`coastMoves` 和 `coastEats` 统计没有新输入时的移动和吃食。
 - 对于路线实验源码，`expiredResponses` 统计失效响应。当前方向输入从实际位置执行，`expectedStartMove` 和 `expiredOnArrival` 为 `null`。
+- `records[].dispatchState` 和 `responseState` 分别保存请求发出和响应解析完成时的可见棋盘。两者省略 RNG。
+- `executions` 记录每次真实移动或碰撞。`directionInput` 为 `null` 时表示没有新方向输入，`requestId` 将执行关联到模型响应。
 - `maxActiveFetches` 独立统计原生 fetch 并发，覆盖响应体接收时间。`clockRatio` 比较实际 tick 与存活墙钟对应的 60 Hz tick。
 - `errors` 区分 HTTP、网络、解析、死亡取消和窗口结束取消。旧源码没有来源统计时，`executionStats` 与 `decisionApplied` 为 `null`。
 - `sourceBefore` 和 `sourceAfter` 按相对路径与内容计算每份源码 `src/**/*.ts` 的 SHA256，包含逐文件清单。`sourceStable` 表示运行前后内容相同。
+
+当前方向控制的配对实验见 [提示词实验报告](ai-prompt-evaluation.md)。
 
 `passed` 只表示页面、时钟、单请求和清理检查通过。检查模型效果时同时查看错误、真实解析数和实际 API 动作，不能仅看 `passed`。
 

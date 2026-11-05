@@ -49,21 +49,21 @@ npm run preview
 2. 模型固定为 `gpt-6-luna`，对应 Decisions API。
 3. 点「开始 AI」或菜单里的「让 AI 来玩」。
 
-浏览器通过 `POST https://api.openai.com/v1/decisions` 请求当前方向。`input` 使用 `SNAKE/2`，包含当前棋盘、蛇身坐标、食物、移动速度、历史和响应延迟。每个方向的分析仅供 AI 判断。
+浏览器通过 `POST https://api.openai.com/v1/decisions` 请求当前方向。`input` 使用 `SNAKE/4 CURRENT`，包含当前棋盘、蛇身坐标、食物、移动速度、食物停留时间和响应延迟。每个方向的分析仅供 AI 判断。
 
 ```json
 {
   "model": "gpt-6-luna",
-  "input": "SNAKE/2\n... 当前棋盘、延迟和方向分析 ...",
+  "input": "SNAKE/4 CURRENT\n... 当前棋盘、延迟和指标说明 ...",
   "questions": [
     {
       "type": "choice",
       "name": "next_move",
-      "instructions": "Choose the direction to control the snake now ...",
+      "instructions": "Choose one current direction. Eat apples and stay alive ...",
       "choices": [
-        { "value": "U", "description": "U: S0 OK (9, 8) A f4 space=358 tail=yes run=9" },
-        { "value": "D", "description": "D: S0 OK (9, 10) A f2 space=358 tail=yes run=9" },
-        { "value": "R", "description": "R: S0 OK (10, 9) A f4 space=358 tail=yes run=9" }
+        { "value": "U", "description": "U (up): S1 LIKELY: safe_for=1500ms margin=900ms food_on_straight=none food_distance=4 space=358 tail=true" },
+        { "value": "D", "description": "D (down): S1 LIKELY: safe_for=1500ms margin=900ms food_on_straight=2 food_distance=1 space=358 tail=true" },
+        { "value": "R", "description": "R (right): S1 LIKELY: safe_for=1000ms margin=400ms food_on_straight=none food_distance=3 space=358 tail=true" }
       ]
     }
   ]
@@ -83,6 +83,10 @@ npm run preview
 - 网络或解析失败时显示错误，至少等待 60 tick，再在移动边界重试。
 
 控制台的 `getPrompt()` 和 `getObservation()` 使用与真实请求相同的信息生成逻辑。`__snake.ai.getExecutionStats()` 区分 AI 方向输入、没有新输入时的移动，以及控制台脚本输入。
+
+方向说明中的 `safe_for` 是选择该方向后，从第一次移动到直行碰撞的时间。`margin` 减去近期响应 P90，用来观察下一次响应是否可能来不及。`food_on_straight` 表示沿该方向直行时，第几步吃到已知食物。所有指标只供模型判断。
+
+真实 API 的对照方法、逐局结果和限制见 [提示词实验报告](docs/ai-prompt-evaluation.md)。
 
 ## 控制台测试接口
 

@@ -36,6 +36,15 @@ Single npm package: Vite + TypeScript + Three.js 2.5D snake game. `index.html` i
 - Exercise the AI path without a key with `__snake.ai.useMock(...)` or a controller mock; it still goes through the real parser and direction validation.
 - `window.__snake` is the console test API (`src/app/testApi.ts`). Its mutating methods call `detach()` so the rAF loop stops competing with scripted steps; call `attach()` to resume real time.
 
+## AI 决策限制
+
+- AI 每次只输出一个当前方向，在响应到达后的下一次移动执行。
+- 本地只提供当前可观察局面和分析信息。所有非反向选项都交给 AI，包括会碰撞的选项。
+- 禁止本地生成行动路线、排序后替 AI 选方向、自动避险，或直接执行唯一安全选项。
+- 等待响应时按当前方向移动，危险选择按游戏规则执行。不得暂停、减速、重开或修改棋盘来改善 AI 得分。
+- 尚未出现的食物位置和 RNG 状态不能提供给 AI。延迟预测只使用当前可见信息。
+- 提示词实验固定种子、难度和计分时长。测试阶段与独立验证阶段使用不同种子，记录真实响应和实际执行结果。
+
 ## Invariants and TLA+
 
 - Runtime invariant names in `src/sim/invariants.ts` are kept aligned with `spec/SnakeFlow.tla` and `spec/SnakeRules.tla`; `test/sim/conformance.test.ts` maps TLA+ actions to the real reducers/session.

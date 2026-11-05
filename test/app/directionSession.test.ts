@@ -77,8 +77,8 @@ describe("AI 当前方向控制", () => {
     game.retryAi();
     expect(calls).toHaveLength(2);
     expect(calls[1].request.legalMoves).toEqual(["up", "down", "right"]);
-    expect(calls[1].request.choiceDescriptions?.right).toContain("S0 X");
-    expect(calls[1].request.choiceDescriptions?.up).toContain("S0 X");
+    expect(calls[1].request.choiceDescriptions?.right).toContain("COLLISION wall");
+    expect(calls[1].request.choiceDescriptions?.up).toContain("COLLISION wall");
     expect(controller.plan).toEqual([]);
     calls[1].answer("down");
     await game.waitForIdle();
