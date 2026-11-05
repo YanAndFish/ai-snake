@@ -77,7 +77,7 @@ export class DecisionsTransport implements DecisionTransport {
           type: "choice",
           name: "next_move",
           instructions:
-            "Choose the direction to control the snake now. Your answer is one direction input applied at the next movement after arrival. Use the current board and delay information to decide. The snake keeps its heading while waiting. Every non-reversing direction is offered, including dangerous ones. No local planner or collision avoidance will change your choice. Return exactly one listed choice.",
+            "Choose one current direction. Eat apples and stay alive. Compare LIKELY and late-arrival outcomes; S0 only describes now. Leave enough time for the next response, then prioritize food rather than extra space. Your choice is executed without local rescue.",
           choices,
         },
       ],

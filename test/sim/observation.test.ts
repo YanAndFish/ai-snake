@@ -15,10 +15,10 @@ describe("observation", () => {
       `head (${state.snake[0].x}, ${state.snake[0].y})`,
     );
     expect(observation.prompt).toContain(
-      `food (${state.food?.x}, ${state.food?.y})`,
+      `food (${state.food?.x},${state.food?.y})`,
     );
     expect(observation.prompt).toContain(
-      `body (${state.snake[0].x},${state.snake[0].y})`,
+      `body head-to-tail: (${state.snake[0].x},${state.snake[0].y})`,
     );
     expect(observation.prompt).not.toContain("MAP");
     expect(observation).not.toHaveProperty("map");
@@ -32,10 +32,9 @@ describe("observation", () => {
 
   it("puts the move analysis and decision task in the prompt", () => {
     const observation = buildObservation(game());
-    expect(observation.prompt).toContain("TASK");
-    expect(observation.prompt).toContain("MOVE ANALYSIS");
-    expect(observation.prompt).toContain(" A f");
-    expect(observation.prompt).toContain("OK (");
+    expect(observation.prompt).toContain("Earn 10 points per apple");
+    expect(observation.choiceDescriptions.right).toContain("safe_for=");
+    expect(observation.choiceDescriptions.right).toContain("food_distance=");
     expect(observation.prompt).toContain(`board ${observation.view.width}x${observation.view.height}`);
     expect(observation.prompt).toContain(`head (${observation.view.snake[0].x}, ${observation.view.snake[0].y})`);
     expect(observation.prompt).not.toContain("MAP");
@@ -55,11 +54,11 @@ describe("observation", () => {
       "up",
     );
     state = setFood(state, { x: 5, y: 5 });
-    const prompt = buildObservation(state).prompt;
-    expect(prompt).toContain("U: X");
+    const observation = buildObservation(state);
+    expect(observation.choiceDescriptions.up).toContain("COLLISION wall");
   });
 
-  it("shows space only for tight turns", () => {
+  it("封闭区域的方向信息显示零空间和食物不可达", () => {
     let state = startGame(createGame({ width: 5, height: 5, seed: 7 }), 7);
     state = setSnake(
       state,
@@ -76,8 +75,9 @@ describe("observation", () => {
       "down",
     );
     state = setFood(state, { x: 3, y: 3 });
-    const prompt = buildObservation(state).prompt;
-    expect(prompt).toContain("R: OK (1, 1) T0 f-");
+    const observation = buildObservation(state);
+    expect(observation.choiceDescriptions.right).toContain("space=0");
+    expect(observation.choiceDescriptions.right).toContain("food_distance=unreachable");
   });
 
   it("returns independent cell objects in the view", () => {

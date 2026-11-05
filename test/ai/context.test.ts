@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DecisionTelemetry } from "../../src/ai/context";
-import { buildPrompt } from "../../src/ai/prompt";
+import { buildPrompt, buildChoiceDescriptions } from "../../src/ai/prompt";
 import { STEP } from "../../src/engine/loop.hot";
 import { shortestFoodDistance } from "../../src/sim/analysis";
 import { createGame, enqueueDirection, setFood, setSnake, setSpeed, startGame } from "../../src/sim/game";
@@ -116,17 +116,16 @@ describe("decision context", () => {
     expect(delayed?.foodDistance).toBe(3);
 
     const prompt = buildPrompt(state, ["up", "down", "right"], context);
-    expect(prompt).toContain("SNAKE/2");
-    expect(prompt).toContain("DELAY");
-    expect(prompt).toContain("SCEN");
-    expect(prompt).toContain("HIST");
-    expect(prompt).toContain("recent:");
-    expect(prompt).toContain("MOVE ANALYSIS");
-    expect(prompt).toContain("D: S0 OK (9, 10) A f1 space=358 tail=yes run=9");
-    expect(prompt).toContain("S1 OK (11, 10) A f3");
-    expect(prompt).toContain("S1[likely]");
-    expect(prompt).toContain("loop=no");
-    expect(prompt).toContain("Return one of U/D/L/R only.");
+    expect(prompt).toContain("SNAKE/4 CURRENT");
+    expect(prompt).toContain("Response delay median=");
+    expect(prompt).toContain("food_unchanged=");
+    expect(prompt).toContain("no_progress=");
+    expect(prompt).toContain("LIKELY");
+    const descriptions = buildChoiceDescriptions(state, ["up", "down", "right"], context);
+    expect(descriptions.down).toContain("S1 LIKELY:");
+    expect(descriptions.down).toContain("food_distance=3");
+    expect(descriptions.down).toContain("food_distance=1");
+    expect(descriptions.down?.indexOf("S1 LIKELY")).toBeLessThan(descriptions.down!.indexOf("S0:"));
     expect(prompt).not.toContain("MAP");
     expect(prompt.length).toBeLessThan(4000);
   });
@@ -158,8 +157,9 @@ describe("decision context", () => {
     expect(right?.outcomes[0]?.analysis?.space).toBe(0);
     expect(right?.outcomes[0]?.analysis?.foodDistance).toBeNull();
 
-    const prompt = buildPrompt(state, ["down", "left", "right"], context);
-    expect(prompt).toContain("R: S0 OK (1, 1) T0 f-");
+    const descriptions = buildChoiceDescriptions(state, ["down", "left", "right"], context);
+    expect(descriptions.right).toContain("space=0");
+    expect(descriptions.right).toContain("food_distance=unreachable");
   });
 
   it("computes current shortest food distance without mutating state", () => {

@@ -102,13 +102,12 @@ describe("GameSession", () => {
     const game = session({ mock: { moves: ["up"], reason: "context" }, seed: 21 });
     game.start({ seed: 21, ai: true });
     await game.waitForIdle(1000);
-    const prompt = game.getPrompt();
-    expect(prompt).toContain("DELAY");
-    expect(prompt).toMatch(/DELAY\nn=1/);
-    expect(prompt).toContain("HIST");
-    expect(prompt).toContain("recent:");
+    const context = game.getDecisionContext();
+    expect(context.latency.samples).toBe(1);
+    expect(game.getPrompt()).toContain("Response delay median=");
+    expect(game.getPrompt()).toContain("food_unchanged=");
     game.stepMoves(1);
-    expect(game.getPrompt()).toContain("recent:");
+    expect(game.getDecisionContext().recent.length).toBeGreaterThan(context.recent.length);
   });
 
   it("pauses and resumes without advancing the tick", () => {
@@ -301,7 +300,7 @@ describe("GameSession", () => {
     const game = session({ seed: 16 });
     game.start({ seed: 16 });
     expect(game.getState().phase).toBe("playing");
-    expect(game.getPrompt()).toContain("MOVE ANALYSIS");
+    expect(game.getPrompt()).toContain("SNAKE/4 CURRENT");
     expect(game.getObservation().prompt).toContain("board 19x19");
     expect(game.getAiVersion()).toBeGreaterThanOrEqual(0);
     expect(game.getFatal()).toBeNull();

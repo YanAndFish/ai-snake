@@ -62,7 +62,7 @@ describe("console test API", () => {
     api.start({ seed: 5 });
     expect(api.getObservation().prompt).toContain("board 19x19");
     expect(api.getObservation().prompt).toContain("head (");
-    expect(api.getPrompt()).toContain("MOVE ANALYSIS");
+    expect(api.getPrompt()).toContain("SNAKE/4 CURRENT");
   });
 
   it("控制台收到 AI 响应后下一步执行所选方向", async () => {

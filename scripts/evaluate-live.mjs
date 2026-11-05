@@ -210,7 +210,10 @@ async function runBrowserGame({ scenario, apiKey, endpoint }) {
   if (!controller || typeof controller.request !== "function") throw new Error("待测源码没有可观察的 AI controller。");
   const realFetch = globalThis.fetch;
   const realRequest = controller.request;
+  const realStepTick = session.stepTick;
   const records = [];
+  const executions = [];
+  let latestParsedRequestId = null;
   const samples = [];
   const parsed = new Map();
   let currentRecord = null;
@@ -222,6 +225,26 @@ async function runBrowserGame({ scenario, apiKey, endpoint }) {
   let previousSampleMs = 0;
   const now = () => performance.now() - startedAtMs;
   const safeError = (error) => ({ name: error?.name ?? "Error", message: String(error?.message ?? error).split(apiKey).join("[已隐藏 Key]") });
+
+  /** 保存观察到的棋盘，省略 RNG 和凭据，供请求与执行时间对照。 */
+  function observeBoard(state) {
+    return { tick: state.tick, moveCount: state.moveCount, direction: state.direction,
+      snake: state.snake.map((cell) => ({ ...cell })), food: state.food === null ? null : { ...state.food },
+      moveEveryTicks: state.moveEveryTicks, moveAccumulator: state.moveAccumulator,
+      score: state.score, phase: state.phase, overReason: state.overReason };
+  }
+
+  /** 记录实际移动及碰撞，观察过程只读取游戏输入和结果。 */
+  session.stepTick = function () {
+    const previousMove = this.state.moveCount;
+    const previousPhase = this.state.phase;
+    const directionInput = controller.plan[0] ?? null;
+    const requestId = directionInput === null ? null : latestParsedRequestId;
+    realStepTick.call(this);
+    if (this.state.moveCount !== previousMove || (previousPhase === "playing" && this.state.phase === "over")) {
+      executions.push({ elapsedMs: now(), requestId, directionInput, state: observeBoard(this.state) });
+    }
+  };
 
   /** 压缩两处路线说明，保留已检查的路线长度和食物指标。 */
   function compactBody(body) {
@@ -239,10 +262,10 @@ async function runBrowserGame({ scenario, apiKey, endpoint }) {
   controller.request = function (args) {
     const state = api.getState();
     const record = { sequence: records.length + 1, requestId: args.requestId, model: args.model,
-      dispatchMs: now(), dispatchTick: state.tick, dispatchMove: state.moveCount, payload: null,
+      dispatchMs: now(), dispatchTick: state.tick, dispatchMove: state.moveCount, dispatchState: observeBoard(state), payload: null,
       httpStatus: null, apiRequestId: null, headersLatencyMs: null, fetchLatencyMs: null,
       parsedLatencyMs: null, parsedAtMs: null, responseTick: null, responseMove: null,
-      responseComplete: false, choice: null, selectedDirection: null,
+      responseComplete: false, choice: null, selectedDirection: null, responseState: null,
       expectedStartMove: /^Start move=(\d+)/m.exec(args.prompt)?.[1] ?? null, expiredOnArrival: null,
       abortAtMs: null, abortReason: null, error: null, parsed: false };
     records.push(record);
@@ -251,6 +274,8 @@ async function runBrowserGame({ scenario, apiKey, endpoint }) {
     currentRecord = null;
     promise.then((moves) => {
       record.parsed = true;
+      latestParsedRequestId = args.requestId;
+      record.responseState = observeBoard(api.getState());
       record.selectedDirection = moves[0] ?? null;
       record.choice = { up: "U", down: "D", left: "L", right: "R" }[moves[0]] ?? null;
       record.responseMove = api.getState().moveCount;
@@ -357,12 +382,13 @@ async function runBrowserGame({ scenario, apiKey, endpoint }) {
       executionStats, maxActiveFetches, activeAtEnd, activeAfterCleanup: activeFetches,
       clockRatio, clockDriftMs: aliveElapsedMs - state.tick * 1000 / 60, maxSampleGapMs,
       clockHealthy: clockRatio >= 0.9 && clockRatio <= 1.1 && maxSampleGapMs <= 250 && elapsedMs <= scenario.durationMs * 1.05,
-      initialVisibility, finalVisibility: document.visibilityState, invariantReport, samples, records };
+      initialVisibility, finalVisibility: document.visibilityState, invariantReport, samples, records, executions };
   } finally {
     api.detach();
     session.stopAi();
     session.clearKey();
     controller.request = realRequest;
+    session.stepTick = realStepTick;
     globalThis.fetch = realFetch;
   }
 }

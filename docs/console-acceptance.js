@@ -147,11 +147,11 @@
   assert(observation.prompt.includes("food ("), "prompt lacks food coordinates");
   assert(!observation.prompt.includes("MAP"), "prompt still contains a text map");
   assert(!document.querySelector("#observation"), "observation map is still in the DOM");
-  assert(observation.prompt.includes("MOVE ANALYSIS"), "prompt lacks the move analysis");
-  assert(observation.prompt.includes("DELAY"), "prompt lacks latency context");
-  assert(observation.prompt.includes("HIST"), "prompt lacks history context");
-  assert(observation.prompt.includes("SCEN"), "prompt lacks execution scenarios");
-  assert(observation.prompt.includes("TASK"), "prompt lacks the decision task");
+  assert(observation.choiceDescriptions.right.includes("safe_for="), "方向说明缺少直行时间");
+  assert(observation.prompt.includes("Response delay"), "提示词缺少响应延迟");
+  assert(observation.prompt.includes("food_unchanged="), "提示词缺少食物停留时间");
+  assert(observation.choiceDescriptions.right.includes("S1"), "方向说明缺少响应到达场景");
+  assert(observation.prompt.includes("Earn 10 points per apple"), "提示词缺少得分目标");
 
   api.start({ seed: 87 });
   api.stepMoves(1);

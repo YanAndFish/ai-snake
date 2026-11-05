@@ -13,7 +13,7 @@ npm run check
 
 `npm run check` 依次运行热路径 lint、Vitest、构建和 TLC。
 
-当前完整检查包含 178 个测试，`npm run check` 和 `npm run test:coverage` 均通过。路线方案的实验数据见 [AI 延迟评估](ai-latency.md)，这些结果不代表当前方向控制效果。真实网络运行步骤见 [比较真实模型的得分和存活时间](evaluate-live.md)。
+当前完整检查包含 184 个测试，`npm run check` 和 `npm run test:coverage` 均通过。路线方案的实验数据见 [AI 延迟评估](ai-latency.md)，这些结果不代表当前方向控制效果。真实网络运行步骤见 [比较真实模型的得分和存活时间](evaluate-live.md)。
 
 ## 测试文件
 
@@ -32,6 +32,7 @@ npm run check
 | `test/engine/audio.test.ts` | 事件到音效映射、静音、背景音乐循环与停止、无 AudioContext 时不崩溃 |
 | `test/ai/client.test.ts` | Decisions 请求体、choice 问题、默认模型、answer 解析、refusal、非法选择、HTTP 错误不泄露 Key、abort、默认 fetch 接收者 |
 | `test/ai/response.test.ts` | 兼容 JSON、代码围栏、单 action、大小写、反向截断、未知 token、超长截断、垃圾输入、理由清洗 |
+| `test/ai/prompt.test.ts` | 直线上食物的步数、响应时间余量、危险选项保留、隐藏 RNG 不影响提示词，以及分析不修改游戏状态 |
 | `test/ai/controller.test.ts` | mock 走真实解析、错误日志、竞态只保留最新、abort、`waitForIdle` 超时、日志上限 |
 | `test/ai/context.test.ts` | 延迟分位数、当前移动进度、入队转向、等待期间变速、冷启动场景、食物进度、循环检测和状态只读性 |
 | `test/app/keyStore.test.ts` | Key 的存取、清除、不可序列化 |
