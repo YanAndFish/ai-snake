@@ -1,11 +1,13 @@
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
+  DEFAULT_DIFFICULTY,
   DEFAULT_SEED,
   INITIAL_LENGTH,
   MAX_QUEUE,
   SCORE_PER_FOOD,
   moveEveryTicksFor,
+  type Difficulty,
 } from "../config";
 import { rngNext } from "../engine/rng";
 import { advanceClockHot } from "./tick.hot";
@@ -75,10 +77,12 @@ export function createGame(options?: {
   seed?: number;
   width?: number;
   height?: number;
+  difficulty?: Difficulty;
 }): GameState {
   const width = options?.width ?? BOARD_WIDTH;
   const height = options?.height ?? BOARD_HEIGHT;
   const seed = (options?.seed ?? DEFAULT_SEED) >>> 0;
+  const difficulty = options?.difficulty ?? DEFAULT_DIFFICULTY;
   const base: GameState = {
     phase: "menu",
     control: "human",
@@ -87,8 +91,9 @@ export function createGame(options?: {
     tick: 0,
     haltTick: 0,
     moveCount: 0,
-    moveEveryTicks: moveEveryTicksFor(0),
+    moveEveryTicks: moveEveryTicksFor(0, difficulty),
     moveAccumulator: 0,
+    difficulty,
     snake: initialSnake(width, height),
     direction: "right",
     queue: [],
@@ -108,6 +113,7 @@ export function startGame(state: GameState, seed?: number): GameState {
   const width = state.width;
   const height = state.height;
   const nextSeed = (seed ?? state.seed) >>> 0;
+  const difficulty = state.difficulty ?? DEFAULT_DIFFICULTY;
   const base: GameState = {
     phase: "playing",
     control: "human",
@@ -116,8 +122,9 @@ export function startGame(state: GameState, seed?: number): GameState {
     tick: 0,
     haltTick: 0,
     moveCount: 0,
-    moveEveryTicks: moveEveryTicksFor(0),
+    moveEveryTicks: moveEveryTicksFor(0, difficulty),
     moveAccumulator: 0,
+    difficulty,
     snake: initialSnake(width, height),
     direction: "right",
     queue: [],
@@ -145,27 +152,6 @@ export function pauseGame(state: GameState, reason?: PauseReason): GameState {
 
 export function resumeGame(state: GameState): GameState {
   if (state.phase !== "paused") return state;
-  return { ...state, phase: "playing", pauseReason: null };
-}
-
-export function beginThinking(state: GameState): GameState {
-  if (state.control !== "ai") {
-    throw new Error("beginThinking requires an AI-controlled run");
-  }
-  if (state.phase === "thinking") return state;
-  if (state.phase !== "playing") {
-    throw new Error("beginThinking requires a playing run");
-  }
-  return {
-    ...state,
-    phase: "thinking",
-    haltTick: state.tick,
-    pauseReason: "ai",
-  };
-}
-
-export function finishThinking(state: GameState): GameState {
-  if (state.phase !== "thinking") return state;
   return { ...state, phase: "playing", pauseReason: null };
 }
 
@@ -256,7 +242,7 @@ export function advanceMove(state: GameState): {
       ...next,
       eaten,
       score: SCORE_PER_FOOD * eaten,
-      moveEveryTicks: moveEveryTicksFor(eaten),
+      moveEveryTicks: moveEveryTicksFor(eaten, s.difficulty),
     };
     events.push({ type: "eat", tick: s.tick });
 
@@ -323,7 +309,7 @@ export function setSnake(state: GameState, cells: Cell[], dir: Direction): GameS
     queue: [],
     eaten,
     score: SCORE_PER_FOOD * eaten,
-    moveEveryTicks: moveEveryTicksFor(eaten),
+    moveEveryTicks: moveEveryTicksFor(eaten, state.difficulty),
     moveAccumulator: 0,
     overReason: null,
     pauseReason: null,
@@ -358,6 +344,15 @@ export function setFood(state: GameState, cell: Cell | null): GameState {
     throw new Error(`setFood cell is on the snake: ${cell.x},${cell.y}`);
   }
   return { ...state, food: { ...cell } };
+}
+
+export function setDifficulty(state: GameState, difficulty: Difficulty): GameState {
+  return {
+    ...state,
+    difficulty,
+    moveEveryTicks: moveEveryTicksFor(state.eaten, difficulty),
+    moveAccumulator: 0,
+  };
 }
 
 export function setSpeed(state: GameState, moveEveryTicks: number): GameState {

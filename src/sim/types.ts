@@ -1,5 +1,7 @@
+import type { Difficulty } from "../config";
+
 export type Direction = "up" | "down" | "left" | "right";
-export type Phase = "menu" | "playing" | "paused" | "thinking" | "over";
+export type Phase = "menu" | "playing" | "paused" | "over";
 export type OverReason = "wall" | "self" | "win";
 export type PauseReason = "user" | "ai" | "hidden" | null;
 export type Control = "human" | "ai";
@@ -19,6 +21,7 @@ export interface GameState {
   moveCount: number;
   moveEveryTicks: number;
   moveAccumulator: number;
+  difficulty: Difficulty;
   snake: Cell[];
   direction: Direction;
   queue: Direction[];

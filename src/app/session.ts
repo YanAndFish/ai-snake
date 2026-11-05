@@ -1,4 +1,4 @@
-import { DEFAULT_MODEL } from "../config";
+import { DEFAULT_DIFFICULTY, DEFAULT_MODEL, type Difficulty } from "../config";
 import {
   type AiLogEntry,
   type AiStatusView,
@@ -13,6 +13,7 @@ import {
   resumeGame,
   setFood as setFoodGame,
   setSnake as setSnakeGame,
+  setDifficulty as setDifficultyGame,
   setSpeed as setSpeedGame,
   startGame,
   viewState,
@@ -38,6 +39,7 @@ export interface ScoreStore {
 export interface StartOptions {
   seed?: number;
   ai?: boolean;
+  difficulty?: Difficulty;
 }
 
 export interface SessionOptions {
@@ -79,6 +81,7 @@ export class GameSession {
   private bestScoreStore: ScoreStore | null;
   private bestScore: number;
   private model: string;
+  private difficulty: Difficulty;
   private events: GameEvent[] = [];
   private onEvents: ((events: GameEvent[]) => void) | null;
   private onFatal: ((message: string) => void) | null;
@@ -98,9 +101,10 @@ export class GameSession {
     this.bestScoreStore = options.bestScore ?? null;
     this.bestScore = this.bestScoreStore?.load() ?? 0;
     this.model = options.model ?? DEFAULT_MODEL;
+    this.difficulty = DEFAULT_DIFFICULTY;
     this.onEvents = options.onEvents ?? null;
     this.onFatal = options.onFatal ?? null;
-    this.state = createGame();
+    this.state = createGame({ difficulty: this.difficulty });
   }
 
   getBestScore(): number {
@@ -159,9 +163,12 @@ export class GameSession {
   start(options?: StartOptions): StateView {
     this.runId += 1;
     this.abortController?.abort();
+    this.abortController = null;
+    this.requestInFlight = false;
     this.frozen = false;
     this.fatal = null;
     const ai = options?.ai === true;
+    if (options?.difficulty) this.difficulty = options.difficulty;
     this.aiEnabled = ai;
 
     if (ai && !this.controller.hasMock() && !this.keyStore.has()) {
@@ -170,6 +177,7 @@ export class GameSession {
     }
 
     this.state = startGame(this.state, options?.seed ?? freshSeed());
+    this.state = setDifficultyGame(this.state, this.difficulty);
     this.events.length = 0;
     this.emit([{ type: "start", tick: 0 }]);
 
@@ -317,6 +325,17 @@ export class GameSession {
     return viewState(this.state);
   }
 
+  setDifficulty(difficulty: Difficulty): StateView {
+    this.difficulty = difficulty;
+    this.state = setDifficultyGame(this.state, difficulty);
+    this.assertInvariants();
+    return viewState(this.state);
+  }
+
+  getDifficulty(): Difficulty {
+    return this.difficulty;
+  }
+
   setPlan(moves: Direction[] | string): StateView {
     if (this.state.control !== "ai") {
       throw new Error("setPlan requires an AI-controlled run");
@@ -354,12 +373,24 @@ export class GameSession {
     this.keyStore.set(value);
   }
 
+  setMock(answer: Parameters<AiController["useMock"]>[0]): void {
+    this.controller.useMock(answer);
+  }
+
+  clearMock(): void {
+    this.controller.clearMock();
+  }
+
   setModel(value: string): void {
     this.model = value.trim() || DEFAULT_MODEL;
   }
 
   clearKey(): void {
     this.keyStore.clear();
+  }
+
+  hasKey(): boolean {
+    return this.keyStore.has();
   }
 
   attach(): StateView {

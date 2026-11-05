@@ -1,32 +1,77 @@
 import * as THREE from "three";
-import type { Cell, GameState } from "../sim/types";
+import { BOARD_HEIGHT, BOARD_WIDTH } from "../config";
+import type { Cell, Direction, GameState } from "../sim/types";
+import {
+  APPLE_SIZE,
+  BOARD_TOP,
+  BODY_LENGTH,
+  BODY_WIDTH,
+  HEAD_SIZE,
+  SHADOW_LIFT,
+  SHADOW_OFFSET_X,
+  SHADOW_OFFSET_Z,
+  VIEW_ELEVATION_DEGREES,
+  renderSceneHot,
+  type SceneHot,
+} from "./scene.hot";
 import {
   appleTexture,
-  grassTexture,
+  boardTexture,
+  borderTexture,
+  bushTexture,
+  daisyTexture,
+  grassTuftTexture,
+  groundShadowTexture,
+  groundTexture,
   headTexture,
-  leafTexture,
-  snakeTexture,
-  stemTexture,
-  wallTexture,
+  particleTexture,
+  shadowTexture,
+  snakeBodyTexture,
+  soilTexture,
+  stoneTexture,
 } from "./textures";
-import { SNAKE_SIZE, renderSceneHot, type SceneHot } from "./scene.hot";
 
-const APPLE_SIZE = 0.6;
-const MAX_PARTICLES = 64;
-const MAX_SEGMENTS = 224;
-const TILE_COLOR_A = new THREE.Color("#3a5c3d");
-const TILE_COLOR_B = new THREE.Color("#314d35");
+export { BOARD_TOP, SPRITE_SIZE } from "./scene.hot";
+export type { SceneHot } from "./scene.hot";
+
+const BORDER_WIDTH = 0.58;
+const BORDER_HEIGHT = 0.16;
+const GROUND_Y = -0.16;
+const PLINTH_HEIGHT = BOARD_TOP - GROUND_Y;
+const MAX_PARTICLES = 48;
+const MAX_SEGMENTS = BOARD_WIDTH * BOARD_HEIGHT;
+const CAMERA_FOV = 34;
+const CAMERA_ELEVATION = THREE.MathUtils.degToRad(VIEW_ELEVATION_DEGREES);
+const CAMERA_SIN = Math.sin(CAMERA_ELEVATION);
+const CAMERA_COS = Math.cos(CAMERA_ELEVATION);
+const FIT_FRACTION = 0.93;
+
+function makeSpriteMaterial(texture: THREE.Texture): THREE.SpriteMaterial {
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    alphaTest: 0.04,
+    toneMapped: false,
+  });
+  return material;
+}
 
 export class Scene implements SceneHot {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
-  camera: THREE.OrthographicCamera;
-  segmentMeshes: THREE.Mesh[] = [];
-  headMesh: THREE.Mesh | null = null;
-  headEyes: THREE.Mesh[] = [];
-  headTongue: THREE.Mesh | null = null;
+  camera: THREE.PerspectiveCamera;
+  cameraHome = new THREE.Vector3();
+  cameraTarget = new THREE.Vector3();
+  segmentMeshes: THREE.Sprite[] = [];
+  segmentShadows: THREE.Mesh[] = [];
+  headMesh: THREE.Sprite | null = null;
+  headShadow: THREE.Mesh | null = null;
+  headMaterials: Record<Direction, THREE.SpriteMaterial>;
   appleGroup = new THREE.Group();
-  particles: THREE.Mesh[] = [];
+  appleSprite: THREE.Sprite | null = null;
+  appleShadow: THREE.Mesh | null = null;
+  particles: THREE.Sprite[] = [];
   particleLife: number[] = [];
   prevSnake: Cell[] | null = null;
   currentSnake: Cell[] | null = null;
@@ -34,169 +79,259 @@ export class Scene implements SceneHot {
   shakeTime = 0;
   shakeActive = false;
 
-  private readonly snakeGroup = new THREE.Group();
-  private readonly bodyMaterial: THREE.MeshLambertMaterial;
-  private readonly headMaterial: THREE.MeshLambertMaterial;
-  private readonly eyeMaterial: THREE.MeshLambertMaterial;
-  private readonly appleMaterial: THREE.MeshLambertMaterial;
-  private readonly seed: number;
+  private readonly shadowGeometry: THREE.PlaneGeometry;
+  private readonly shadowMaterial: THREE.MeshBasicMaterial;
+  private readonly decorations = new THREE.Group();
 
   constructor(canvas: HTMLCanvasElement, seed = 1) {
-    this.seed = seed;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
     this.renderer.setPixelRatio(1);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.BasicShadowMap;
+    this.renderer.shadowMap.enabled = false;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color("#0a120c");
+    this.scene.background = new THREE.Color("#cfe3b0");
 
-    this.camera = new THREE.OrthographicCamera(-14, 14, 14, -14, 1, 120);
+    this.camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.1, 300);
+    this.cameraTarget.set(BOARD_WIDTH / 2, BOARD_TOP, BOARD_HEIGHT / 2);
+    this.cameraHome.set(BOARD_WIDTH / 2, BOARD_TOP + 30, BOARD_HEIGHT / 2 + 20);
+    this.camera.position.copy(this.cameraHome);
+    this.camera.lookAt(this.cameraTarget);
 
-    const hemi = new THREE.HemisphereLight("#a9c8a0", "#1a241a", 0.55);
-    this.scene.add(hemi);
+    this.shadowGeometry = new THREE.PlaneGeometry(1, 1);
+    this.shadowGeometry.rotateX(-Math.PI / 2);
+    this.shadowMaterial = new THREE.MeshBasicMaterial({
+      map: shadowTexture(),
+      transparent: true,
+      depthWrite: false,
+      opacity: 0.85,
+      toneMapped: false,
+    });
 
-    const sun = new THREE.DirectionalLight("#f1e6c8", 1.15);
-    sun.position.set(10, 22, 16);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
-    sun.shadow.camera.left = -18;
-    sun.shadow.camera.right = 18;
-    sun.shadow.camera.top = 18;
-    sun.shadow.camera.bottom = -18;
-    sun.shadow.camera.near = 1;
-    sun.shadow.camera.far = 80;
-    this.scene.add(sun);
-
-    this.bodyMaterial = new THREE.MeshLambertMaterial({ map: snakeTexture() });
-    this.headMaterial = new THREE.MeshLambertMaterial({ map: headTexture() });
-    this.eyeMaterial = new THREE.MeshLambertMaterial({ color: "#0c0c10" });
-    this.appleMaterial = new THREE.MeshLambertMaterial({ map: appleTexture() });
+    this.headMaterials = {
+      up: makeSpriteMaterial(headTexture("up")),
+      down: makeSpriteMaterial(headTexture("down")),
+      left: makeSpriteMaterial(headTexture("left")),
+      right: makeSpriteMaterial(headTexture("right")),
+    };
 
     this.buildBoard();
+    this.buildDecorations();
     this.buildApple();
+    this.buildSnake();
     this.buildParticles();
-    this.ensureSnakeMeshes(MAX_SEGMENTS);
 
-    this.scene.add(this.snakeGroup);
+    this.scene.add(this.decorations);
     this.scene.add(this.appleGroup);
 
-    this.camera.position.set(7.5, 20, 18);
-    this.camera.lookAt(7.5, 0, 7.5);
-    this.camera.updateProjectionMatrix();
+    this.resize(canvas.clientWidth || 960, canvas.clientHeight || 640);
   }
 
   private buildBoard(): void {
-    const floor = new THREE.Mesh(
-      new THREE.BoxGeometry(15, 1, 15),
-      new THREE.MeshLambertMaterial({ map: grassTexture(this.seed) }),
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(240, 240),
+      new THREE.MeshBasicMaterial({ map: groundTexture(), toneMapped: false }),
     );
-    floor.position.set(7.5, -0.75, 7.5);
-    floor.receiveShadow = true;
-    this.scene.add(floor);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(BOARD_WIDTH / 2, GROUND_Y, BOARD_HEIGHT / 2);
+    this.scene.add(ground);
 
-    const tileGeo = new THREE.BoxGeometry(0.94, 0.08, 0.94);
-    const tiles = new THREE.InstancedMesh(
-      tileGeo,
-      new THREE.MeshLambertMaterial({ color: "#ffffff" }),
-      15 * 15,
+    const plinth = new THREE.Mesh(
+      new THREE.BoxGeometry(BOARD_WIDTH + BORDER_WIDTH * 2, PLINTH_HEIGHT, BOARD_HEIGHT + BORDER_WIDTH * 2),
+      new THREE.MeshBasicMaterial({ map: soilTexture(), toneMapped: false }),
     );
-    const matrix = new THREE.Matrix4();
-    let i = 0;
-    for (let y = 0; y < 15; y += 1) {
-      for (let x = 0; x < 15; x += 1) {
-        matrix.makeTranslation(x + 0.5, 0.0, y + 0.5);
-        tiles.setMatrixAt(i, matrix);
-        tiles.setColorAt(i, (x + y) % 2 === 0 ? TILE_COLOR_A : TILE_COLOR_B);
-        i += 1;
-      }
-    }
-    tiles.receiveShadow = true;
-    this.scene.add(tiles);
+    plinth.position.set(BOARD_WIDTH / 2, (BOARD_TOP + GROUND_Y) / 2, BOARD_HEIGHT / 2);
+    this.scene.add(plinth);
 
-    const wallMat = new THREE.MeshLambertMaterial({ map: wallTexture() });
-    const wallDefs: Array<[number, number, number, number]> = [
-      [17, 1, 1, -0.5],
-      [17, 1, 1, 14.5],
-      [1, 1, 17, -0.5],
-      [1, 1, 17, 14.5],
-    ];
-    for (const [w, h, d, axis] of wallDefs) {
-      const horizontal = w > 1;
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
-      wall.position.set(horizontal ? 7.5 : axis, 0.5, horizontal ? axis : 7.5);
-      wall.castShadow = true;
-      wall.receiveShadow = true;
-      this.scene.add(wall);
-    }
+    const field = new THREE.Mesh(
+      new THREE.PlaneGeometry(BOARD_WIDTH, BOARD_HEIGHT),
+      new THREE.MeshBasicMaterial({
+        map: boardTexture(BOARD_WIDTH, BOARD_HEIGHT),
+        toneMapped: false,
+      }),
+    );
+    field.rotation.x = -Math.PI / 2;
+    field.position.set(BOARD_WIDTH / 2, BOARD_TOP + 0.002, BOARD_HEIGHT / 2);
+    this.scene.add(field);
+
+    const borderMaterial = new THREE.MeshBasicMaterial({
+      map: borderTexture(),
+      toneMapped: false,
+    });
+    const borderY = BOARD_TOP + BORDER_HEIGHT / 2;
+    const horizontalBorder = new THREE.BoxGeometry(
+      BOARD_WIDTH + BORDER_WIDTH * 2,
+      BORDER_HEIGHT,
+      BORDER_WIDTH,
+    );
+    const verticalBorder = new THREE.BoxGeometry(
+      BORDER_WIDTH,
+      BORDER_HEIGHT,
+      BOARD_HEIGHT,
+    );
+    const topBorder = new THREE.Mesh(horizontalBorder, borderMaterial);
+    topBorder.position.set(BOARD_WIDTH / 2, borderY, -BORDER_WIDTH / 2);
+    this.scene.add(topBorder);
+    const bottomBorder = new THREE.Mesh(horizontalBorder, borderMaterial);
+    bottomBorder.position.set(BOARD_WIDTH / 2, borderY, BOARD_HEIGHT + BORDER_WIDTH / 2);
+    this.scene.add(bottomBorder);
+    const leftBorder = new THREE.Mesh(verticalBorder, borderMaterial);
+    leftBorder.position.set(-BORDER_WIDTH / 2, borderY, BOARD_HEIGHT / 2);
+    this.scene.add(leftBorder);
+    const rightBorder = new THREE.Mesh(verticalBorder, borderMaterial);
+    rightBorder.position.set(BOARD_WIDTH + BORDER_WIDTH / 2, borderY, BOARD_HEIGHT / 2);
+    this.scene.add(rightBorder);
+
+    const boardShadowMap = groundShadowTexture();
+    const ambientShadow = new THREE.Mesh(
+      this.shadowGeometry,
+      new THREE.MeshBasicMaterial({
+        map: boardShadowMap,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.32,
+        toneMapped: false,
+      }),
+    );
+    ambientShadow.position.set(BOARD_WIDTH / 2, GROUND_Y + 0.002, BOARD_HEIGHT / 2);
+    ambientShadow.scale.set(
+      BOARD_WIDTH + BORDER_WIDTH * 2 + 5.2,
+      1,
+      BOARD_HEIGHT + BORDER_WIDTH * 2 + 5.2,
+    );
+    this.scene.add(ambientShadow);
+
+    const contactShadow = new THREE.Mesh(
+      this.shadowGeometry,
+      new THREE.MeshBasicMaterial({
+        map: boardShadowMap,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.58,
+        toneMapped: false,
+      }),
+    );
+    contactShadow.position.set(BOARD_WIDTH / 2, GROUND_Y + 0.003, BOARD_HEIGHT / 2);
+    contactShadow.scale.set(
+      BOARD_WIDTH + BORDER_WIDTH * 2 + 1.4,
+      1,
+      BOARD_HEIGHT + BORDER_WIDTH * 2 + 1.4,
+    );
+    this.scene.add(contactShadow);
+  }
+
+  private addDecoration(texture: THREE.Texture, size: number, x: number, z: number): void {
+    const sprite = new THREE.Sprite(makeSpriteMaterial(texture));
+    sprite.scale.set(size, size, 1);
+    sprite.center.set(0.5, 0);
+    sprite.position.set(x, GROUND_Y + 0.004, z);
+    sprite.renderOrder = 1;
+    this.decorations.add(sprite);
+
+    const shadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
+    shadow.position.set(
+      x + SHADOW_OFFSET_X * size * 1.3,
+      GROUND_Y + 0.006,
+      z + SHADOW_OFFSET_Z * size * 1.3,
+    );
+    shadow.scale.set(size * 0.9, 1, size * 0.62);
+    this.decorations.add(shadow);
+  }
+
+  private buildDecorations(): void {
+    this.addDecoration(grassTuftTexture(), 0.62, 1.4, -1.7);
+    this.addDecoration(grassTuftTexture(), 0.56, -1.8, 4.4);
+    this.addDecoration(grassTuftTexture(), 0.6, 17.8, -1.6);
+    this.addDecoration(grassTuftTexture(), 0.62, -1.7, 12.8);
+    this.addDecoration(grassTuftTexture(), 0.58, 20.9, 8.5);
+    this.addDecoration(grassTuftTexture(), 0.6, 12.2, 20.6);
+    this.addDecoration(grassTuftTexture(), 0.52, 5.2, 20.8);
+
+    this.addDecoration(daisyTexture(), 0.62, 20.8, 3.0);
+    this.addDecoration(daisyTexture(), 0.58, 2.8, 20.8);
+    this.addDecoration(daisyTexture(), 0.56, -1.6, 18.4);
+    this.addDecoration(daisyTexture(), 0.6, 20.7, 16.2);
+    this.addDecoration(daisyTexture(), 0.54, -1.5, 9.0);
+
+    this.addDecoration(bushTexture(), 0.84, 9.4, -2.0);
+    this.addDecoration(bushTexture(), 0.76, 21.0, 12.0);
+    this.addDecoration(bushTexture(), 0.74, -2.0, 7.2);
+    this.addDecoration(bushTexture(), 0.72, 20.9, 18.5);
+    this.addDecoration(bushTexture(), 0.7, 17.2, 20.8);
+
+    this.addDecoration(stoneTexture(), 0.5, 21.0, 5.2);
+    this.addDecoration(stoneTexture(), 0.46, -1.7, 1.6);
+    this.addDecoration(stoneTexture(), 0.52, 7.0, 20.8);
+    this.addDecoration(stoneTexture(), 0.44, 18.2, 20.7);
   }
 
   private buildApple(): void {
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(APPLE_SIZE, APPLE_SIZE, APPLE_SIZE),
-      this.appleMaterial,
-    );
-    body.castShadow = true;
-    this.appleGroup.add(body);
+    const sprite = new THREE.Sprite(makeSpriteMaterial(appleTexture()));
+    sprite.scale.set(APPLE_SIZE, APPLE_SIZE, 1);
+    sprite.center.set(0.5, 0.5);
+    sprite.position.y = BOARD_TOP + APPLE_SIZE * 0.5;
+    sprite.renderOrder = 1;
+    this.appleSprite = sprite;
+    this.appleGroup.add(sprite);
 
-    const stem = new THREE.Mesh(
-      new THREE.BoxGeometry(0.12, 0.24, 0.12),
-      new THREE.MeshLambertMaterial({ map: stemTexture() }),
-    );
-    stem.position.y = APPLE_SIZE / 2 + 0.12;
-    this.appleGroup.add(stem);
+    const shadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
+    shadow.position.set(0.06, BOARD_TOP + SHADOW_LIFT, 0.1);
+    shadow.scale.set(0.86, 1, 0.68);
+    this.appleShadow = shadow;
+    this.appleGroup.add(shadow);
+  }
 
-    const leaf = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 0.05, 0.16),
-      new THREE.MeshLambertMaterial({ map: leafTexture() }),
-    );
-    leaf.position.set(0.14, APPLE_SIZE / 2 + 0.1, 0);
-    leaf.castShadow = true;
-    this.appleGroup.add(leaf);
+  private addBodyShadow(): THREE.Mesh {
+    const shadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
+    shadow.position.y = BOARD_TOP + SHADOW_LIFT;
+    shadow.scale.set(BODY_LENGTH * 1.06, 1, BODY_WIDTH * 1.12);
+    shadow.visible = false;
+    this.scene.add(shadow);
+    return shadow;
+  }
+
+  private buildSnake(): void {
+    const bodyA = snakeBodyTexture(0);
+    const bodyB = snakeBodyTexture(1);
+    for (let i = 0; i < MAX_SEGMENTS; i += 1) {
+      const sprite = new THREE.Sprite(
+        makeSpriteMaterial(i % 2 === 0 ? bodyA : bodyB),
+      );
+      sprite.scale.set(BODY_LENGTH, BODY_WIDTH, 1);
+      sprite.center.set(0.5, 0.5);
+      sprite.renderOrder = 1;
+      sprite.visible = false;
+      this.segmentMeshes.push(sprite);
+      this.scene.add(sprite);
+      this.segmentShadows.push(this.addBodyShadow());
+    }
+
+    const head = new THREE.Sprite(this.headMaterials.right);
+    head.scale.set(HEAD_SIZE, HEAD_SIZE, 1);
+    head.center.set(0.5, 0.5);
+    head.renderOrder = 1000;
+    head.visible = false;
+    this.headMesh = head;
+    this.scene.add(head);
+
+    const headShadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
+    headShadow.position.y = BOARD_TOP + SHADOW_LIFT;
+    headShadow.scale.set(0.82, 1, 0.68);
+    headShadow.visible = false;
+    this.headShadow = headShadow;
+    this.scene.add(headShadow);
   }
 
   private buildParticles(): void {
-    const geo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
+    const texture = particleTexture();
     for (let i = 0; i < MAX_PARTICLES; i += 1) {
-      const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: "#a85a44" }));
-      mesh.visible = false;
-      this.particles.push(mesh);
+      const sprite = new THREE.Sprite(makeSpriteMaterial(texture));
+      sprite.scale.set(0.2, 0.2, 1);
+      sprite.renderOrder = 1001;
+      sprite.visible = false;
+      this.particles.push(sprite);
       this.particleLife.push(0);
-      this.scene.add(mesh);
-    }
-  }
-
-  private ensureSnakeMeshes(length: number): void {
-    const geo = new THREE.BoxGeometry(SNAKE_SIZE, SNAKE_SIZE, SNAKE_SIZE);
-    while (this.segmentMeshes.length < length) {
-      const mesh = new THREE.Mesh(geo, this.bodyMaterial);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.visible = false;
-      this.segmentMeshes.push(mesh);
-      this.snakeGroup.add(mesh);
-    }
-
-    if (this.headMesh === null) {
-      this.headMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(SNAKE_SIZE, SNAKE_SIZE, SNAKE_SIZE),
-        this.headMaterial,
-      );
-      this.headMesh.castShadow = true;
-      this.snakeGroup.add(this.headMesh);
-      for (let e = 0; e < 2; e += 1) {
-        const eye = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.1), this.eyeMaterial);
-        eye.position.set(e === 0 ? -0.1 : 0.1, 0.12, SNAKE_SIZE / 2);
-        this.headEyes.push(eye);
-        this.headMesh.add(eye);
-      }
-      this.headTongue = new THREE.Mesh(
-        new THREE.BoxGeometry(0.28, 0.04, 0.04),
-        new THREE.MeshLambertMaterial({ color: "#8f3444" }),
-      );
-      this.headTongue.position.set(0, -0.05, SNAKE_SIZE / 2 + 0.12);
-      this.headMesh.add(this.headTongue);
+      this.scene.add(sprite);
     }
   }
 
@@ -208,32 +343,75 @@ export class Scene implements SceneHot {
     let spawned = 0;
     for (let i = 0; i < this.particles.length && spawned < 16; i += 1) {
       if (this.particleLife[i] > 0) continue;
-      const p = this.particles[i];
-      p.position.set(cell.x + 0.5, 0.4, cell.y + 0.5);
-      p.visible = true;
-      this.particleLife[i] = 0.5 + Math.random() * 0.3;
+      const particle = this.particles[i];
+      particle.position.set(
+        cell.x + 0.5 + (Math.random() - 0.5) * 0.3,
+        BOARD_TOP + 0.18 + Math.random() * 0.22,
+        cell.y + 0.5 + (Math.random() - 0.5) * 0.3,
+      );
+      particle.visible = true;
+      particle.material.opacity = 1;
+      this.particleLife[i] = 0.55 + Math.random() * 0.25;
       spawned += 1;
     }
   }
 
   shake(): void {
-    this.shakeTime = 0.4;
+    this.shakeTime = 0.35;
   }
 
   resize(cssWidth: number, cssHeight: number): void {
-    const w = Math.max(240, Math.floor(cssWidth / 2));
-    const h = Math.max(180, Math.floor(cssHeight / 2));
-    this.renderer.setSize(w, h, false);
-    const aspect = w / h;
-    const half = 14;
-    this.camera.left = -half * aspect;
-    this.camera.right = half * aspect;
-    this.camera.top = half;
-    this.camera.bottom = -half;
+    const width = Math.max(240, Math.floor(cssWidth / 2));
+    const height = Math.max(180, Math.floor(cssHeight / 2));
+    this.renderer.setSize(width, height, false);
+    const aspect = width / height;
+    this.camera.aspect = aspect;
+    this.camera.fov = CAMERA_FOV;
+    this.camera.near = 0.1;
+    this.camera.far = 300;
+
+    const tanHalf = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV / 2));
+    const halfDepth = BOARD_HEIGHT / 2 + BORDER_WIDTH + 0.55;
+    const halfWidth = BOARD_WIDTH / 2 + BORDER_WIDTH + 0.55;
+    const nearDepth = halfDepth * CAMERA_COS;
+    const distanceY = nearDepth + (halfDepth * CAMERA_SIN) / (FIT_FRACTION * tanHalf);
+    const distanceX = nearDepth + halfWidth / (FIT_FRACTION * tanHalf * aspect);
+    const distance = Math.max(distanceY, distanceX);
+
+    this.cameraHome.set(
+      BOARD_WIDTH / 2,
+      BOARD_TOP + distance * CAMERA_SIN,
+      BOARD_HEIGHT / 2 + distance * CAMERA_COS,
+    );
+    this.camera.position.copy(this.cameraHome);
+    this.camera.lookAt(this.cameraTarget);
     this.camera.updateProjectionMatrix();
+    this.shakeActive = false;
+    this.shakeTime = 0;
   }
 
   dispose(): void {
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
+    const textures = new Set<THREE.Texture>();
+    this.scene.traverse((object) => {
+      const renderable = object as THREE.Mesh;
+      if (renderable.geometry !== undefined) geometries.add(renderable.geometry);
+      const material = renderable.material;
+      if (material === undefined) return;
+      if (Array.isArray(material)) {
+        for (const entry of material) materials.add(entry);
+      } else {
+        materials.add(material);
+      }
+    });
+    for (const geometry of geometries) geometry.dispose();
+    for (const material of materials) {
+      const mapped = material as THREE.Material & { map?: THREE.Texture | null };
+      if (mapped.map) textures.add(mapped.map);
+      material.dispose();
+    }
+    for (const texture of textures) texture.dispose();
     this.renderer.dispose();
   }
 }

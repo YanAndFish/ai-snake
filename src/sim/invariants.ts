@@ -1,6 +1,5 @@
 import { type GameState } from "./types";
 import {
-  BIT_AI_ONLY,
   BIT_BODY_ON_BOARD,
   BIT_FOOD_EXISTS,
   BIT_FOOD_ON_EMPTY,
@@ -26,7 +25,6 @@ export const INVARIANT_NAMES = [
   "LengthMatchesFood",
   "NoReverse",
   "HaltFreezesTicks",
-  "AIOnlyThinks",
   "MenuAtZero",
   "HeadIsFirst",
   "LengthAtLeastThree",
@@ -44,7 +42,6 @@ const BITS = [
   BIT_LENGTH,
   BIT_NO_REVERSE,
   BIT_HALT,
-  BIT_AI_ONLY,
   BIT_MENU_ZERO,
   BIT_HEAD,
   BIT_MIN_LENGTH,

@@ -6,7 +6,7 @@ export interface DecisionRequest {
   model: string;
   apiKey: string;
   signal: AbortSignal;
-  legalMoves: Direction[];
+  legalMoves: readonly Direction[];
 }
 
 export interface DecisionTransport {
@@ -70,7 +70,7 @@ export class DecisionsTransport implements DecisionTransport {
           type: "choice",
           name: "next_move",
           instructions:
-            "Choose the next legal move for the snake. The value is one of U (up), D (down), L (left), R (right). Do not choose a 180-degree reversal.",
+            "Choose exactly one listed turn. Never choose a turn labeled CRASH when a SAFE turn is available; if every turn crashes, choose the one with the most space. A 180-degree reversal is not offered.",
           choices,
         },
       ],

@@ -7,11 +7,11 @@ export interface HotLoopState {
 export function advanceLoopHot(
   loop: HotLoopState,
   deltaSeconds: number,
-  halted: boolean,
+  halted: () => boolean,
   maxSteps: number,
   step: () => void,
 ): number {
-  if (halted) {
+  if (halted()) {
     loop.accumulator = 0;
     return 0;
   }
@@ -22,7 +22,7 @@ export function advanceLoopHot(
     loop.accumulator -= STEP;
     step();
     steps += 1;
-    if (halted) {
+    if (halted()) {
       loop.accumulator = 0;
       break;
     }

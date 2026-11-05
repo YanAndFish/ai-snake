@@ -46,7 +46,7 @@ export function legalMovesFor(state: GameState): Direction[] {
 export function buildObservation(state: GameState): Observation {
   const map = buildMap(state);
   const legalMoves = legalMovesFor(state);
-  const prompt = buildPrompt(state, map, legalMoves);
+  const prompt = buildPrompt(state, legalMoves);
   const view = viewState(state);
   return { map, prompt, legalMoves, view };
 }

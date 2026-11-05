@@ -1,6 +1,3 @@
-import "@fontsource/press-start-2p";
-import "./styles.css";
-
 import { DecisionsTransport } from "./ai/client";
 import { AiController } from "./ai/controller";
 import { KeyStore } from "./app/keyStore";
@@ -87,11 +84,13 @@ function handleEvents(events: GameEvent[]): void {
 
 function startManual(): void {
   audio.ensure();
+  audio.startMusic();
   session.start({ ai: false });
 }
 
 function startAi(): void {
   audio.ensure();
+  audio.startMusic();
   const key = apiKeyValue().trim();
   if (key) session.setCredentials(key);
   clearApiKeyInput();
@@ -117,10 +116,7 @@ bindUi({
   onStartAi: startAi,
   onStopAi: () => session.stopAi(),
   onRetryAi: () => session.retryAi(),
-  onClearKey: () => {
-    session.clearKey();
-    clearApiKeyInput();
-  },
+  onDifficulty: (difficulty) => session.setDifficulty(difficulty),
   onPause: togglePause,
   onRestart: restart,
   onMute: () => setMuteLabel(audio.toggleMute()),
@@ -129,7 +125,8 @@ bindUi({
 document.getElementById("menu-ai")?.addEventListener("click", startAi);
 document.getElementById("resume-btn")?.addEventListener("click", togglePause);
 document.getElementById("restart-pause")?.addEventListener("click", restart);
-document.getElementById("restart-over")?.addEventListener("click", restart);
+document.getElementById("restart-over")?.addEventListener("click", startManual);
+document.getElementById("restart-over-ai")?.addEventListener("click", startAi);
 
 const input = new Input(window, {
   onDirection: (dir) => {
@@ -151,6 +148,7 @@ const frameCtx: FrameHotContext = {
   lastAiVersion: -1,
   lastFatal: null,
   onPhase(phase, reason, score) {
+    document.body.dataset.phase = phase;
     if (phase === "menu") showMenu();
     else if (phase === "paused") showPause();
     else if (phase === "over") showOver(reason, score);
@@ -196,4 +194,4 @@ loop.start();
 
 const testApi = createTestApi(session, controller);
 (globalThis as unknown as { __snake: unknown }).__snake = testApi;
-(globalThis as unknown as { __pixelSerpent: unknown }).__pixelSerpent = { session, scene };
+(globalThis as unknown as { __pixelSerpent: unknown }).__pixelSerpent = { session, scene, audio };

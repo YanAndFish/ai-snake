@@ -92,7 +92,8 @@ function extractMoves(parsed: unknown): unknown[] {
 
 function extractReason(parsed: unknown): string {
   if (typeof parsed === "object" && parsed !== null) {
-    return sanitizeReason((parsed as Record<string, unknown>).reason);
+    const object = parsed as Record<string, unknown>;
+    return sanitizeReason(object.reason ?? object.note);
   }
   return "";
 }

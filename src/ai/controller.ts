@@ -28,7 +28,7 @@ export interface AiRequestArgs {
   signal: AbortSignal;
   observation: string;
   currentDirection: Direction;
-  legalMoves: Direction[];
+  legalMoves: readonly Direction[];
   requestId: number;
 }
 
@@ -161,6 +161,7 @@ export class AiController {
         requestId: args.requestId,
         error: null,
       });
+      if (this.log.length > 20) this.log.splice(0, this.log.length - 20);
       return parsed.moves;
     })().catch((err) => {
       if (args.signal.aborted || seq !== this.requestSeq) throw err;
@@ -176,6 +177,7 @@ export class AiController {
         requestId: args.requestId,
         error: message,
       });
+      if (this.log.length > 20) this.log.splice(0, this.log.length - 20);
       throw err;
     });
 

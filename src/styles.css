@@ -1,3 +1,5 @@
+@import "@fontsource/press-start-2p/latin-400.css";
+
 :root {
   --bg: #070d08;
   --panel: #0b130d;
@@ -56,7 +58,7 @@ button {
   min-height: 0;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 44%, #132017 0%, #070d08 62%, #050806 100%);
+    radial-gradient(circle at 50% 42%, #b8d19a 0%, #8fb073 55%, #71945f 100%);
   border-right: 2px solid var(--line);
 }
 
@@ -68,7 +70,7 @@ button {
   height: 100%;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  filter: saturate(0.92) contrast(1.02);
+  filter: saturate(1.04);
 }
 
 #scanlines {
@@ -79,13 +81,12 @@ button {
   background:
     repeating-linear-gradient(
       to bottom,
-      rgba(0, 0, 0, 0.14) 0,
-      rgba(0, 0, 0, 0.14) 1px,
+      rgba(8, 20, 10, 0.035) 0,
+      rgba(8, 20, 10, 0.035) 1px,
       transparent 1px,
       transparent 3px
     ),
-    radial-gradient(ellipse at center, transparent 54%, rgba(0, 0, 0, 0.42) 100%);
-  mix-blend-mode: multiply;
+    radial-gradient(ellipse at center, transparent 62%, rgba(12, 28, 14, 0.16) 100%);
 }
 
 #flash {
@@ -165,6 +166,57 @@ button {
   font-size: 9px;
 }
 
+body[data-phase="menu"] #hud .difficulty-group {
+  display: none;
+}
+
+.difficulty-group {
+  align-items: center;
+  gap: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  pointer-events: auto;
+}
+
+.difficulty-option {
+  border: 1px solid var(--line);
+  background: #0a130c;
+  color: var(--muted);
+  font-family: var(--ui);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 4px 7px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.difficulty-option:hover {
+  color: var(--green-bright);
+  border-color: var(--line-hot);
+}
+
+.difficulty-option.is-active {
+  background: var(--green);
+  border-color: #d3e3c5;
+  color: var(--ink);
+}
+
+.menu-difficulty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.menu-difficulty .difficulty-option {
+  font-size: 12px;
+  padding: 7px 11px;
+}
+
 .phase-chip {
   font-family: var(--ui);
   font-size: 12px;
@@ -223,23 +275,6 @@ button {
   padding: 7px 9px;
 }
 
-.link-button {
-  align-self: flex-start;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-family: var(--ui);
-  font-size: 12px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  padding: 0;
-}
-
-.link-button:hover {
-  color: var(--orange);
-}
-
 .overlay {
   position: absolute;
   inset: 0;
@@ -249,7 +284,7 @@ button {
   justify-content: center;
   padding: 24px;
   background:
-    radial-gradient(circle at 50% 42%, rgba(20, 35, 22, 0.58) 0%, rgba(7, 13, 8, 0.92) 58%, #050806 100%);
+    radial-gradient(circle at 50% 42%, rgba(24, 42, 26, 0.08) 0%, rgba(7, 13, 8, 0.44) 62%, rgba(5, 8, 6, 0.62) 100%);
   text-align: left;
 }
 
@@ -488,10 +523,18 @@ button {
 }
 
 .observation {
-  max-height: 230px;
+  max-height: 260px;
   overflow: auto;
   white-space: pre;
   word-break: normal;
+  padding: 12px 11px;
+  color: #d2e6bc;
+  font-family: var(--pixel);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-ligatures: none;
+  text-rendering: geometricPrecision;
 }
 
 .ai-log {

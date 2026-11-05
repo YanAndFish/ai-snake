@@ -4,6 +4,7 @@ import type {
   AiStatusView,
   MockAnswer,
 } from "../ai/controller";
+import type { Difficulty } from "../config";
 import type { Observation } from "../sim/observation";
 import type { Cell, Direction, GameEvent, StateView } from "../sim/types";
 import type { GameSession, StartOptions } from "./session";
@@ -39,6 +40,7 @@ export interface SnakeApi {
   setSnake(cells: Cell[], dir: Direction): StateView;
   setFood(cell: Cell | null): StateView;
   setSpeed(moveEveryTicks: number): StateView;
+  setDifficulty(difficulty: Difficulty): StateView;
   pause(): StateView;
   resume(): StateView;
   getState(): StateView;
@@ -85,6 +87,7 @@ export function createTestApi(
     setSnake: (cells, dir) => detachAnd(() => session.setSnake(cells, dir)),
     setFood: (cell) => detachAnd(() => session.setFood(cell)),
     setSpeed: (t) => detachAnd(() => session.setSpeed(t)),
+    setDifficulty: (difficulty) => detachAnd(() => session.setDifficulty(difficulty)),
     pause: () => detachAnd(() => session.pause()),
     resume: () => detachAnd(() => session.resume()),
     getState: () => session.getState(),

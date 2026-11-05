@@ -1,128 +1,156 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>PIXEL SERPENT · 3D 像素贪吃蛇</title>
-  </head>
-  <body>
-    <div id="app">
-      <main id="stage">
-        <canvas id="world" aria-label="3D pixel snake board"></canvas>
 
-        <header id="hud">
-          <div class="hud-left">
-            <span class="brand">PIXEL SERPENT</span>
-            <div class="hud-item"><span class="label">分数</span><span id="score">0</span></div>
-            <div class="hud-item"><span class="label">最高</span><span id="best">0</span></div>
-            <div class="hud-item"><span class="label">长度</span><span id="length">3</span></div>
-            <div class="hud-item"><span class="label">节拍</span><span id="speed">10</span></div>
-            <span id="phase" class="phase-chip">菜单</span>
-          </div>
-          <div class="hud-buttons">
-            <button id="pause" class="btn tiny" type="button">暂停</button>
-            <button id="restart" class="btn tiny" type="button">重开</button>
-            <button id="mute" class="btn tiny" type="button">声音：开</button>
-          </div>
-        </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preload" href="/node_modules/@fontsource/press-start-2p/files/press-start-2p-latin-400-normal.woff2"
+    as="font" type="font/woff2" crossorigin />
+  <style>
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      background: #070d08;
+      color: #c6d4c0;
+    }
 
-        <div id="flash"></div>
-        <div id="scanlines"></div>
+    body {
+      overflow: hidden;
+    }
+  </style>
+  <link rel="stylesheet" href="/src/styles.css" />
+  <title>PIXEL SERPENT · 2.5D 像素贪吃蛇</title>
+</head>
 
-        <section id="menu-overlay" class="overlay">
-          <div class="card">
-            <p class="eyebrow">A 3D VOXEL SNAKE / DECISIONS API</p>
-            <h1 class="title">PIXEL<br /><span>SERPENT</span></h1>
-            <p class="lede">吃掉苹果，越长越危险。墙和自己的身体都会结束这一局。</p>
-            <div class="controls">
-              <span><b>WASD</b> / <b>方向键</b> 转向</span>
-              <span><b>SPACE</b> 暂停</span>
-              <span><b>R</b> 重开</span>
-              <span><b>M</b> 静音</span>
-            </div>
-            <div class="button-row">
-              <button id="start-manual" class="btn primary" type="button">手动开始</button>
-              <button id="menu-ai" class="btn" type="button">让 AI 来玩</button>
-            </div>
-            <p class="hint">AI 每走一步调用一次 Decisions API。地图在右侧面板可查看。</p>
-          </div>
-        </section>
+<body>
+  <div id="app">
+    <main id="stage">
+      <canvas id="world" aria-label="2.5D pixel snake board"></canvas>
 
-        <section id="pause-overlay" class="overlay" style="display: none">
-          <div class="card compact">
-            <p class="eyebrow">RUN PAUSED</p>
-            <h2 class="title">已暂停</h2>
-            <p class="lede">蛇停住了，场景还在渲染。</p>
-            <div class="button-row">
-              <button id="resume-btn" class="btn primary" type="button">继续</button>
-              <button id="restart-pause" class="btn" type="button">重新开始</button>
-            </div>
+      <header id="hud">
+        <div class="hud-left">
+          <span class="brand">PIXEL SERPENT</span>
+          <div class="hud-item"><span class="label">分数</span><span id="score">0</span></div>
+          <div class="hud-item"><span class="label">最高</span><span id="best">0</span></div>
+          <div class="hud-item"><span class="label">长度</span><span id="length">3</span></div>
+          <div class="hud-item"><span class="label">节拍</span><span id="speed">10</span></div>
+          <div class="hud-item difficulty-group" role="group" aria-label="难度">
+            <span class="label">难度</span>
+            <button class="difficulty-option" type="button" data-difficulty="chill" aria-pressed="false">悠闲</button>
+            <button class="difficulty-option is-active" type="button" data-difficulty="normal" aria-pressed="true">标准</button>
+            <button class="difficulty-option" type="button" data-difficulty="fast" aria-pressed="false">疾速</button>
           </div>
-        </section>
-
-        <section id="over-overlay" class="overlay" style="display: none">
-          <div class="card compact">
-            <p class="eyebrow">RUN ENDED</p>
-            <h2 class="title">游戏结束</h2>
-            <p id="over-reason" class="lede"></p>
-            <p class="lede">得分 <b id="over-score">0</b></p>
-            <button id="restart-over" class="btn primary" type="button">再来一局</button>
-          </div>
-        </section>
-
-        <section id="fatal-overlay" class="overlay fatal" style="display: none">
-          <div class="card compact">
-            <p class="eyebrow">INVARIANT VIOLATION</p>
-            <h2 class="title">运行已冻结</h2>
-            <p id="fatal-message" class="lede"></p>
-          </div>
-        </section>
-      </main>
-
-      <aside id="ai-panel" aria-label="AI pilot panel">
-        <div class="panel-head">
-          <div>
-            <p class="eyebrow">DECISION API</p>
-            <h2 class="panel-title">AI 控制台</h2>
-          </div>
-          <span id="ai-status" class="status">关闭</span>
+          <span id="phase" class="phase-chip">菜单</span>
         </div>
-
-        <p class="panel-copy">
-          每轮发送一张 ASCII 地图和规则，Decisions API 返回一个类型化选择。AI 思考时游戏暂停，地图不会在决策前改变。
-        </p>
-
-        <div class="field">
-          <label for="api-key">OpenAI API Key</label>
-          <input id="api-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="sk-..." />
+        <div class="hud-buttons">
+          <button id="pause" class="btn tiny" type="button">暂停</button>
+          <button id="restart" class="btn tiny" type="button">重开</button>
+          <button id="mute" class="btn tiny" type="button">声音：开</button>
         </div>
-        <div class="field">
-          <label for="model">模型（固定）</label>
-          <input id="model" type="text" value="gpt-6-luna" readonly aria-readonly="true" />
+      </header>
+
+      <div id="flash"></div>
+      <div id="scanlines"></div>
+
+      <section id="menu-overlay" class="overlay">
+        <div class="card">
+          <p class="eyebrow">A 2.5D PIXEL SNAKE / DECISIONS API</p>
+          <h1 class="title">PIXEL<br /><span>SERPENT</span></h1>
+          <p class="lede">吃掉苹果，越长越危险。墙和自己的身体都会结束这一局。</p>
+          <div class="controls">
+            <span><b>WASD</b> / <b>方向键</b> 转向</span>
+            <span><b>SPACE</b> 暂停</span>
+            <span><b>R</b> 重开</span>
+            <span><b>M</b> 音乐 / 音效</span>
+          </div>
+          <div class="menu-difficulty" role="group" aria-label="开局难度">
+            <span>难度</span>
+            <button class="difficulty-option" type="button" data-difficulty="chill" aria-pressed="false">悠闲</button>
+            <button class="difficulty-option is-active" type="button" data-difficulty="normal" aria-pressed="true">标准</button>
+            <button class="difficulty-option" type="button" data-difficulty="fast" aria-pressed="false">疾速</button>
+          </div>
+          <div class="button-row">
+            <button id="start-manual" class="btn primary" type="button">手动开始</button>
+            <button id="menu-ai" class="btn" type="button">让 AI 来玩</button>
+          </div>
+          <p class="hint">AI 每走一步调用一次 Decisions API。请求期间游戏不会暂停，慢响应可能让蛇撞死。</p>
         </div>
-        <p class="key-hint">Key 只保存在当前页面内存，刷新即清空。不会写入 localStorage、cookie 或日志。</p>
+      </section>
 
-        <div class="button-row">
-          <button id="start-ai" class="btn primary" type="button">开始 AI</button>
-          <button id="stop-ai" class="btn" type="button">停止 AI</button>
-          <button id="retry-ai" class="btn" type="button">重试</button>
+      <section id="pause-overlay" class="overlay" style="display: none">
+        <div class="card compact">
+          <p class="eyebrow">RUN PAUSED</p>
+          <h2 class="title">已暂停</h2>
+          <p class="lede">蛇停住了，场景还在渲染。</p>
+          <div class="button-row">
+            <button id="resume-btn" class="btn primary" type="button">继续</button>
+            <button id="restart-pause" class="btn" type="button">重新开始</button>
+          </div>
         </div>
-        <button id="clear-key" class="link-button" type="button">清除内存中的 Key</button>
+      </section>
 
-        <section class="panel-section">
-          <h3 class="section-title">观察地图</h3>
-          <pre id="observation" class="observation"></pre>
-        </section>
+      <section id="over-overlay" class="overlay" style="display: none">
+        <div class="card compact">
+          <p class="eyebrow">RUN ENDED</p>
+          <h2 class="title">游戏结束</h2>
+          <p id="over-reason" class="lede"></p>
+          <p class="lede">得分 <b id="over-score">0</b></p>
+          <div class="button-row">
+            <button id="restart-over" class="btn primary" type="button">手动再来一局</button>
+            <button id="restart-over-ai" class="btn" type="button">AI 再来一局</button>
+          </div>
+        </div>
+      </section>
 
-        <section class="panel-section log-section">
-          <h3 class="section-title">决策记录</h3>
-          <pre id="ai-log" class="ai-log"></pre>
-        </section>
+      <section id="fatal-overlay" class="overlay fatal" style="display: none">
+        <div class="card compact">
+          <p class="eyebrow">INVARIANT VIOLATION</p>
+          <h2 class="title">运行已冻结</h2>
+          <p id="fatal-message" class="lede"></p>
+        </div>
+      </section>
+    </main>
 
-        <p class="panel-foot">固定 60Hz 模拟 · 低分辨率体素渲染 · 内存 Key</p>
-      </aside>
-    </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+    <aside id="ai-panel" aria-label="AI pilot panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">DECISION API</p>
+          <h2 class="panel-title">AI 控制台</h2>
+        </div>
+        <span id="ai-status" class="status">关闭</span>
+      </div>
+
+      <div class="field">
+        <label for="api-key">OpenAI API Key</label>
+        <input id="api-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="sk-..." />
+      </div>
+      <div class="field">
+        <label for="model">模型（固定）</label>
+        <input id="model" type="text" value="gpt-6-luna" readonly aria-readonly="true" />
+      </div>
+      <p class="key-hint">Key 只保存在当前页面内存，刷新即清空。不会写入 localStorage、cookie 或日志。</p>
+
+      <div class="button-row">
+        <button id="start-ai" class="btn primary" type="button">开始 AI</button>
+        <button id="stop-ai" class="btn" type="button">停止 AI</button>
+        <button id="retry-ai" class="btn" type="button">重试</button>
+      </div>
+      <section class="panel-section">
+        <h3 class="section-title">观察地图</h3>
+        <pre id="observation" class="observation"></pre>
+      </section>
+
+      <section class="panel-section log-section">
+        <h3 class="section-title">决策记录</h3>
+        <pre id="ai-log" class="ai-log"></pre>
+      </section>
+
+      <p class="panel-foot">固定 60Hz 模拟 · 平面像素 3D · 内存 Key · 背景音乐与音效</p>
+    </aside>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>

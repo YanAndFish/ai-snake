@@ -1,42 +1,49 @@
+import { analyzeMove, type MoveAnalysis } from "../sim/analysis";
 import type { Direction, GameState } from "../sim/types";
 
 export function directionToken(dir: Direction): string {
   return { up: "U", down: "D", left: "L", right: "R" }[dir];
 }
 
-export function buildPrompt(
-  state: GameState,
-  map: string,
-  legalMoves: Direction[],
-): string {
-  const legal = legalMoves.map(directionToken).join(" ");
+function formatMove(option: MoveAnalysis, hasFood: boolean): string {
+  const token = directionToken(option.direction);
+  if (!option.safe) return `${token}: CRASH`;
+  const food =
+    !hasFood
+      ? "no food"
+      : option.eats
+        ? "EATS FOOD"
+        : option.foodDistance === null
+          ? "food unreachable"
+          : `food ${option.foodDistance}`;
+  const room =
+    option.room === "tight"
+      ? `room tight; space ${option.space}`
+      : "room ample";
+  return `${token}: SAFE; ${room}; ${food}`;
+}
+
+export function buildPrompt(state: GameState, legalMoves: Direction[]): string {
+  const analysis = legalMoves.map((direction) =>
+    formatMove(analyzeMove(state, direction), state.food !== null),
+  );
   const lines = [
-    "You are playing a deterministic Snake game on a grid.",
+    "SNAKE/1",
+    "Choose exactly one allowed turn for the current board.",
     "",
-    "LEGEND",
-    "# wall, . empty, H head, s body, * food",
-    "",
-    "RULES",
-    "x grows right, y grows down. Coordinates are 0-based.",
-    "The snake moves one cell per move. Each move advances the head in a direction.",
-    "Moving into a wall or the body ends the run, except the tail cell is vacated when not eating.",
-    "Eating the food scores 10 points and grows the snake by one segment.",
-    "You may never reverse 180 degrees into the neck.",
-    "",
-    "STATE",
-    `board ${state.width}x${state.height}`,
-    `current direction ${directionToken(state.direction)}`,
-    `score ${state.score}`,
-    `length ${state.snake.length}`,
-    `speed ${state.moveEveryTicks} ticks per move`,
-    `legal first moves ${legal}`,
-    "",
-    "MAP",
-    map,
+    "MOVE ANALYSIS",
+    "room: ample or tight; tight means little escape space relative to snake length.",
+    "space: reachable empty cells after the move; shown for tight turns.",
+    "food: shortest path to the food after the move. CRASH ends the run; EATS FOOD grows the snake.",
+    ...analysis,
     "",
     "TASK",
-    "The decision question chooses the next legal move. Keep escape room and prefer food.",
-    "The board is complete and does not change while the decision is made.",
+    "1. Never choose CRASH when any SAFE turn exists.",
+    "2. If any ample-room turn exists, ignore tight turns. Among them, prefer EATS FOOD, otherwise the smallest food distance.",
+    "3. If only tight turns exist, choose the largest space.",
+    `4. If all turns crash, or the best turns tie, prefer the current direction ${directionToken(state.direction)}.`,
+    "",
+    "The simulation keeps moving during the request; answer quickly for this snapshot.",
   ];
   return lines.join("\n");
 }

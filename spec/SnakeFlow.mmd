@@ -1,0 +1,35 @@
+---
+title: "Snake run lifecycle, AI requests never halt"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: Running
+    lg1: Halted
+    lg2: Idle
+  }
+  class lg0 blue
+  class lg1 orange
+  class lg2 tan
+  s0: Menu
+  s1: Playing
+  s2: Playing, AI request in flight
+  s3: Paused
+  s4: Game over
+  [*] --> s0
+  s0 --> s1: you start a run
+  s0 --> s2: you hand the run to the AI
+  s1 --> s3: you pause
+  s2 --> s3: you pause
+  s2 --> s1: the AI request fails or the AI answer arrives
+  s3 --> s1: you resume
+  s3 --> s2: you resume
+  s1 --> s2: the AI request starts
+  s1 --> s4: the run ends
+  s2 --> s4: the run ends
+  s4 --> s1: you run it again
+  s4 --> s2: you let the AI run it again
+  class s0 tan
+  class s1 blue
+  class s2 blue
+  class s3 orange
+  class s4 tan

@@ -1,10 +1,11 @@
 import type { AiLogEntry, AiStatusView } from "../ai/controller";
+import { isDifficulty, type Difficulty } from "../config";
 import type { StateView } from "../sim/types";
 
 const STATUS_LABELS: Record<AiStatusView["state"], string> = {
   off: "关闭",
   needKey: "等待 Key",
-  thinking: "思考中",
+  thinking: "请求中",
   ready: "计划就绪",
   error: "错误",
 };
@@ -13,7 +14,6 @@ const PHASE_LABELS: Record<StateView["phase"], string> = {
   menu: "菜单",
   playing: "游戏中",
   paused: "已暂停",
-  thinking: "思考中",
   over: "结束",
 };
 
@@ -37,7 +37,7 @@ export interface UiHandlers {
   onStartAi: () => void;
   onStopAi: () => void;
   onRetryAi: () => void;
-  onClearKey: () => void;
+  onDifficulty: (difficulty: Difficulty) => void;
   onPause: () => void;
   onRestart: () => void;
   onMute: () => void;
@@ -55,12 +55,27 @@ export function modelValue(): string {
   return el<HTMLInputElement>("model").value;
 }
 
+function markDifficulty(value: Difficulty): void {
+  document.querySelectorAll<HTMLButtonElement>("[data-difficulty]").forEach((button) => {
+    const selected = button.dataset.difficulty === value;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
+}
+
 export function bindUi(handlers: UiHandlers): void {
   el("start-manual").addEventListener("click", handlers.onStartManual);
   el("start-ai").addEventListener("click", handlers.onStartAi);
   el("stop-ai").addEventListener("click", handlers.onStopAi);
   el("retry-ai").addEventListener("click", handlers.onRetryAi);
-  el("clear-key").addEventListener("click", handlers.onClearKey);
+  document.querySelectorAll<HTMLButtonElement>("[data-difficulty]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const value = button.dataset.difficulty;
+      if (value === undefined || !isDifficulty(value)) return;
+      markDifficulty(value);
+      handlers.onDifficulty(value);
+    });
+  });
   el("pause").addEventListener("click", handlers.onPause);
   el("restart").addEventListener("click", handlers.onRestart);
   el("mute").addEventListener("click", handlers.onMute);
@@ -72,6 +87,7 @@ export function updateHud(view: StateView, best: number): void {
   setText("length", String(view.snake.length));
   setText("speed", String(view.moveEveryTicks));
   setText("phase", PHASE_LABELS[view.phase]);
+  markDifficulty(view.difficulty);
 }
 
 export function updateAiPanel(

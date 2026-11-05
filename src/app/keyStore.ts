@@ -1,19 +1,19 @@
 export class KeyStore {
-  private value = "";
+  #value = "";
 
   set(value: string): void {
-    this.value = value;
+    this.#value = value.trim();
   }
 
   get(): string {
-    return this.value;
+    return this.#value;
   }
 
   clear(): void {
-    this.value = "";
+    this.#value = "";
   }
 
   has(): boolean {
-    return this.value !== "";
+    return this.#value !== "";
   }
 }

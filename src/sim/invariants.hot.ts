@@ -11,7 +11,6 @@ export const BIT_SCORE = 1 << 5;
 export const BIT_LENGTH = 1 << 6;
 export const BIT_NO_REVERSE = 1 << 7;
 export const BIT_HALT = 1 << 8;
-export const BIT_AI_ONLY = 1 << 9;
 export const BIT_MENU_ZERO = 1 << 10;
 export const BIT_HEAD = 1 << 11;
 export const BIT_MIN_LENGTH = 1 << 12;
@@ -39,7 +38,6 @@ function isPhase(value: unknown): boolean {
     value === "menu" ||
     value === "playing" ||
     value === "paused" ||
-    value === "thinking" ||
     value === "over"
   );
 }
@@ -126,7 +124,7 @@ export function checkInvariantsMask(state: GameState): number {
   }
 
   if (
-    (state.phase === "playing" || state.phase === "paused" || state.phase === "thinking") &&
+    (state.phase === "playing" || state.phase === "paused") &&
     state.food === null
   ) {
     mask |= BIT_FOOD_EXISTS;
@@ -146,13 +144,12 @@ export function checkInvariantsMask(state: GameState): number {
   }
 
   if (
-    (state.phase === "paused" || state.phase === "thinking" || state.phase === "over") &&
+    (state.phase === "paused" || state.phase === "over") &&
     state.tick !== state.haltTick
   ) {
     mask |= BIT_HALT;
   }
 
-  if (state.phase === "thinking" && state.control !== "ai") mask |= BIT_AI_ONLY;
   if (state.phase === "menu" && (state.tick !== 0 || state.haltTick !== 0)) {
     mask |= BIT_MENU_ZERO;
   }

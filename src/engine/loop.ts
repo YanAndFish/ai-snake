@@ -63,7 +63,7 @@ export class Loop {
     return advanceLoopHot(
       this,
       deltaSeconds,
-      this.halted(),
+      this.halted,
       MAX_STEPS * Math.max(1, this.timeScale),
       this.step,
     );
