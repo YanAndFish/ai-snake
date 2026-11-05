@@ -14,16 +14,13 @@ import {
 } from "./scene.hot";
 import { appleTexture } from "./snakeTextures";
 import { createSnakeBody, createSnakeShadow } from "./snakeBody";
+import { createScenery } from "./scenery";
 import {
   boardTexture,
-  bushTexture,
-  daisyTexture,
-  grassTuftTexture,
   groundTexture,
   headTexture,
   particleTexture,
   shadowTexture,
-  stoneTexture,
 } from "./textures";
 
 export { BOARD_TOP, SPRITE_SIZE } from "./scene.hot";
@@ -97,7 +94,6 @@ export class Scene implements SceneHot {
 
   private readonly shadowGeometry: THREE.PlaneGeometry;
   private readonly shadowMaterial: THREE.MeshBasicMaterial;
-  private readonly decorations = new THREE.Group();
   private lastBufferWidth = 0;
   private lastBufferHeight = 0;
 
@@ -135,12 +131,11 @@ export class Scene implements SceneHot {
 
 
     this.buildBoard();
-    this.buildDecorations();
+    this.scene.add(createScenery(seed));
     this.buildApple();
     this.buildSnake();
     this.buildParticles();
 
-    this.scene.add(this.decorations);
     this.scene.add(this.appleGroup);
 
     this.resize(canvas.clientWidth || 960, canvas.clientHeight || 640);
@@ -234,51 +229,6 @@ export class Scene implements SceneHot {
     this.scene.add(shadow);
   }
 
-  private addDecoration(texture: THREE.Texture, size: number, x: number, z: number): void {
-    const sprite = new THREE.Sprite(makeSpriteMaterial(texture));
-    sprite.scale.set(size, size, 1);
-    sprite.center.set(0.5, 0);
-    sprite.position.set(x, GROUND_Y + 0.004, z);
-    sprite.renderOrder = 1;
-    this.decorations.add(sprite);
-
-    const shadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial);
-    shadow.position.set(
-      x + SHADOW_OFFSET_X * size * 1.3,
-      GROUND_Y + 0.006,
-      z + SHADOW_OFFSET_Z * size * 1.3,
-    );
-    shadow.scale.set(size * 0.9, 1, size * 0.62);
-    this.decorations.add(shadow);
-  }
-
-  private buildDecorations(): void {
-    this.addDecoration(grassTuftTexture(), 0.62, 1.4, -1.7);
-    this.addDecoration(grassTuftTexture(), 0.56, -1.8, 4.4);
-    this.addDecoration(grassTuftTexture(), 0.6, 17.8, -1.6);
-    this.addDecoration(grassTuftTexture(), 0.62, -1.7, 12.8);
-    this.addDecoration(grassTuftTexture(), 0.58, 20.9, 8.5);
-    this.addDecoration(grassTuftTexture(), 0.6, 12.2, 20.6);
-    this.addDecoration(grassTuftTexture(), 0.52, 5.2, 20.8);
-
-    this.addDecoration(daisyTexture(), 0.62, 20.8, 3.0);
-    this.addDecoration(daisyTexture(), 0.58, 2.8, 20.8);
-    this.addDecoration(daisyTexture(), 0.56, -1.6, 18.4);
-    this.addDecoration(daisyTexture(), 0.6, 20.7, 16.2);
-    this.addDecoration(daisyTexture(), 0.54, -1.5, 9.0);
-
-    this.addDecoration(bushTexture(), 0.84, 9.4, -2.0);
-    this.addDecoration(bushTexture(), 0.76, 21.0, 12.0);
-    this.addDecoration(bushTexture(), 0.74, -2.0, 7.2);
-    this.addDecoration(bushTexture(), 0.72, 20.9, 18.5);
-    this.addDecoration(bushTexture(), 0.7, 17.2, 20.8);
-
-    this.addDecoration(stoneTexture(), 0.5, 21.0, 5.2);
-    this.addDecoration(stoneTexture(), 0.46, -1.7, 1.6);
-    this.addDecoration(stoneTexture(), 0.52, 7.0, 20.8);
-    this.addDecoration(stoneTexture(), 0.44, 18.2, 20.7);
-  }
-
   private buildApple(): void {
     const sprite = new THREE.Sprite(makeSpriteMaterial(appleTexture()));
     sprite.scale.set(APPLE_SIZE, APPLE_SIZE, 1);
@@ -355,8 +305,12 @@ export class Scene implements SceneHot {
 
   resize(cssWidth: number, cssHeight: number): void {
     if (cssWidth <= 0 || cssHeight <= 0) return;
-    const width = Math.max(1, Math.round(cssWidth / 2));
-    const height = Math.max(1, Math.round(cssHeight / 2));
+    // 手机按设备像素比绘制，上限为 2，控制高密度屏幕的显存和填充开销。
+    const scale = window.matchMedia("(max-width: 900px)").matches
+      ? Math.min(Math.max(window.devicePixelRatio || 1, 1), 2)
+      : 0.5;
+    const width = Math.max(1, Math.round(cssWidth * scale));
+    const height = Math.max(1, Math.round(cssHeight * scale));
     if (width === this.lastBufferWidth && height === this.lastBufferHeight) return;
     this.lastBufferWidth = width;
     this.lastBufferHeight = height;

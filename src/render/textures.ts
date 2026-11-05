@@ -246,8 +246,9 @@ function toTexture(buf: PixelBuffer): THREE.CanvasTexture {
   return tex;
 }
 
+/** 生成细颗粒的草地贴图，颜色变化均匀分布在可玩区。 */
 export function boardTexture(width: number, height: number): THREE.CanvasTexture {
-  const cell = 10;
+  const cell = 24;
   const w = width * cell;
   const h = height * cell;
   const buf = buffer(w, h);
