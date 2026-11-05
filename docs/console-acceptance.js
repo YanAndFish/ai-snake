@@ -206,13 +206,22 @@
   const newest = decisionLog[decisionLog.length - 1];
   assert(newest.latencyMs >= 50, "决策记录缺少请求耗时");
   await waitFor(
-    () => document.querySelector("#ai-latency").textContent.includes("P90"),
-    "AI 面板没有显示延迟统计",
+    () =>
+      document.querySelector("#ai-latency").textContent === String(newest.latencyMs) &&
+      document.querySelector("#ai-latency-stats").textContent.includes("P90"),
+    "AI 面板没有显示最近耗时和延迟统计",
   );
+  const newestLogLine = () => document.querySelector("#ai-log").textContent.split("\n")[0] || "";
   await waitFor(
-    () => document.querySelector("#ai-log").textContent.startsWith(`#${newest.requestId} ·`),
+    () =>
+      newestLogLine().startsWith("↑") &&
+      newestLogLine().includes(`${newest.latencyMs} ms`),
     "最新决策记录没有排在顶部",
   );
+  const aiLogText = document.querySelector("#ai-log").textContent;
+  assert(!aiLogText.includes("gpt-6-luna"), "决策记录仍显示固定模型名");
+  assert(!aiLogText.includes("slow mock"), "决策记录仍显示理由");
+  assert(!aiLogText.includes(`#${newest.requestId}`), "决策记录仍显示请求序号");
 
   const panel = document.querySelector("#ai-panel");
   const panelTab = document.querySelector("#ai-tab");

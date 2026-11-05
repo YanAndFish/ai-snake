@@ -23,6 +23,27 @@ const OVER_LABELS: Record<string, string> = {
   win: "吃满了！",
 };
 
+const MOVE_ARROWS: Record<string, string> = {
+  up: "↑",
+  down: "↓",
+  left: "←",
+  right: "→",
+};
+
+const MAX_ERROR_LENGTH = 24;
+
+function clip(text: string): string {
+  if (text.length <= MAX_ERROR_LENGTH) return text;
+  return `${text.slice(0, MAX_ERROR_LENGTH - 1)}…`;
+}
+
+function formatLogLine(entry: AiLogEntry): string {
+  if (entry.error) return `✕  ${entry.latencyMs} ms · ${clip(entry.error)}`;
+  if (entry.moves.length === 0) return "—";
+  const glyphs = entry.moves.map((move) => MOVE_ARROWS[move] ?? move).join("");
+  return `${glyphs}  ${entry.latencyMs} ms`;
+}
+
 function el<T extends HTMLElement>(id: string): T {
   return document.getElementById(id) as T;
 }
@@ -141,23 +162,20 @@ export function updateAiPanel(
   el("ai-status").dataset.state = state;
 
   const last = status.latencyMs;
+  setText("ai-latency", last === null ? "--" : String(last));
+
   const samples = log.map((entry) => entry.latencyMs).sort((a, b) => a - b);
-  if (last === null || samples.length === 0) {
-    setText("ai-latency", "决策延迟：等待首次响应");
+  if (samples.length === 0) {
+    setText("ai-latency-stats", "");
   } else {
     const p50 = samples[Math.ceil(samples.length * 0.5) - 1];
     const p90 = samples[Math.ceil(samples.length * 0.9) - 1];
-    setText("ai-latency", `最近 ${last} ms · P50 ${p50} ms · P90 ${p90} ms`);
+    setText("ai-latency-stats", `P50 ${p50} · P90 ${p90}`);
   }
 
-  const logLines = log.slice(-20).reverse().map((entry) => {
-    const moves = entry.moves.length > 0 ? entry.moves.join(" ") : "-";
-    const reason = entry.reason ? ` | ${entry.reason}` : "";
-    const err = entry.error ? ` | 错误 ${entry.error}` : "";
-    return `#${entry.requestId} · ${entry.latencyMs} ms · ${entry.model} [${moves}]${reason}${err}`;
-  });
   const logNode = el("ai-log");
-  logNode.textContent = logLines.join("\n") || "暂无决策记录";
+  logNode.textContent =
+    log.slice(-20).reverse().map(formatLogLine).join("\n") || "暂无决策记录";
   logNode.scrollTop = 0;
 }
 
