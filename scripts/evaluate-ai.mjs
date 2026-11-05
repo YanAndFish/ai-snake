@@ -250,7 +250,7 @@ async function runScenario(runtime, scenario) {
     constraints.failedResponses = stats?.failedResponses ?? 0;
     constraints.startMismatches = stats?.startMismatches ?? 0;
     const apiMoves = stats?.apiMoves ?? fallbackApiMoves;
-    const localMoves = stats ? stats.bridgeMoves + stats.forcedMoves + stats.scriptMoves : state.moveCount - apiMoves;
+    const localMoves = stats ? (stats.coastMoves ?? ((stats.bridgeMoves ?? 0) + (stats.forcedMoves ?? 0))) + stats.scriptMoves : state.moveCount - apiMoves;
     if (apiMoves + localMoves !== state.moveCount) constraints.executionCountMismatches += 1;
     if (stats && (stats.requests !== requests || stats.completed !== completed)) constraints.requestCountMismatches += 1;
     if (session.getFatal()) errors.add(session.getFatal());

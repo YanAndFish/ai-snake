@@ -98,7 +98,7 @@ function straightRunway(state: GameState, direction: Direction): number {
     const result = advanceMove(current);
     if (result.events.some((event) => event.type === "crash")) break;
     moves += 1;
-    current = result.state;
+    current = result.state.eaten > current.eaten ? { ...result.state, food: null } : result.state;
   }
   return moves;
 }

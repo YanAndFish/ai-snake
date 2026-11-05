@@ -15,11 +15,11 @@ function args(signal = new AbortController().signal) {
 }
 
 describe("AI controller", () => {
-  it("Mock 响应经过真实解析器且不修改活动路线", async () => {
+  it("Mock 响应经过真实解析器并返回一个方向", async () => {
     const controller = new AiController({ decide: async () => "" });
-    controller.useMock({ moves: ["up", "right"], reason: "mock plan" });
+    controller.useMock({ moves: ["up"], reason: "mock plan" });
     const moves = await controller.request(args());
-    expect(moves).toEqual(["up", "right"]);
+    expect(moves).toEqual(["up"]);
     expect(controller.plan).toEqual([]);
     expect(controller.getStatus().state).toBe("ready");
     const log = controller.getLog();
@@ -27,7 +27,7 @@ describe("AI controller", () => {
     expect(log[0].reason).toBe("mock plan");
     expect(controller.getVersion()).toBeGreaterThan(0);
     controller.setPlan(["right"]);
-    expect(controller.getLog()[0].moves).toEqual(["up", "right"]);
+    expect(controller.getLog()[0].moves).toEqual(["up"]);
   });
 
   it("logs a failed request", async () => {

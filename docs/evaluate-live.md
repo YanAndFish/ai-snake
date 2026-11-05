@@ -15,8 +15,7 @@ npm run eval:live -- --env-file .env.local --seeds 83 --duration-ms 30000 --outp
 ```json
 [
   { "name": "baseline", "root": "/tmp/ai-snake-live-baseline" },
-  { "name": "routes-full", "root": ".", "prompt": "full" },
-  { "name": "routes-compact", "root": ".", "prompt": "compact-summary" }
+  { "name": "current-direction", "root": ".", "prompt": "full" }
 ]
 ```
 
@@ -26,15 +25,15 @@ npm run eval:live -- --env-file .env.local --matrix /tmp/variants.json --seeds 2
 
 `--scenarios` 读取逐局配置，支持 `name`、`root`、`seed`、`durationMs`、`difficulty`、`model`、`prompt`。需要固定成对运行时，为每局填写 `round`。同一轮全部结束后才开始下一轮，每轮数量最多为 `--concurrency`。
 
-`full` 发送生产源码生成的请求。`compact-summary` 适用于 `SNAKE/3 ROUTES`。它从 `input` 和候选说明中删除蛇身坐标与逐步方向，保留未来起点、已知食物、`length`、`safe_extension`、`eatAt`、`progress` 和终点。每次请求保存实际 `payload`、`promptHash` 和 `payloadHash`。
+`full` 发送生产源码生成的请求，当前方向控制使用此选项。`compact-summary` 仅适用于单独检出的 `SNAKE/3 ROUTES` 实验源码。它从 `input` 和候选说明中删除蛇身坐标与逐步方向，保留未来起点、已知食物、`length`、`safe_extension`、`eatAt`、`progress` 和终点。每次请求保存实际 `payload`、`promptHash` 和 `payloadHash`。
 
 报告中的字段用于区分不同结果。
 
 - `realApiMode` 表示启用真实网络。`realModelMeasured` 表示至少有一个真实 HTTP 200 响应完成生产 parser 解析。
 - `score` 是固定窗口结束时的分数。`survivedMs` 是存活时长，死亡时间由每 25 毫秒采样观测。
 - `responseCount` 统计收到响应头的请求。`completedResponseCount` 统计收完响应体的请求。`parsedResponseCount` 统计完成生产 parser 解析的请求。
-- `executionStats.apiMoves` 和 `apiEats` 统计按模型选择的路线完成的移动和食物。路线由游戏预先计算。`bridgeMoves` 和 `bridgeEats` 统计等待响应时的本地路线。
-- `executionStats.expiredResponses` 统计失效响应。每次请求的 `expiredOnArrival` 只比较解析时的移动数与未来起点。
+- `executionStats.apiMoves` 和 `apiEats` 统计应用 AI 方向输入时完成的移动和吃食。`coastMoves` 和 `coastEats` 统计没有新输入时的移动和吃食。
+- 对于路线实验源码，`expiredResponses` 统计失效响应。当前方向输入从实际位置执行，`expectedStartMove` 和 `expiredOnArrival` 为 `null`。
 - `maxActiveFetches` 独立统计原生 fetch 并发，覆盖响应体接收时间。`clockRatio` 比较实际 tick 与存活墙钟对应的 60 Hz tick。
 - `errors` 区分 HTTP、网络、解析、死亡取消和窗口结束取消。旧源码没有来源统计时，`executionStats` 与 `decisionApplied` 为 `null`。
 - `sourceBefore` 和 `sourceAfter` 按相对路径与内容计算每份源码 `src/**/*.ts` 的 SHA256，包含逐文件清单。`sourceStable` 表示运行前后内容相同。
@@ -47,7 +46,9 @@ npm run eval:live -- --env-file .env.local --matrix /tmp/variants.json --seeds 2
 npm run eval:live -- --self-check --seeds 83 --duration-ms 2000 --output /tmp/live-selfcheck.json
 ```
 
-## 复现本次固定配对
+## 复现路线方案的固定配对
+
+本节对应路线方案实验。B、C 必须使用与报告源码 hash 相同的独立检出目录，不能使用当前方向控制源码。下方示例中的 `process.cwd()` 需要替换为该目录。
 
 [真实结果 JSON](ai-live-results.json) 保留正式场景的种子、轮次、顺序和源码 hash。标准难度有三方案各 5 局，疾速有 A、B 各 2 局，所有窗口均为 90 秒。它们没有包含初检或假响应样本。
 

@@ -55,38 +55,29 @@ describe("GameSession", () => {
     expect(game.getAiStatus().state).toBe("needKey");
   });
 
-  it("AI 响应早到时等待前缀走完再执行", async () => {
-    const game = session({ mock: { moves: ["up"], reason: "up" }, seed: 2 });
-    const view = game.start({ seed: 2, ai: true });
-    expect(view.phase).toBe("playing");
-    expect(game.getAiStatus().state).toBe("thinking");
+  it("AI 响应到达后在下一次移动执行方向", async () => {
+    const game = session({ mock: { moves: ["up"], reason: "up" } });
+    game.start({ seed: 2, ai: true });
     game.stepMoves(3);
-    expect(game.getState().snake[0].x).toBe(12);
+    expect(game.getState().snake[0]).toEqual({ x: 12, y: 9 });
     await game.waitForIdle(1000);
     expect(game.getAiStatus().state).toBe("ready");
     game.stepMoves(1);
-    expect(game.getState().snake[0].y).toBe(9);
-    expect(game.getAiExecutionStats().apiMoves).toBe(0);
-    game.stepMoves(12);
-    const startHead = game.getState().snake[0];
-    game.stepMoves(1);
-    expect(game.getState().snake[0].y).toBe(startHead.y - 1);
+    expect(game.getState().snake[0]).toEqual({ x: 12, y: 8 });
     expect(game.getAiExecutionStats().apiMoves).toBe(1);
+    game.stopAi();
   });
 
-  it("请求挂起时按避险方向推进且只有一个请求", () => {
+  it("请求挂起时沿当前方向移动直到撞墙", () => {
     const gate = deferredTransport();
-    const game = session({ transport: gate.transport, seed: 3 });
+    const game = session({ transport: gate.transport });
     game.setCredentials("sk-test");
     game.start({ seed: 3, ai: true });
-    expect(game.getState().phase).toBe("playing");
-    expect(gate.calls).toHaveLength(1);
     game.stepMoves(20);
-    expect(game.getState().phase).toBe("playing");
-    expect(game.getState().moveCount).toBe(20);
-    expect(game.getAiExecutionStats().bridgeMoves).toBe(20);
+    expect(game.getState().overReason).toBe("wall");
+    expect(game.getState().direction).toBe("right");
+    expect(game.getAiExecutionStats().coastMoves).toBe(9);
     expect(gate.calls).toHaveLength(1);
-    game.stopAi();
   });
 
   it("allows only one request in flight", async () => {
@@ -100,7 +91,7 @@ describe("GameSession", () => {
     gate.calls[0].resolve('{"moves":["up"],"reason":"one"}');
     await game.waitForIdle(1000);
     expect(game.getAiStatus().state).toBe("ready");
-    game.stepMoves(13);
+    game.stepMoves(1);
     expect(gate.calls).toHaveLength(2);
     gate.calls[1].resolve('{"moves":["left"],"reason":"two"}');
     await game.waitForIdle(1000);
@@ -108,7 +99,7 @@ describe("GameSession", () => {
   });
 
   it("records request latency and movement in the decision context", async () => {
-    const game = session({ mock: { moves: ["left"], reason: "context" }, seed: 21 });
+    const game = session({ mock: { moves: ["up"], reason: "context" }, seed: 21 });
     game.start({ seed: 21, ai: true });
     await game.waitForIdle(1000);
     const prompt = game.getPrompt();
@@ -170,7 +161,7 @@ describe("GameSession", () => {
     game.stepMoves(2);
     expect(game.getState().phase).toBe("playing");
     await game.waitForIdle(1000);
-    game.setMock({ moves: ["left"], reason: "recovered" });
+    game.setMock({ moves: ["up"], reason: "recovered" });
     game.retryAi();
     await game.waitForIdle(1000);
     expect(game.getAiStatus().state).toBe("ready");

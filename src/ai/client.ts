@@ -10,7 +10,7 @@ export interface DecisionRequest {
   apiKey: string;
   /** 取消当前请求的信号。 */
   signal: AbortSignal;
-  /** 允许模型选择的路线首方向，每个方向标记一条路线。 */
+  /** 游戏规则允许的方向，仅排除反向。 */
   legalMoves: readonly Direction[];
   /** 选项的局面分析；省略时使用方向说明。 */
   choiceDescriptions?: Partial<Record<Direction, string>>;
@@ -77,7 +77,7 @@ export class DecisionsTransport implements DecisionTransport {
           type: "choice",
           name: "next_move",
           instructions:
-            "Choose one listed route from its future start board. A direction token identifies the complete route in its description. Prefer surviving and reaching known food sooner, using eatAt and progress. Routes are already checked by the game rules. An early answer waits for the specified start; a late answer is discarded. Return exactly one listed choice.",
+            "Choose the direction to control the snake now. Your answer is one direction input applied at the next movement after arrival. Use the current board and delay information to decide. The snake keeps its heading while waiting. Every non-reversing direction is offered, including dangerous ones. No local planner or collision avoidance will change your choice. Return exactly one listed choice.",
           choices,
         },
       ],

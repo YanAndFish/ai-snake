@@ -138,7 +138,10 @@ function simulateWait(
       current = enqueueDirection(current, pending.plan[planIndex]);
       planIndex += 1;
     }
+    const previousEaten = current.eaten;
     current = advanceMove(current).state;
+    // 预测只能使用请求时可见的食物，生成的新位置要等下一次观察。
+    if (current.eaten > previousEaten) current = { ...current, food: null };
   }
   return { state: current, ended: current.phase !== "playing" };
 }
